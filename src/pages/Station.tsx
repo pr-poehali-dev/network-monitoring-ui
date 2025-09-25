@@ -186,9 +186,10 @@ export default function Station() {
           <p className="text-gray-500">{station.location}</p>
         </div>
 
-        <div className="max-w-4xl">
-          {/* Main Content */}
-          <div>
+        {/* Двухколоночный лэйаут */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Основной контент (левая колонка) */}
+          <div className="xl:col-span-2">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-6">
                 <TabsTrigger value="management">Панель управления</TabsTrigger>
@@ -338,34 +339,7 @@ export default function Station() {
                   </CardContent>
                 </Card>
 
-                {/* OCPP Logs */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Icon name="FileText" size={20} />
-                      OCPP Логи
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="bg-gray-50 rounded-lg p-4 font-mono text-sm space-y-2 max-h-96 overflow-y-auto">
-                      {mockLogs.map((log) => (
-                        <div 
-                          key={log.id} 
-                          className={`text-xs ${
-                            log.type === 'request' ? 'text-blue-600' :
-                            log.type === 'response' ? 'text-green-600' :
-                            log.type === 'error' ? 'text-red-600' :
-                            'text-gray-600'
-                          }`}
-                        >
-                          <span className="text-gray-500">[{log.timestamp}]</span>{' '}
-                          <span className="uppercase font-semibold">{log.type}:</span>{' '}
-                          <pre className="whitespace-pre-wrap">{log.message}</pre>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+
               </TabsContent>
 
               <TabsContent value="transactions">
@@ -436,7 +410,36 @@ export default function Station() {
             </Tabs>
           </div>
 
-
+          {/* Правая колонка - Логи */}
+          <div className="xl:col-span-1">
+            <Card className="sticky top-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="FileText" size={20} />
+                  OCPP Логи
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-gray-50 rounded-lg p-4 font-mono text-sm space-y-2 max-h-[80vh] overflow-y-auto">
+                  {mockLogs.map((log) => (
+                    <div 
+                      key={log.id} 
+                      className={`text-xs ${
+                        log.type === 'request' ? 'text-blue-600' :
+                        log.type === 'response' ? 'text-green-600' :
+                        log.type === 'error' ? 'text-red-600' :
+                        'text-gray-600'
+                      }`}
+                    >
+                      <span className="text-gray-500">[{log.timestamp}]</span>{' '}
+                      <span className="uppercase font-semibold">{log.type}:</span>{' '}
+                      <pre className="whitespace-pre-wrap">{log.message}</pre>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
