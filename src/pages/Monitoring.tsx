@@ -237,7 +237,7 @@ export default function Monitoring() {
             <TabsTrigger value="history">История ошибок</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="space-y-3">
+          <TabsContent value="active">
             {filteredActiveAlerts.length === 0 ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -249,53 +249,72 @@ export default function Monitoring() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-1">
-                {filteredActiveAlerts.map((alert) => (
-                  <div key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)} border rounded-lg p-4`}>
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3 flex-1">
-                        {alert.severity === 'critical' ? (
-                          <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0 mt-1" />
-                        ) : alert.severity === 'warning' ? (
-                          <Icon name="AlertCircle" size={16} className="text-orange-500 flex-shrink-0 mt-1" />
-                        ) : (
-                          <Icon name="Info" size={16} className="text-blue-500 flex-shrink-0 mt-1" />
-                        )}
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
-                              {getSeverityText(alert.severity)}
-                            </Badge>
-                            <span className="font-semibold text-gray-900 text-base">{alert.message}</span>
-                            <span className={`text-sm font-medium ${getStatusColor(alert.status)}`}>
-                              {getStatusText(alert.status)}
-                            </span>
-                          </div>
-                          
-                          <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
-                          
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Icon name="MapPin" size={12} />
-                              <span>{alert.station}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Icon name="Timer" size={12} />
-                              <span className="font-medium text-red-600">{alert.duration}</span>
-                            </div>
-                            <span className="text-gray-400">{alert.startTime}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Приоритет</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm min-w-[300px]">Ошибка</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Статус</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Станция</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Длительность</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время начала</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredActiveAlerts.map((alert) => (
+                          <tr key={alert.id} className={`border-b border-l-4 ${getSeverityBg(alert.severity)} hover:bg-gray-50/50`}>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                {alert.severity === 'critical' ? (
+                                  <Icon name="AlertTriangle" size={14} className="text-red-500" />
+                                ) : alert.severity === 'warning' ? (
+                                  <Icon name="AlertCircle" size={14} className="text-orange-500" />
+                                ) : (
+                                  <Icon name="Info" size={14} className="text-blue-500" />
+                                )}
+                                <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
+                                  {getSeverityText(alert.severity)}
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div>
+                                <div className="font-medium text-gray-900 text-sm mb-1">{alert.message}</div>
+                                <div className="text-xs text-gray-600">{alert.description}</div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                alert.status === 'active' ? 'bg-red-100 text-red-700' :
+                                alert.status === 'acknowledged' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {getStatusText(alert.status)}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-sm text-gray-900">{alert.station}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-sm font-medium text-red-600">{alert.duration}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs text-gray-500">{alert.startTime}</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                ))}
-              </div>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-2">
+          <TabsContent value="history">
             {filteredHistoryAlerts.length === 0 ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -307,38 +326,56 @@ export default function Monitoring() {
                 </CardContent>
               </Card>
             ) : (
-              filteredHistoryAlerts.map((alert) => (
-                <Card key={alert.id} className="border-l-4 border-l-green-500 bg-green-50">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      <Icon name="CheckCircle" size={16} className="text-green-500 flex-shrink-0 mt-0.5" />
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200 flex-shrink-0">
-                            РЕШЕНА
-                          </Badge>
-                          <span className="font-medium text-gray-700">{alert.message}</span>
-                        </div>
-                        
-                        <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
-                        
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Icon name="MapPin" size={12} />
-                            <span>{alert.station}</span>
-                          </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <Icon name="Timer" size={12} />
-                            <span>Длилась: {alert.duration}</span>
-                          </div>
-                          <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-50">
+                        <tr className="border-b">
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Статус</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm min-w-[300px]">Ошибка</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Станция</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Длительность</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время начала</th>
+                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Решена</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredHistoryAlerts.map((alert) => (
+                          <tr key={alert.id} className="border-b border-l-4 border-l-green-500 bg-green-50/30 hover:bg-green-50/50">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <Icon name="CheckCircle" size={14} className="text-green-500" />
+                                <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200">
+                                  РЕШЕНА
+                                </Badge>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div>
+                                <div className="font-medium text-gray-700 text-sm mb-1">{alert.message}</div>
+                                <div className="text-xs text-gray-600">{alert.description}</div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-sm text-gray-700">{alert.station}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-sm text-gray-600">{alert.duration}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs text-gray-500">{alert.startTime}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs text-green-600 font-medium">Вчера, 14:30</div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </TabsContent>
         </Tabs>
