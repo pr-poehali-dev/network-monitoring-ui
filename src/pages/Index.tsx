@@ -1,8 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -94,17 +94,12 @@ const getStatusLabel = (status: string) => {
 };
 
 export default function Index() {
-  const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredStations = mockStations.filter(station =>
     station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     station.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleStationAction = (action: string, stationId: string) => {
-    console.log(`Действие ${action} для станции ${stationId}`);
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -159,26 +154,23 @@ export default function Index() {
                   </div>
                   
                   {/* Station Markers */}
-                  <div className="absolute top-20 left-32">
-                    <div className={`w-4 h-4 ${getStatusColor('charging')} rounded-full animate-pulse cursor-pointer`}
-                         onClick={() => setSelectedStation(mockStations[0])}>
+                  <Link to="/station/1" className="absolute top-20 left-32">
+                    <div className={`w-4 h-4 ${getStatusColor('charging')} rounded-full animate-pulse cursor-pointer hover:scale-110 transition-transform`}>
                     </div>
-                    <div className="text-xs mt-1 font-medium">ЭЗС Центральная</div>
-                  </div>
+                    <div className="text-xs mt-1 font-medium hover:text-blue-600">ЭЗС Центральная</div>
+                  </Link>
                   
-                  <div className="absolute bottom-32 right-40">
-                    <div className={`w-4 h-4 ${getStatusColor('available')} rounded-full cursor-pointer`}
-                         onClick={() => setSelectedStation(mockStations[1])}>
+                  <Link to="/station/2" className="absolute bottom-32 right-40">
+                    <div className={`w-4 h-4 ${getStatusColor('available')} rounded-full cursor-pointer hover:scale-110 transition-transform`}>
                     </div>
-                    <div className="text-xs mt-1 font-medium">ЭЗС ТЦ</div>
-                  </div>
+                    <div className="text-xs mt-1 font-medium hover:text-blue-600">ЭЗС ТЦ</div>
+                  </Link>
                   
-                  <div className="absolute top-40 right-20">
-                    <div className={`w-4 h-4 ${getStatusColor('error')} rounded-full cursor-pointer`}
-                         onClick={() => setSelectedStation(mockStations[2])}>
+                  <Link to="/station/3" className="absolute top-40 right-20">
+                    <div className={`w-4 h-4 ${getStatusColor('error')} rounded-full cursor-pointer hover:scale-110 transition-transform`}>
                     </div>
-                    <div className="text-xs mt-1 font-medium">ЭЗС Парковая</div>
-                  </div>
+                    <div className="text-xs mt-1 font-medium hover:text-blue-600">ЭЗС Парковая</div>
+                  </Link>
 
                   <div className="text-center">
                     <Icon name="MapPin" size={48} className="text-gray-300 mx-auto mb-2" />
@@ -270,13 +262,14 @@ export default function Index() {
                         <TableCell>{station.totalSessions}</TableCell>
                         <TableCell className="text-gray-500">{station.lastActivity}</TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedStation(station)}
-                          >
-                            Подробнее
-                          </Button>
+                          <Link to={`/station/${station.id}`}>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                            >
+                              Подробнее
+                            </Button>
+                          </Link>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -288,109 +281,7 @@ export default function Index() {
         </Tabs>
       </div>
 
-      {/* Station Detail Modal */}
-      <Dialog open={!!selectedStation} onOpenChange={() => setSelectedStation(null)}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Icon name="Zap" size={20} />
-              {selectedStation?.name}
-            </DialogTitle>
-          </DialogHeader>
-          
-          {selectedStation && (
-            <div className="space-y-6">
-              {/* Station Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Местоположение</p>
-                  <p className="font-medium">{selectedStation.location}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Статус</p>
-                  <Badge 
-                    variant={selectedStation.status === 'error' ? 'destructive' : 'default'}
-                    className={
-                      selectedStation.status === 'available' ? 'bg-green-100 text-green-800' :
-                      selectedStation.status === 'charging' ? 'bg-orange-100 text-orange-800' :
-                      ''
-                    }
-                  >
-                    {getStatusLabel(selectedStation.status)}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Всего сессий</p>
-                  <p className="font-medium">{selectedStation.totalSessions}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Последняя активность</p>
-                  <p className="font-medium">{selectedStation.lastActivity}</p>
-                </div>
-              </div>
 
-              {/* Actions */}
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleStationAction('restart', selectedStation.id)}
-                >
-                  <Icon name="RotateCcw" size={16} className="mr-1" />
-                  Перезагрузить
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleStationAction('shutdown', selectedStation.id)}
-                >
-                  <Icon name="Power" size={16} className="mr-1" />
-                  Выключить
-                </Button>
-              </div>
-
-              {/* Connectors */}
-              <div>
-                <h4 className="font-semibold mb-3">Коннекторы</h4>
-                <div className="space-y-3">
-                  {selectedStation.connectors.map((connector) => (
-                    <Card key={connector.id}>
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-medium">{connector.type}</span>
-                              <Badge 
-                                variant={connector.status === 'error' ? 'destructive' : 'default'}
-                                className={
-                                  connector.status === 'available' ? 'bg-green-100 text-green-800' :
-                                  connector.status === 'charging' ? 'bg-orange-100 text-orange-800' :
-                                  ''
-                                }
-                              >
-                                {getStatusLabel(connector.status)}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-500 mb-1">Мощность: {connector.power}</p>
-                            {connector.currentSession && (
-                              <div className="text-sm">
-                                <p>Начало: {connector.currentSession.startTime}</p>
-                                <p>Энергия: {connector.currentSession.energy} кВт·ч</p>
-                                <p>Стоимость: {connector.currentSession.cost} ₽</p>
-                              </div>
-                            )}
-                          </div>
-                          <Icon name="Plug" size={24} className="text-gray-400" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
