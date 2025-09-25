@@ -130,10 +130,27 @@ export default function Station() {
     <Layout>
       <StationHeader station={station} />
 
-      {/* Двухколоночный лэйаут */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Основной контент (левая колонка) */}
-        <div className="xl:col-span-2">
+      {/* Условный лэйаут в зависимости от активной вкладки */}
+      {activeTab === 'management' ? (
+        // Двухколоночный лэйаут для панели управления (с логами)
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          {/* Основной контент (левая колонка) */}
+          <div className="xl:col-span-2">
+            <StationTabs 
+              station={station}
+              mockLogs={mockLogs}
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              onAction={handleAction}
+            />
+          </div>
+
+          {/* Правая колонка - Логи */}
+          <StationLogs mockLogs={mockLogs} />
+        </div>
+      ) : (
+        // Одноколоночный лэйаут для остальных разделов (без логов)
+        <div className="max-w-7xl mx-auto">
           <StationTabs 
             station={station}
             mockLogs={mockLogs}
@@ -142,10 +159,7 @@ export default function Station() {
             onAction={handleAction}
           />
         </div>
-
-        {/* Правая колонка - Логи */}
-        <StationLogs mockLogs={mockLogs} />
-      </div>
+      )}
     </Layout>
   );
 }
