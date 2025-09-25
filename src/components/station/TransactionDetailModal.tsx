@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 interface Transaction {
   id: string;
@@ -25,9 +25,10 @@ const generateMockData = (points: number, baseValue: number, variance: number) =
   return Array.from({ length: points }, (_, i) => {
     const time = `${String(Math.floor(i / 4) + 14).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`;
     const randomVariance = (Math.random() - 0.5) * variance;
+    const value = baseValue + randomVariance + Math.sin(i * 0.3) * variance * 0.3;
     return {
       time,
-      value: Math.max(0, baseValue + randomVariance + Math.sin(i * 0.3) * variance * 0.3)
+      value: Math.max(0, Math.round(value * 10) / 10) // Округляем до 1 знака после запятой
     };
   });
 };
@@ -254,7 +255,7 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
               <CardContent>
                 <div className="h-64 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={currentData} barCategoryGap="10%">
+                    <LineChart data={currentData}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                       <XAxis 
                         dataKey="time" 
@@ -264,7 +265,7 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
                       <YAxis 
                         stroke="#666"
                         tick={{ fontSize: 12 }}
-                        domain={['dataMin - 2', 'dataMax + 2']}
+                        domain={[20, 35]}
                       />
                       <Tooltip 
                         labelStyle={{ color: '#333' }}
@@ -275,12 +276,15 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
                         }}
                         formatter={(value: number) => [`${value.toFixed(1)} А`, 'Ток']}
                       />
-                      <Bar 
+                      <Line 
+                        type="monotone" 
                         dataKey="value" 
-                        fill="#f97316"
-                        radius={[2, 2, 0, 0]}
+                        stroke="#f97316" 
+                        strokeWidth={2}
+                        dot={{ fill: '#f97316', strokeWidth: 2, r: 3 }}
+                        activeDot={{ r: 5, stroke: '#f97316', strokeWidth: 2, fill: '#fff' }}
                       />
-                    </BarChart>
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -307,7 +311,7 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
                       <YAxis 
                         stroke="#666"
                         tick={{ fontSize: 12 }}
-                        domain={['dataMin - 10', 'dataMax + 10']}
+                        domain={[380, 420]}
                       />
                       <Tooltip 
                         labelStyle={{ color: '#333' }}
