@@ -7,6 +7,7 @@ import ErrorsTab from './ErrorsTab';
 import LogsTab from './LogsTab';
 import TransactionDetailModal from './TransactionDetailModal';
 import SimpleTabContent from './SimpleTabContent';
+import AvailabilityTab from './AvailabilityTab';
 
 interface Connector {
   id: string;
@@ -129,10 +130,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsContent>
 
         <TabsContent value="availability">
-          <SimpleTabContent 
-            title="Доступность станции" 
-            content="График доступности будет отображаться здесь" 
-          />
+          <AvailabilityTab />
         </TabsContent>
       </Tabs>
 
