@@ -144,6 +144,10 @@ export default function Index() {
               <Icon name="List" size={16} />
               Список станций
             </TabsTrigger>
+            <TabsTrigger value="admin" className="flex items-center gap-2">
+              <Icon name="Settings" size={16} />
+              Панель управления
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="map" className="space-y-4">
@@ -254,9 +258,94 @@ export default function Index() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="admin" className="space-y-4">
+            {/* System Logs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Системные логи</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="bg-gray-50 rounded-lg p-4 font-mono text-sm space-y-1">
+                  <div className="text-blue-600">[15:42:33] INFO: Подключение к станции ЭЗС-001 установлено</div>
+                  <div className="text-green-600">[15:42:30] SUCCESS: Сессия зарядки #12457 завершена успешно</div>
+                  <div className="text-orange-600">[15:42:28] WARNING: Высокая нагрузка на станцию ЭЗС-003</div>
+                  <div className="text-red-600">[15:42:25] ERROR: Ошибка связи со станцией ЭЗС-002</div>
+                  <div className="text-blue-600">[15:42:22] INFO: Начата сессия зарядки #12458</div>
+                  <div className="text-green-600">[15:42:18] SUCCESS: Диагностика станции ЭЗС-001 пройдена</div>
+                  <div className="text-blue-600">[15:42:15] INFO: Обновление прошивки станции ЭЗС-004</div>
+                  <div className="text-orange-600">[15:42:12] WARNING: Превышение температуры коннектора #3</div>
+                  <div className="text-green-600">[15:42:08] SUCCESS: Соединение с сервером восстановлено</div>
+                  <div className="text-blue-600">[15:42:05] INFO: Запуск системы мониторинга</div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Network Status */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Активные подключения</CardTitle>
+                  <Icon name="Wifi" className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">15</div>
+                  <p className="text-xs text-muted-foreground">+2 за последний час</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Потеря пакетов</CardTitle>
+                  <Icon name="AlertTriangle" className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">0.2%</div>
+                  <p className="text-xs text-muted-foreground">В пределах нормы</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Загрузка сети</CardTitle>
+                  <Icon name="Activity" className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">67%</div>
+                  <p className="text-xs text-muted-foreground">Средняя нагрузка</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Control Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Управление сетью</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-4">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Icon name="RefreshCw" size={16} />
+                    Перезапустить систему
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Icon name="Download" size={16} />
+                    Экспорт логов
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Icon name="Settings" size={16} />
+                    Настройки сети
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Icon name="Shield" size={16} />
+                    Диагностика безопасности
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
-
 
     </div>
   );
