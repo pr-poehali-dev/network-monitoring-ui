@@ -237,7 +237,7 @@ export default function Monitoring() {
             <TabsTrigger value="history">История ошибок</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="space-y-2">
+          <TabsContent value="active" className="space-y-3">
             {filteredActiveAlerts.length === 0 ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -249,47 +249,49 @@ export default function Monitoring() {
                 </CardContent>
               </Card>
             ) : (
-              filteredActiveAlerts.map((alert) => (
-                <Card key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)}`}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {alert.severity === 'critical' ? (
-                        <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
-                      ) : alert.severity === 'warning' ? (
-                        <Icon name="AlertCircle" size={16} className="text-orange-500 flex-shrink-0 mt-0.5" />
-                      ) : (
-                        <Icon name="Info" size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
-                      )}
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={getSeverityColor(alert.severity)} className="text-xs flex-shrink-0">
-                            {getSeverityText(alert.severity)}
-                          </Badge>
-                          <span className="font-medium text-gray-900">{alert.message}</span>
-                          <span className={`text-xs font-medium ${getStatusColor(alert.status)} flex-shrink-0`}>
-                            {getStatusText(alert.status)}
-                          </span>
-                        </div>
+              <div className="space-y-1">
+                {filteredActiveAlerts.map((alert) => (
+                  <div key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)} border rounded-lg p-4`}>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1">
+                        {alert.severity === 'critical' ? (
+                          <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0 mt-1" />
+                        ) : alert.severity === 'warning' ? (
+                          <Icon name="AlertCircle" size={16} className="text-orange-500 flex-shrink-0 mt-1" />
+                        ) : (
+                          <Icon name="Info" size={16} className="text-blue-500 flex-shrink-0 mt-1" />
+                        )}
                         
-                        <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
-                        
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Icon name="MapPin" size={12} />
-                            <span>{alert.station}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
+                              {getSeverityText(alert.severity)}
+                            </Badge>
+                            <span className="font-semibold text-gray-900 text-base">{alert.message}</span>
+                            <span className={`text-sm font-medium ${getStatusColor(alert.status)}`}>
+                              {getStatusText(alert.status)}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <Icon name="Timer" size={12} />
-                            <span className="font-medium text-red-600">{alert.duration}</span>
+                          
+                          <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                          
+                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Icon name="MapPin" size={12} />
+                              <span>{alert.station}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Icon name="Timer" size={12} />
+                              <span className="font-medium text-red-600">{alert.duration}</span>
+                            </div>
+                            <span className="text-gray-400">{alert.startTime}</span>
                           </div>
-                          <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
+                  </div>
+                ))}
+              </div>
             )}
           </TabsContent>
 
