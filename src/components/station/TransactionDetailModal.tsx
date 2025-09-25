@@ -131,24 +131,55 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
             </Card>
           </div>
 
-          {/* Временные метки */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Временная линия</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <div className="text-sm text-gray-600 mb-1">Время начала</div>
-                  <div className="font-medium">{transaction.startTime}</div>
-                </div>
-                <div>
-                  <div className="text-sm text-gray-600 mb-1">Время завершения</div>
-                  <div className="font-medium">{transaction.endTime}</div>
-                </div>
+          {/* Временная линия и действия */}
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex flex-col sm:flex-row gap-6">
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Время начала</div>
+                <div className="font-medium">{transaction.startTime}</div>
               </div>
-            </CardContent>
-          </Card>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Время завершения</div>
+                <div className="font-medium">{transaction.endTime}</div>
+              </div>
+            </div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                // Имитируем скачивание лога
+                const logContent = `Транзакция: ${transaction.id}
+Коннектор: ${transaction.connector}
+Время начала: ${transaction.startTime}
+Время завершения: ${transaction.endTime}
+Переданная энергия: ${transaction.energy} кВт⋅ч
+Длительность: ${transaction.duration}
+Статус завершения: ${transaction.status}
+
+=== ДЕТАЛЬНЫЙ ЛОГ ТРАНЗАКЦИИ ===
+2025-09-25 14:30:00 [INFO] Инициализация зарядки на коннекторе ${transaction.connector}
+2025-09-25 14:30:15 [INFO] Авторизация пользователя успешна
+2025-09-25 14:30:30 [INFO] Начало подачи энергии (мощность: 22.5 кВт)
+2025-09-25 14:45:00 [INFO] Стабильная зарядка (SOC: 45%)
+2025-09-25 15:30:00 [INFO] Снижение мощности (SOC: 80%)
+2025-09-25 16:45:00 [INFO] Зарядка завершена (итого: ${transaction.energy} кВт⋅ч)
+2025-09-25 16:45:15 [INFO] Отключение коннектора
+2025-09-25 16:45:30 [INFO] Финализация транзакции ${transaction.id}`;
+
+                const blob = new Blob([logContent], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `transaction_${transaction.id}_log.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <Icon name="Download" size={14} />
+              Скачать лог
+            </Button>
+          </div>
 
           {/* Графики - каждый на полную ширину */}
           <div className="space-y-6">
