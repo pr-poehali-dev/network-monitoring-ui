@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import Map from '@/components/Map';
+import Layout from '@/components/Layout';
 
 interface ChargingStation {
   id: string;
@@ -47,12 +47,12 @@ const mockStations: ChargingStation[] = [
     ]
   },
   {
-    id: '2', 
-    name: 'ЭЗС Торговый центр',
-    location: 'ТЦ Метрополис',
+    id: '2',
+    name: 'ЭЗС Северная',
+    location: 'пр. Мира, 45',
     status: 'available',
-    coordinates: [55.7387, 37.6032],
-    totalSessions: 89,
+    coordinates: [55.7665, 37.6177],
+    totalSessions: 87,
     lastActivity: '15 мин назад',
     connectors: [
       { id: 'c3', type: 'Type 2', status: 'available', power: '22 кВт' },
@@ -61,28 +61,18 @@ const mockStations: ChargingStation[] = [
   },
   {
     id: '3',
-    name: 'ЭЗС Парковая',
-    location: 'Парк Сокольники',
+    name: 'ЭЗС Южная',
+    location: 'ул. Победы, 12',
     status: 'error',
-    coordinates: [55.7942, 37.6816], 
+    coordinates: [55.7430, 37.6156],
     totalSessions: 203,
     lastActivity: '1 час назад',
     connectors: [
       { id: 'c5', type: 'Type 2', status: 'error', power: '22 кВт' },
-      { id: 'c6', type: 'CCS', status: 'error', power: '50 кВт' }
+      { id: 'c6', type: 'CCS', status: 'available', power: '150 кВт' }
     ]
   }
 ];
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'available': return 'bg-station-available';
-    case 'charging': return 'bg-station-charging';
-    case 'error': return 'bg-station-error';
-    case 'offline': return 'bg-station-offline';
-    default: return 'bg-gray-400';
-  }
-};
 
 const getStatusLabel = (status: string) => {
   switch (status) {
@@ -96,7 +86,10 @@ const getStatusLabel = (status: string) => {
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  const currentTab = searchParams.get('tab') || 'map';
 
   const filteredStations = mockStations.filter(station =>
     station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -108,50 +101,39 @@ export default function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <Layout>
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <Icon name="Zap" className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-semibold text-gray-900">
-                Система мониторинга ЭЗС
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {currentTab === 'map' ? 'Карта станций' : 'Список станций'}
               </h1>
+              <p className="text-sm text-gray-500">
+                Мониторинг и управление зарядными станциями
+              </p>
             </div>
             <div className="flex items-center gap-4">
               <Badge variant="outline" className="gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                Онлайн: 2
+                Онлайн: 18
               </Badge>
               <Badge variant="outline" className="gap-1">
                 <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                Ошибки: 1
+                Ошибки: 3
               </Badge>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <Tabs defaultValue="map" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="map" className="flex items-center gap-2">
-              <Icon name="Map" size={16} />
-              Карта
-            </TabsTrigger>
-            <TabsTrigger value="list" className="flex items-center gap-2">
-              <Icon name="List" size={16} />
-              Список станций
-            </TabsTrigger>
-            <TabsTrigger value="admin" className="flex items-center gap-2">
-              <Icon name="Settings" size={16} />
-              Панель управления
-            </TabsTrigger>
-          </TabsList>
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
+        <div className="space-y-6">
 
-          <TabsContent value="map" className="space-y-4">
-            {/* OpenStreetMap */}
+        {/* Map view */}
+        {currentTab === 'map' && (
+          <div className="space-y-4">
             <Card className="h-[600px] relative">
               <CardContent className="p-0 h-full">
                 <Map 
@@ -187,9 +169,12 @@ export default function Index() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="list" className="space-y-4">
+        {/* List view */}
+        {currentTab === 'list' && (
+          <div className="space-y-4">
             {/* Search */}
             <div className="flex gap-4">
               <div className="relative flex-1">
@@ -243,10 +228,7 @@ export default function Index() {
                         <TableCell className="text-gray-500">{station.lastActivity}</TableCell>
                         <TableCell>
                           <Link to={`/station/${station.id}`}>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                            >
+                            <Button variant="outline" size="sm">
                               Подробнее
                             </Button>
                           </Link>
@@ -257,75 +239,11 @@ export default function Index() {
                 </Table>
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="admin" className="space-y-4">
-            {/* Network Status */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Активные подключения</CardTitle>
-                  <Icon name="Wifi" className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">15</div>
-                  <p className="text-xs text-muted-foreground">+2 за последний час</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Потеря пакетов</CardTitle>
-                  <Icon name="AlertTriangle" className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">0.2%</div>
-                  <p className="text-xs text-muted-foreground">В пределах нормы</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Загрузка сети</CardTitle>
-                  <Icon name="Activity" className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">67%</div>
-                  <p className="text-xs text-muted-foreground">Средняя нагрузка</p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Control Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Управление сетью</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Icon name="RefreshCw" size={16} />
-                    Перезапустить систему
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Icon name="Download" size={16} />
-                    Экспорт логов
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Icon name="Settings" size={16} />
-                    Настройки сети
-                  </Button>
-                  <Button variant="outline" className="flex items-center gap-2">
-                    <Icon name="Shield" size={16} />
-                    Диагностика безопасности
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        </div>
       </div>
-
-    </div>
+    </Layout>
   );
 }
