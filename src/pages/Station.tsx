@@ -411,34 +411,50 @@ export default function Station() {
           </div>
 
           {/* Правая колонка - Логи */}
-          <div className="xl:col-span-1">
-            <Card className="sticky top-6">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Icon name="FileText" size={20} />
-                  OCPP Логи
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="bg-gray-50 rounded-lg p-4 font-mono text-sm space-y-2 max-h-[80vh] overflow-y-auto">
+          <div className="xl:col-span-1 flex flex-col">
+            <div className="flex items-center gap-2 mb-4 px-1">
+              <Icon name="FileText" size={20} />
+              <h3 className="text-lg font-semibold">OCPP Логи</h3>
+            </div>
+            
+            <div className="flex-1 bg-white border rounded-lg overflow-hidden">
+              <div className="h-full overflow-y-auto">
+                <div className="p-4 font-mono text-sm space-y-3">
                   {mockLogs.map((log) => (
                     <div 
                       key={log.id} 
-                      className={`text-xs ${
-                        log.type === 'request' ? 'text-blue-600' :
-                        log.type === 'response' ? 'text-green-600' :
-                        log.type === 'error' ? 'text-red-600' :
-                        'text-gray-600'
-                      }`}
+                      className="flex items-start justify-between gap-4 py-2 border-b border-gray-100 last:border-0"
                     >
-                      <span className="text-gray-500">[{log.timestamp}]</span>{' '}
-                      <span className="uppercase font-semibold">{log.type}:</span>{' '}
-                      <pre className="whitespace-pre-wrap">{log.message}</pre>
+                      <div className="flex items-start gap-3 flex-1">
+                        <div className="flex-shrink-0">
+                          {log.type === 'request' ? (
+                            <Icon name="ArrowRight" size={16} className="text-blue-500 mt-0.5" />
+                          ) : log.type === 'response' ? (
+                            <Icon name="ArrowLeft" size={16} className="text-green-500 mt-0.5" />
+                          ) : (
+                            <Icon name="AlertCircle" size={16} className="text-red-500 mt-0.5" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-900 text-sm">
+                            {log.message.split('\n')[0]}
+                          </div>
+                          {log.message.includes('\n') && (
+                            <pre className="text-xs text-gray-600 mt-1 whitespace-pre-wrap font-mono">
+                              {log.message.split('\n').slice(1).join('\n')}
+                            </pre>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0 text-xs text-gray-500 text-right">
+                        <div>{log.timestamp.split(' ')[0]}</div>
+                        <div>{log.timestamp.split(' ')[1]}</div>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>
