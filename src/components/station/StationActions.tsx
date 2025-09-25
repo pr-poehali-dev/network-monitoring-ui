@@ -1,0 +1,58 @@
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+
+interface StationActionsProps {
+  onAction: (action: string) => void;
+}
+
+export default function StationActions({ onAction }: StationActionsProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Действия</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="font-medium">Перезагрузка</p>
+            <p className="text-sm text-gray-500">Отправить команду Reset</p>
+          </div>
+          <Button onClick={() => onAction('reset')}>
+            ПЕРЕЗАГРУЗКА
+          </Button>
+        </div>
+        <Separator />
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="font-medium">Очистка кэша</p>
+            <p className="text-sm text-gray-500">Отправить команду ClearCache</p>
+          </div>
+          <Button onClick={() => onAction('clearCache')}>
+            ОЧИСТИТЬ КЭШ
+          </Button>
+        </div>
+        <Separator />
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="font-medium">Запрос сообщения</p>
+            <p className="text-sm text-gray-500">Отправить команду TriggerMessage</p>
+          </div>
+          <Button onClick={() => onAction('triggerMessage')}>
+            ОТПРАВИТЬ
+          </Button>
+        </div>
+        <Separator />
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="font-medium">Комментарий</p>
+            <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
+          </div>
+          <Button onClick={() => onAction('editComment')}>
+            РЕДАКТИРОВАТЬ
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
