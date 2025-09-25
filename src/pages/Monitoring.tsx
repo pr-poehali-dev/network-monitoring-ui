@@ -257,7 +257,6 @@ export default function Monitoring() {
                         <tr className="border-b">
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Приоритет</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm min-w-[300px]">Ошибка</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Статус</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Станция</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Длительность</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время начала</th>
@@ -285,15 +284,6 @@ export default function Monitoring() {
                                 <div className="font-medium text-gray-900 text-sm mb-1">{alert.message}</div>
                                 <div className="text-xs text-gray-600">{alert.description}</div>
                               </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                                alert.status === 'active' ? 'bg-red-100 text-red-700' :
-                                alert.status === 'acknowledged' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-green-100 text-green-700'
-                              }`}>
-                                {getStatusText(alert.status)}
-                              </span>
                             </td>
                             <td className="py-3 px-4">
                               <div className="text-sm text-gray-900">{alert.station}</div>
