@@ -117,26 +117,15 @@ export default function StationStatus({ station }: StationStatusProps) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="default" size="sm">
+                <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50">
                   СТАРТ
                 </Button>
                 <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
                   СТОП
                 </Button>
-                <Button 
-                  variant={connector.status === 'error' ? 'outline' : 'ghost'} 
-                  size="sm"
-                  className={
-                    connector.status === 'error' 
-                      ? 'text-green-600 border-green-200 hover:bg-green-50' 
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }
-                >
-                  <Icon 
-                    name={connector.status === 'error' ? 'PowerOff' : 'Power'} 
-                    size={16} 
-                  />
-                  {connector.status === 'error' ? 'ВКЛ' : 'ВЫКЛ'}
+                <Button variant="outline" size="sm" className="text-gray-600 border-gray-200 hover:bg-gray-50">
+                  <Icon name="Power" size={16} />
+                  ВКЛ/ВЫКЛ
                 </Button>
               </div>
             </div>
