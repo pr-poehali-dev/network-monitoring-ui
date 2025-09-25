@@ -237,7 +237,7 @@ export default function Monitoring() {
             <TabsTrigger value="history">История ошибок</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="active" className="space-y-4">
+          <TabsContent value="active" className="space-y-2">
             {filteredActiveAlerts.length === 0 ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -250,75 +250,44 @@ export default function Monitoring() {
               </Card>
             ) : (
               filteredActiveAlerts.map((alert) => (
-                <Card key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)}`}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className="mt-1">
-                          {alert.severity === 'critical' ? (
-                            <Icon name="AlertTriangle" size={20} className="text-red-500" />
-                          ) : alert.severity === 'warning' ? (
-                            <Icon name="AlertCircle" size={20} className="text-orange-500" />
-                          ) : (
-                            <Icon name="Info" size={20} className="text-blue-500" />
-                          )}
-                        </div>
+                <Card key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)} hover:shadow-sm transition-shadow cursor-pointer`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        {alert.severity === 'critical' ? (
+                          <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0" />
+                        ) : alert.severity === 'warning' ? (
+                          <Icon name="AlertCircle" size={16} className="text-orange-500 flex-shrink-0" />
+                        ) : (
+                          <Icon name="Info" size={16} className="text-blue-500 flex-shrink-0" />
+                        )}
                         
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Badge variant={getSeverityColor(alert.severity)} className="text-xs">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={getSeverityColor(alert.severity)} className="text-xs flex-shrink-0">
                               {getSeverityText(alert.severity)}
                             </Badge>
-                            <h3 className="font-semibold text-gray-900">{alert.message}</h3>
-                            <span className={`text-sm font-medium ${getStatusColor(alert.status)}`}>
+                            <span className="font-medium text-gray-900 truncate">{alert.message}</span>
+                            <span className={`text-xs font-medium ${getStatusColor(alert.status)} flex-shrink-0`}>
                               {getStatusText(alert.status)}
                             </span>
                           </div>
                           
-                          <p className="text-gray-700 mb-2">{alert.description}</p>
-                          
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
-                              <Icon name="MapPin" size={14} />
-                              <span>{alert.station}</span>
+                              <Icon name="MapPin" size={12} />
+                              <span className="truncate">{alert.station}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Icon name="Clock" size={14} />
-                              <span>{alert.startTime}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Icon name="Timer" size={14} />
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Icon name="Timer" size={12} />
                               <span className="font-medium text-red-600">{alert.duration}</span>
                             </div>
+                            <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex gap-2 ml-4">
-                        {alert.status === 'active' && (
-                          <>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleAcknowledge(alert.id)}
-                            >
-                              <Icon name="Eye" size={16} className="mr-1" />
-                              Подтвердить
-                            </Button>
-                            <Button 
-                              variant="default" 
-                              size="sm"
-                              onClick={() => handleResolve(alert.id)}
-                            >
-                              <Icon name="Check" size={16} className="mr-1" />
-                              Решить
-                            </Button>
-                          </>
-                        )}
-                        <Button variant="ghost" size="sm">
-                          <Icon name="ExternalLink" size={16} />
-                        </Button>
-                      </div>
+                      <Icon name="ChevronRight" size={16} className="text-gray-400 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
@@ -326,7 +295,7 @@ export default function Monitoring() {
             )}
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4">
+          <TabsContent value="history" className="space-y-2">
             {filteredHistoryAlerts.length === 0 ? (
               <Card>
                 <CardContent className="flex items-center justify-center py-12">
@@ -339,38 +308,35 @@ export default function Monitoring() {
               </Card>
             ) : (
               filteredHistoryAlerts.map((alert) => (
-                <Card key={alert.id} className="border-l-4 border-l-gray-300 bg-gray-50">
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="mt-1">
-                        <Icon name="CheckCircle" size={20} className="text-green-500" />
+                <Card key={alert.id} className="border-l-4 border-l-green-500 bg-green-50 hover:shadow-sm transition-shadow cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <Icon name="CheckCircle" size={16} className="text-green-500 flex-shrink-0" />
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200 flex-shrink-0">
+                              РЕШЕНА
+                            </Badge>
+                            <span className="font-medium text-gray-700 truncate">{alert.message}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <Icon name="MapPin" size={12} />
+                              <span className="truncate">{alert.station}</span>
+                            </div>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              <Icon name="Timer" size={12} />
+                              <span>Длилась: {alert.duration}</span>
+                            </div>
+                            <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
+                          </div>
+                        </div>
                       </div>
                       
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200">
-                            РЕШЕНА
-                          </Badge>
-                          <h3 className="font-semibold text-gray-700">{alert.message}</h3>
-                        </div>
-                        
-                        <p className="text-gray-600 mb-2">{alert.description}</p>
-                        
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Icon name="MapPin" size={14} />
-                            <span>{alert.station}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Icon name="Clock" size={14} />
-                            <span>{alert.startTime}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Icon name="Timer" size={14} />
-                            <span>Длилась: {alert.duration}</span>
-                          </div>
-                        </div>
-                      </div>
+                      <Icon name="ChevronRight" size={16} className="text-gray-400 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
