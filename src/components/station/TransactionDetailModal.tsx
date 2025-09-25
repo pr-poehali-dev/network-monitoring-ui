@@ -133,7 +133,7 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
 
           {/* Временная линия и действия */}
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex flex-col sm:flex-row gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <div className="text-sm text-gray-600 mb-1">Время начала</div>
                 <div className="font-medium">{transaction.startTime}</div>
@@ -141,6 +141,14 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
               <div>
                 <div className="text-sm text-gray-600 mb-1">Время завершения</div>
                 <div className="font-medium">{transaction.endTime}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Начальный SOC</div>
+                <div className="font-medium text-orange-600">20%</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Конечный SOC</div>
+                <div className="font-medium text-green-600">85%</div>
               </div>
             </div>
             <Button 
