@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
+import Map from '@/components/Map';
 
 interface ChargingStation {
   id: string;
@@ -95,11 +96,16 @@ const getStatusLabel = (status: string) => {
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
   const filteredStations = mockStations.filter(station =>
     station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     station.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleStationClick = (stationId: string) => {
+    navigate(`/station/${stationId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -141,43 +147,13 @@ export default function Index() {
           </TabsList>
 
           <TabsContent value="map" className="space-y-4">
-            {/* Map Placeholder */}
+            {/* OpenStreetMap */}
             <Card className="h-[600px] relative">
               <CardContent className="p-0 h-full">
-                <div className="h-full bg-gradient-to-br from-blue-50 to-green-50 rounded-lg flex items-center justify-center relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="grid grid-cols-12 gap-1 h-full">
-                      {Array.from({ length: 144 }).map((_, i) => (
-                        <div key={i} className="bg-blue-200 opacity-30"></div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Station Markers */}
-                  <Link to="/station/1" className="absolute top-20 left-32">
-                    <div className={`w-4 h-4 ${getStatusColor('charging')} rounded-full animate-pulse cursor-pointer hover:scale-110 transition-transform`}>
-                    </div>
-                    <div className="text-xs mt-1 font-medium hover:text-blue-600">ЭЗС Центральная</div>
-                  </Link>
-                  
-                  <Link to="/station/2" className="absolute bottom-32 right-40">
-                    <div className={`w-4 h-4 ${getStatusColor('available')} rounded-full cursor-pointer hover:scale-110 transition-transform`}>
-                    </div>
-                    <div className="text-xs mt-1 font-medium hover:text-blue-600">ЭЗС ТЦ</div>
-                  </Link>
-                  
-                  <Link to="/station/3" className="absolute top-40 right-20">
-                    <div className={`w-4 h-4 ${getStatusColor('error')} rounded-full cursor-pointer hover:scale-110 transition-transform`}>
-                    </div>
-                    <div className="text-xs mt-1 font-medium hover:text-blue-600">ЭЗС Парковая</div>
-                  </Link>
-
-                  <div className="text-center">
-                    <Icon name="MapPin" size={48} className="text-gray-300 mx-auto mb-2" />
-                    <p className="text-gray-500 text-lg mb-2">Интерактивная карта OpenStreetMap</p>
-                    <p className="text-gray-400 text-sm">Кликните на маркеры для подробной информации</p>
-                  </div>
-                </div>
+                <Map 
+                  stations={mockStations} 
+                  onStationClick={handleStationClick}
+                />
               </CardContent>
             </Card>
 

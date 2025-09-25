@@ -186,9 +186,9 @@ export default function Station() {
           <p className="text-gray-500">{station.location}</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="max-w-4xl">
           {/* Main Content */}
-          <div className="lg:col-span-2">
+          <div>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="mb-6">
                 <TabsTrigger value="management">Панель управления</TabsTrigger>
@@ -407,46 +407,7 @@ export default function Station() {
             </Tabs>
           </div>
 
-          {/* Real-time Log */}
-          <div className="lg:col-span-1">
-            <Card className="h-fit">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <CardTitle className="text-base">Лог в реальном времени</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="max-h-96 overflow-y-auto">
-                  {mockLogs.map((log) => (
-                    <div key={log.id} className="flex items-start gap-3 p-3 border-b hover:bg-gray-50">
-                      <div className="flex-shrink-0 mt-1">
-                        {log.type === 'request' && <Icon name="ArrowRight" size={12} className="text-blue-500" />}
-                        {log.type === 'response' && <Icon name="ArrowLeft" size={12} className="text-green-500" />}
-                        {log.type === 'error' && <Icon name="AlertCircle" size={12} className="text-red-500" />}
-                        {log.type === 'info' && <Icon name="Info" size={12} className="text-gray-500" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
-                          <p className="text-xs font-mono text-gray-600 truncate">
-                            {log.message.split('\n')[0]}
-                          </p>
-                          <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
-                            {log.timestamp}
-                          </span>
-                        </div>
-                        {log.message.includes('\n') && (
-                          <pre className="text-xs text-gray-500 font-mono whitespace-pre-wrap break-all">
-                            {log.message.split('\n').slice(1).join('\n')}
-                          </pre>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+
         </div>
       </div>
     </div>
