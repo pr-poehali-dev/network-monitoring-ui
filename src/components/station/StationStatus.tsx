@@ -120,8 +120,23 @@ export default function StationStatus({ station }: StationStatusProps) {
                 <Button variant="default" size="sm">
                   СТАРТ
                 </Button>
-                <Button variant="ghost" size="sm">
-                  <Icon name="MoreVertical" size={16} />
+                <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                  СТОП
+                </Button>
+                <Button 
+                  variant={connector.status === 'error' ? 'outline' : 'ghost'} 
+                  size="sm"
+                  className={
+                    connector.status === 'error' 
+                      ? 'text-green-600 border-green-200 hover:bg-green-50' 
+                      : 'text-gray-600 hover:bg-gray-100'
+                  }
+                >
+                  <Icon 
+                    name={connector.status === 'error' ? 'PowerOff' : 'Power'} 
+                    size={16} 
+                  />
+                  {connector.status === 'error' ? 'ВКЛ' : 'ВЫКЛ'}
                 </Button>
               </div>
             </div>
