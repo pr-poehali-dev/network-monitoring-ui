@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ChargingStation {
   id: string;
@@ -33,59 +33,97 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-// Простая функция для конвертации координат в пиксели
-const coordsToPixels = (
-  lat: number, 
-  lng: number, 
-  mapBounds: { north: number; south: number; east: number; west: number },
-  width: number,
-  height: number
-) => {
-  const x = ((lng - mapBounds.west) / (mapBounds.east - mapBounds.west)) * width;
-  const y = ((mapBounds.north - lat) / (mapBounds.north - mapBounds.south)) * height;
-  return { x, y };
-};
-
 export default function MapComponent({ stations, onStationClick }: MapProps) {
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
-  const [hoveredStation, setHoveredStation] = useState<ChargingStation | null>(null);
-  const mapRef = useRef<HTMLDivElement>(null);
+  const [mapHtml, setMapHtml] = useState<string>('');
 
-  // Границы карты для Москвы и области
-  const mapBounds = {
-    north: 56.2,
-    south: 55.3,
-    east: 38.3,
-    west: 36.9
-  };
+  useEffect(() => {
+    // Генерируем HTML для встроенной карты с маркерами
+    const markers = stations.map(station => {
+      const color = getStatusColor(station.status);
+      return `
+        <div style="
+          position: absolute;
+          left: ${((station.coordinates[1] - 37.2) / 1.2) * 100}%;
+          top: ${((56.0 - station.coordinates[0]) / 0.9) * 100}%;
+          transform: translate(-50%, -50%);
+          z-index: 1000;
+          cursor: pointer;
+        " onclick="handleStationClick('${station.id}')">
+          <div style="
+            width: 16px;
+            height: 16px;
+            background-color: ${color};
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            ${station.status === 'charging' ? 'animation: pulse 2s infinite;' : ''}
+          "></div>
+        </div>
+      `;
+    }).join('');
 
-  const handleMarkerClick = (station: ChargingStation) => {
-    setSelectedStation(station);
-    onStationClick?.(station.id);
-  };
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+          #map { position: relative; width: 100%; height: 100%; }
+          @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+          }
+        </style>
+      </head>
+      <body>
+        <div id="map">
+          <iframe
+            src="https://www.openstreetmap.org/export/embed.html?bbox=37.2%2C55.3%2C38.4%2C56.2&layer=mapnik"
+            style="border: none; width: 100%; height: 100%;">
+          </iframe>
+          ${markers}
+        </div>
+        <script>
+          function handleStationClick(stationId) {
+            window.parent.postMessage({type: 'stationClick', stationId: stationId}, '*');
+          }
+        </script>
+      </body>
+      </html>
+    `;
+    
+    setMapHtml(html);
+  }, [stations]);
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'stationClick') {
+        const station = stations.find(s => s.id === event.data.stationId);
+        if (station) {
+          setSelectedStation(station);
+          onStationClick?.(station.id);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [stations, onStationClick]);
 
   return (
     <div className="relative w-full">
       {/* Основная карта */}
-      <div
-        ref={mapRef}
-        className="relative w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border overflow-hidden"
-        style={{
-          backgroundImage: `
-            linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px),
-            linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px)
-          `,
-          backgroundSize: '40px 40px'
-        }}
-      >
-        {/* Заголовок карты */}
-        <div className="absolute top-4 left-4 bg-white px-3 py-2 rounded-lg shadow-md z-10">
-          <h3 className="font-semibold text-gray-800">Карта зарядных станций</h3>
-          <p className="text-sm text-gray-600">Москва и область</p>
-        </div>
-
+      <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
+        <iframe
+          srcDoc={mapHtml}
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          title="Карта зарядных станций"
+        />
+        
         {/* Легенда */}
-        <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-md z-10">
+        <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg z-[1001]">
           <div className="text-sm font-medium mb-2">Статус станций:</div>
           <div className="space-y-1 text-xs">
             {[
@@ -104,60 +142,11 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             ))}
           </div>
         </div>
-
-        {/* Маркеры станций */}
-        {stations.map((station) => {
-          const { x, y } = coordsToPixels(
-            station.coordinates[0],
-            station.coordinates[1],
-            mapBounds,
-            mapRef.current?.clientWidth || 800,
-            mapRef.current?.clientHeight || 600
-          );
-
-          return (
-            <div
-              key={station.id}
-              className={`
-                absolute transform -translate-x-1/2 -translate-y-1/2 cursor-pointer z-20
-                transition-all duration-200 hover:scale-125
-                ${station.status === 'charging' ? 'animate-pulse' : ''}
-              `}
-              style={{ left: x, top: y }}
-              onClick={() => handleMarkerClick(station)}
-              onMouseEnter={() => setHoveredStation(station)}
-              onMouseLeave={() => setHoveredStation(null)}
-            >
-              <div
-                className="w-4 h-4 border-2 border-white rounded-full shadow-lg"
-                style={{ 
-                  backgroundColor: getStatusColor(station.status),
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
-                }}
-              />
-              
-              {/* Tooltip при наведении */}
-              {hoveredStation?.id === station.id && (
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-black text-white px-2 py-1 rounded text-xs whitespace-nowrap z-30">
-                  {station.name}
-                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-2 border-r-2 border-t-2 border-transparent border-t-black" />
-                </div>
-              )}
-            </div>
-          );
-        })}
-
-        {/* Фоновые элементы для имитации карты */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/4 left-1/3 w-32 h-32 bg-green-200 rounded-full" />
-          <div className="absolute top-1/2 right-1/4 w-24 h-24 bg-blue-200 rounded-full" />
-          <div className="absolute bottom-1/3 left-1/4 w-40 h-20 bg-gray-200 rounded-lg" />
-        </div>
       </div>
 
       {/* Боковая панель с информацией о выбранной станции */}
       {selectedStation && (
-        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs z-[1000]">
+        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs z-[1002]">
           <button 
             onClick={() => setSelectedStation(null)}
             className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl leading-none"
