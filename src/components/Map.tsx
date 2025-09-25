@@ -156,30 +156,87 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               icon: customIcon
             }).addTo(map);
 
-            // Добавляем popup
+            // Получаем статус текст
+            const statusText = station.status === 'available' ? 'Доступна' : 
+              station.status === 'charging' ? 'Зарядка' :
+              station.status === 'error' ? 'Ошибка' : 'Офлайн';
+            
+            // Кнопка в зависимости от статуса
+            const buttonHtml = station.status === 'available' ? 
+              \`<button onclick="openStationDetails('\${station.id}')" style="
+                width: 100%;
+                background-color: #22C55E;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-top: 8px;
+                font-weight: 500;
+              " onmouseover="this.style.backgroundColor='#16A34A'" onmouseout="this.style.backgroundColor='#22C55E'">
+                Подробнее и бронирование
+              </button>\` :
+              station.status === 'charging' ?
+              \`<button onclick="openStationDetails('\${station.id}')" style="
+                width: 100%;
+                background-color: #F97316;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-top: 8px;
+                font-weight: 500;
+              " onmouseover="this.style.backgroundColor='#EA580C'" onmouseout="this.style.backgroundColor='#F97316'">
+                Подробнее
+              </button>\` :
+              \`<button onclick="openStationDetails('\${station.id}')" style="
+                width: 100%;
+                background-color: #6B7280;
+                color: white;
+                border: none;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                cursor: pointer;
+                margin-top: 8px;
+                font-weight: 500;
+              " onmouseover="this.style.backgroundColor='#4B5563'" onmouseout="this.style.backgroundColor='#6B7280'">
+                Подробнее
+              </button>\`;
+
+            // Добавляем popup с кнопкой
             marker.bindPopup(\`
-              <div>
-                <h3 style="margin: 0 0 5px 0; font-size: 14px;">\${station.name}</h3>
-                <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">\${station.location}</p>
-                <div style="display: flex; align-items: center; gap: 5px;">
+              <div style="min-width: 200px;">
+                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">\${station.name}</h3>
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6B7280;">\${station.location}</p>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                   <div style="
-                    width: 8px;
-                    height: 8px;
+                    width: 10px;
+                    height: 10px;
                     background-color: \${color};
                     border-radius: 50%;
+                    border: 1px solid white;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                   "></div>
-                  <span style="font-size: 12px;">\${station.status === 'available' ? 'Доступна' : 
-                    station.status === 'charging' ? 'Зарядка' :
-                    station.status === 'error' ? 'Ошибка' : 'Офлайн'}</span>
+                  <span style="font-size: 13px; font-weight: 500; color: #374151;">\${statusText}</span>
                 </div>
+                \${buttonHtml}
               </div>
-            \`);
-
-            // Обработчик клика по маркеру
-            marker.on('click', () => {
-              window.parent.postMessage({type: 'stationClick', stationId: station.id}, '*');
+            \`, {
+              closeButton: true,
+              autoClose: false,
+              closeOnClick: false,
+              className: 'custom-popup'
             });
           });
+
+          // Функция для открытия детальной информации о станции
+          function openStationDetails(stationId) {
+            window.parent.postMessage({type: 'stationClick', stationId: stationId}, '*');
+          }
         </script>
       </body>
       </html>
