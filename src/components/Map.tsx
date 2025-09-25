@@ -161,51 +161,21 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               station.status === 'charging' ? 'Зарядка' :
               station.status === 'error' ? 'Ошибка' : 'Офлайн';
             
-            // Кнопка в зависимости от статуса
-            const buttonHtml = station.status === 'available' ? 
-              \`<button onclick="openStationDetails('\${station.id}')" style="
-                width: 100%;
-                background-color: #22C55E;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                cursor: pointer;
-                margin-top: 8px;
-                font-weight: 500;
-              " onmouseover="this.style.backgroundColor='#16A34A'" onmouseout="this.style.backgroundColor='#22C55E'">
-                Подробнее и бронирование
-              </button>\` :
-              station.status === 'charging' ?
-              \`<button onclick="openStationDetails('\${station.id}')" style="
-                width: 100%;
-                background-color: #F97316;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                cursor: pointer;
-                margin-top: 8px;
-                font-weight: 500;
-              " onmouseover="this.style.backgroundColor='#EA580C'" onmouseout="this.style.backgroundColor='#F97316'">
-                Подробнее
-              </button>\` :
-              \`<button onclick="openStationDetails('\${station.id}')" style="
-                width: 100%;
-                background-color: #6B7280;
-                color: white;
-                border: none;
-                padding: 8px 12px;
-                border-radius: 6px;
-                font-size: 12px;
-                cursor: pointer;
-                margin-top: 8px;
-                font-weight: 500;
-              " onmouseover="this.style.backgroundColor='#4B5563'" onmouseout="this.style.backgroundColor='#6B7280'">
-                Подробнее
-              </button>\`;
+            // Единая кнопка для всех станций
+            const buttonHtml = \`<button onclick="openStationDetails('\${station.id}')" style="
+              width: 100%;
+              background-color: #3B82F6;
+              color: white;
+              border: none;
+              padding: 8px 12px;
+              border-radius: 6px;
+              font-size: 12px;
+              cursor: pointer;
+              margin-top: 8px;
+              font-weight: 500;
+            " onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'">
+              Перейти
+            </button>\`;
 
             // Добавляем popup с кнопкой
             marker.bindPopup(\`
