@@ -25,26 +25,6 @@ export default function StationActions({ onAction }: StationActionsProps) {
         <Separator />
         <div className="flex justify-between items-center">
           <div>
-            <p className="font-medium">Очистка кэша</p>
-            <p className="text-sm text-gray-500">Отправить команду ClearCache</p>
-          </div>
-          <Button onClick={() => onAction('clearCache')}>
-            ОЧИСТИТЬ КЭШ
-          </Button>
-        </div>
-        <Separator />
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="font-medium">Запрос сообщения</p>
-            <p className="text-sm text-gray-500">Отправить команду TriggerMessage</p>
-          </div>
-          <Button onClick={() => onAction('triggerMessage')}>
-            ОТПРАВИТЬ
-          </Button>
-        </div>
-        <Separator />
-        <div className="flex justify-between items-center">
-          <div>
             <p className="font-medium">Комментарий</p>
             <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
           </div>

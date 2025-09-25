@@ -140,18 +140,28 @@ export default function StationStatus({ station }: StationStatusProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between">
-            <span className="text-gray-500">Производитель</span>
-            <span className="font-medium">{station.manufacturer}</span>
+            <span className="text-gray-500">Город</span>
+            <span className="font-medium">Москва</span>
           </div>
           <Separator />
           <div className="flex justify-between">
-            <span className="text-gray-500">Серийный номер</span>
-            <span className="font-medium">{station.serialNumber}</span>
+            <span className="text-gray-500">Приложение</span>
+            <span className="font-medium">МосЭнерго Заряд</span>
           </div>
           <Separator />
           <div className="flex justify-between">
-            <span className="text-gray-500">OCPP идентификатор</span>
-            <span className="font-medium text-sm">{station.ocppId}</span>
+            <span className="text-gray-500">IP адрес</span>
+            <span className="font-medium text-sm">192.168.1.45</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between">
+            <span className="text-gray-500">Адрес</span>
+            <span className="font-medium text-sm">ул. Тверская, 12</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between">
+            <span className="text-gray-500">Владелец</span>
+            <span className="font-medium">ООО "ЭкоЗаряд"</span>
           </div>
         </CardContent>
       </Card>
