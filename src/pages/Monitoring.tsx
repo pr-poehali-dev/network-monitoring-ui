@@ -26,7 +26,7 @@ const mockActiveAlerts: Alert[] = [
     station: 'ЭЗС Центральная',
     stationId: '1',
     message: 'Коннектор 1 недоступен',
-    description: 'Ошибка связи с коннектором. Код: E001',
+    description: 'Нет связи с зарядным контроллером',
     startTime: '25.09.2025 13:45:00',
     duration: '2ч 15м',
     status: 'active'
@@ -37,7 +37,7 @@ const mockActiveAlerts: Alert[] = [
     station: 'ЭЗС Парковая',
     stationId: '3',
     message: 'Станция недоступна',
-    description: 'Потеря связи со станцией',
+    description: 'Потеря связи с OCPP сервером',
     startTime: '25.09.2025 10:30:00',
     duration: '5ч 30м',
     status: 'active'
@@ -47,8 +47,8 @@ const mockActiveAlerts: Alert[] = [
     severity: 'warning',
     station: 'ЭЗС Торговый центр',
     stationId: '2',
-    message: 'Высокая температура',
-    description: 'Температура превышает норму на 5°C',
+    message: 'Высокая температура коннектора',
+    description: 'Температура превысила 65°C, требуется охлаждение',
     startTime: '25.09.2025 15:15:00',
     duration: '45м',
     status: 'active'
@@ -58,8 +58,8 @@ const mockActiveAlerts: Alert[] = [
     severity: 'warning',
     station: 'ЭЗС Центральная',
     stationId: '1',
-    message: 'Низкий уровень энергии',
-    description: 'Мощность снижена до 80%',
+    message: 'Низкий заряд резервного источника',
+    description: 'Уровень заряда UPS составляет 15%',
     startTime: '25.09.2025 14:20:00',
     duration: '1ч 40м',
     status: 'acknowledged'
@@ -69,8 +69,8 @@ const mockActiveAlerts: Alert[] = [
     severity: 'info',
     station: 'ЭЗС Промышленная',
     stationId: '4',
-    message: 'Требуется техобслуживание',
-    description: 'Плановое ТО через 2 дня',
+    message: 'Плановое обслуживание',
+    description: 'Запланировано обновление прошивки в 18:00',
     startTime: '24.09.2025 09:00:00',
     duration: '1д 7ч',
     status: 'active'
@@ -250,44 +250,42 @@ export default function Monitoring() {
               </Card>
             ) : (
               filteredActiveAlerts.map((alert) => (
-                <Card key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)} hover:shadow-sm transition-shadow cursor-pointer`}>
+                <Card key={alert.id} className={`border-l-4 ${getSeverityBg(alert.severity)}`}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        {alert.severity === 'critical' ? (
-                          <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0" />
-                        ) : alert.severity === 'warning' ? (
-                          <Icon name="AlertCircle" size={16} className="text-orange-500 flex-shrink-0" />
-                        ) : (
-                          <Icon name="Info" size={16} className="text-blue-500 flex-shrink-0" />
-                        )}
+                    <div className="flex items-start gap-3">
+                      {alert.severity === 'critical' ? (
+                        <Icon name="AlertTriangle" size={16} className="text-red-500 flex-shrink-0 mt-0.5" />
+                      ) : alert.severity === 'warning' ? (
+                        <Icon name="AlertCircle" size={16} className="text-orange-500 flex-shrink-0 mt-0.5" />
+                      ) : (
+                        <Icon name="Info" size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
+                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant={getSeverityColor(alert.severity)} className="text-xs flex-shrink-0">
+                            {getSeverityText(alert.severity)}
+                          </Badge>
+                          <span className="font-medium text-gray-900">{alert.message}</span>
+                          <span className={`text-xs font-medium ${getStatusColor(alert.status)} flex-shrink-0`}>
+                            {getStatusText(alert.status)}
+                          </span>
+                        </div>
                         
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={getSeverityColor(alert.severity)} className="text-xs flex-shrink-0">
-                              {getSeverityText(alert.severity)}
-                            </Badge>
-                            <span className="font-medium text-gray-900 truncate">{alert.message}</span>
-                            <span className={`text-xs font-medium ${getStatusColor(alert.status)} flex-shrink-0`}>
-                              {getStatusText(alert.status)}
-                            </span>
+                        <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                        
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Icon name="MapPin" size={12} />
+                            <span>{alert.station}</span>
                           </div>
-                          
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Icon name="MapPin" size={12} />
-                              <span className="truncate">{alert.station}</span>
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Icon name="Timer" size={12} />
-                              <span className="font-medium text-red-600">{alert.duration}</span>
-                            </div>
-                            <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Icon name="Timer" size={12} />
+                            <span className="font-medium text-red-600">{alert.duration}</span>
                           </div>
+                          <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
                         </div>
                       </div>
-                      
-                      <Icon name="ChevronRight" size={16} className="text-gray-400 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
@@ -308,35 +306,33 @@ export default function Monitoring() {
               </Card>
             ) : (
               filteredHistoryAlerts.map((alert) => (
-                <Card key={alert.id} className="border-l-4 border-l-green-500 bg-green-50 hover:shadow-sm transition-shadow cursor-pointer">
+                <Card key={alert.id} className="border-l-4 border-l-green-500 bg-green-50">
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <Icon name="CheckCircle" size={16} className="text-green-500 flex-shrink-0" />
+                    <div className="flex items-start gap-3">
+                      <Icon name="CheckCircle" size={16} className="text-green-500 flex-shrink-0 mt-0.5" />
+                      
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200 flex-shrink-0">
+                            РЕШЕНА
+                          </Badge>
+                          <span className="font-medium text-gray-700">{alert.message}</span>
+                        </div>
                         
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant="outline" className="text-xs bg-green-100 text-green-800 border-green-200 flex-shrink-0">
-                              РЕШЕНА
-                            </Badge>
-                            <span className="font-medium text-gray-700 truncate">{alert.message}</span>
+                        <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                        
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Icon name="MapPin" size={12} />
+                            <span>{alert.station}</span>
                           </div>
-                          
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <div className="flex items-center gap-1">
-                              <Icon name="MapPin" size={12} />
-                              <span className="truncate">{alert.station}</span>
-                            </div>
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              <Icon name="Timer" size={12} />
-                              <span>Длилась: {alert.duration}</span>
-                            </div>
-                            <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Icon name="Timer" size={12} />
+                            <span>Длилась: {alert.duration}</span>
                           </div>
+                          <span className="text-gray-400 flex-shrink-0">{alert.startTime}</span>
                         </div>
                       </div>
-                      
-                      <Icon name="ChevronRight" size={16} className="text-gray-400 flex-shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
