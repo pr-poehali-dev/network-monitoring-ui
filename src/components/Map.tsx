@@ -80,37 +80,106 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
       `;
     }).join('');
 
+    // Генерируем URL с маркерами для OpenStreetMap
+    const markersParam = stations.map(station => {
+      const lat = station.coordinates[0];
+      const lng = station.coordinates[1];
+      return `${lng},${lat}`;
+    }).join(';');
+
     const html = `
       <!DOCTYPE html>
       <html style="height: 100%; margin: 0; padding: 0;">
       <head>
         <meta charset="utf-8">
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body { height: 100%; overflow: hidden; }
-          body { font-family: Arial, sans-serif; }
-          #map { position: relative; width: 100%; height: 100vh; }
-          iframe { border: none !important; width: 100%; height: 100%; display: block; }
+          #map { height: 100vh; width: 100%; }
           @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
           }
+          .charging-marker {
+            animation: pulse 2s infinite;
+          }
         </style>
       </head>
       <body>
-        <div id="map">
-          <iframe
-            src="https://www.openstreetmap.org/export/embed.html?bbox=37.2%2C55.3%2C38.4%2C56.2&layer=mapnik"
-            frameborder="0"
-            scrolling="no"
-            allowfullscreen>
-          </iframe>
-          ${markers}
-        </div>
+        <div id="map"></div>
         <script>
-          function handleStationClick(stationId) {
-            window.parent.postMessage({type: 'stationClick', stationId: stationId}, '*');
+          // Инициализируем карту
+          const map = L.map('map').setView([55.7558, 37.6176], 11);
+          
+          // Добавляем тайлы OpenStreetMap
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+          }).addTo(map);
+
+          // Данные станций
+          const stations = ${JSON.stringify(stations)};
+          
+          // Функция для получения цвета по статусу
+          function getStatusColor(status) {
+            switch (status) {
+              case 'available': return '#22C55E';
+              case 'charging': return '#F97316';
+              case 'error': return '#EF4444';
+              case 'offline': return '#9CA3AF';
+              default: return '#9CA3AF';
+            }
           }
+
+          // Добавляем маркеры станций
+          stations.forEach(station => {
+            const color = getStatusColor(station.status);
+            
+            // Создаем кастомную иконку
+            const customIcon = L.divIcon({
+              className: station.status === 'charging' ? 'charging-marker' : '',
+              html: \`<div style="
+                width: 16px;
+                height: 16px;
+                background-color: \${color};
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              "></div>\`,
+              iconSize: [16, 16],
+              iconAnchor: [8, 8]
+            });
+
+            // Добавляем маркер на карту
+            const marker = L.marker([station.coordinates[0], station.coordinates[1]], {
+              icon: customIcon
+            }).addTo(map);
+
+            // Добавляем popup
+            marker.bindPopup(\`
+              <div>
+                <h3 style="margin: 0 0 5px 0; font-size: 14px;">\${station.name}</h3>
+                <p style="margin: 0 0 5px 0; font-size: 12px; color: #666;">\${station.location}</p>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                  <div style="
+                    width: 8px;
+                    height: 8px;
+                    background-color: \${color};
+                    border-radius: 50%;
+                  "></div>
+                  <span style="font-size: 12px;">\${station.status === 'available' ? 'Доступна' : 
+                    station.status === 'charging' ? 'Зарядка' :
+                    station.status === 'error' ? 'Ошибка' : 'Офлайн'}</span>
+                </div>
+              </div>
+            \`);
+
+            // Обработчик клика по маркеру
+            marker.on('click', () => {
+              window.parent.postMessage({type: 'stationClick', stationId: station.id}, '*');
+            });
+          });
         </script>
       </body>
       </html>
