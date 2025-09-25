@@ -65,12 +65,15 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
 
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html style="height: 100%; margin: 0; padding: 0;">
       <head>
         <meta charset="utf-8">
         <style>
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-          #map { position: relative; width: 100%; height: 100%; }
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          html, body { height: 100%; overflow: hidden; }
+          body { font-family: Arial, sans-serif; }
+          #map { position: relative; width: 100%; height: 100vh; }
+          iframe { border: none !important; width: 100%; height: 100%; display: block; }
           @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.6; }
@@ -81,7 +84,9 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
         <div id="map">
           <iframe
             src="https://www.openstreetmap.org/export/embed.html?bbox=37.2%2C55.3%2C38.4%2C56.2&layer=mapnik"
-            style="border: none; width: 100%; height: 100%;">
+            frameborder="0"
+            scrolling="no"
+            allowfullscreen>
           </iframe>
           ${markers}
         </div>
