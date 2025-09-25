@@ -13,22 +13,22 @@ export default function AvailabilityTab() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Метрики за неделю */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">ДОСТУПНОСТЬ</div>
-              <div className="text-2xl font-bold text-gray-900">79.547 %</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="text-left">
+              <div className="text-sm text-gray-600 mb-2">ДОСТУПНОСТЬ</div>
+              <div className="text-3xl font-bold text-gray-900">79.547 %</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">ВРЕМЯ OFFLINE</div>
-              <div className="text-2xl font-bold text-gray-900">34:28:54</div>
+            <div className="text-left">
+              <div className="text-sm text-gray-600 mb-2">ВРЕМЯ OFFLINE</div>
+              <div className="text-3xl font-bold text-red-600">34:28:54</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">ВРЕМЯ ONLINE</div>
-              <div className="text-2xl font-bold text-gray-900">134:06:34</div>
+            <div className="text-left">
+              <div className="text-sm text-gray-600 mb-2">ВРЕМЯ ONLINE</div>
+              <div className="text-3xl font-bold text-green-600">134:06:34</div>
             </div>
-            <div className="text-center p-4 bg-gray-50 rounded-lg">
-              <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">ОБЩЕЕ ВРЕМЯ</div>
-              <div className="text-2xl font-bold text-gray-900">168:35:29</div>
+            <div className="text-left">
+              <div className="text-sm text-gray-600 mb-2">ОБЩЕЕ ВРЕМЯ</div>
+              <div className="text-3xl font-bold text-gray-900">168:35:29</div>
             </div>
           </div>
 
@@ -113,40 +113,21 @@ export default function AvailabilityTab() {
             </div>
           </div>
 
-          {/* Дополнительная информация */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
-            <div>
-              <h4 className="font-semibold mb-2">Статистика сбоев</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Количество сбоев:</span>
-                  <span className="font-medium">4</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Средняя длительность:</span>
-                  <span className="font-medium">8ч 37м</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Самый долгий сбой:</span>
-                  <span className="font-medium">12ч 45м</span>
-                </div>
+          {/* Статистика сбоев */}
+          <div className="pt-4 border-t">
+            <h4 className="font-semibold mb-4">Статистика сбоев</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600 mb-1">4</div>
+                <div className="text-sm text-gray-600">Количество сбоев</div>
               </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">Целевые показатели</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Цель доступности:</span>
-                  <span className="font-medium text-green-600">95%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Текущий результат:</span>
-                  <span className="font-medium text-red-600">79.5%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">До цели:</span>
-                  <span className="font-medium">-15.5%</span>
-                </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600 mb-1">8ч 37м</div>
+                <div className="text-sm text-gray-600">Средняя длительность</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-700 mb-1">12ч 45м</div>
+                <div className="text-sm text-gray-600">Самый долгий сбой</div>
               </div>
             </div>
           </div>
