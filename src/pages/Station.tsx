@@ -337,6 +337,35 @@ export default function Station() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* OCPP Logs */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Icon name="FileText" size={20} />
+                      OCPP Логи
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="bg-gray-50 rounded-lg p-4 font-mono text-sm space-y-2 max-h-96 overflow-y-auto">
+                      {mockLogs.map((log) => (
+                        <div 
+                          key={log.id} 
+                          className={`text-xs ${
+                            log.type === 'request' ? 'text-blue-600' :
+                            log.type === 'response' ? 'text-green-600' :
+                            log.type === 'error' ? 'text-red-600' :
+                            'text-gray-600'
+                          }`}
+                        >
+                          <span className="text-gray-500">[{log.timestamp}]</span>{' '}
+                          <span className="uppercase font-semibold">{log.type}:</span>{' '}
+                          <pre className="whitespace-pre-wrap">{log.message}</pre>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="transactions">
