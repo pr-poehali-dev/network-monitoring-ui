@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -150,6 +151,7 @@ const getStatusText = (status: string) => {
 export default function Monitoring() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
+  const navigate = useNavigate();
 
   const filteredActiveAlerts = mockActiveAlerts.filter(alert =>
     alert.station.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -260,11 +262,13 @@ export default function Monitoring() {
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Станция</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Длительность</th>
                           <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время начала</th>
+                          <th className="w-8"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredActiveAlerts.map((alert) => (
-                          <tr key={alert.id} className={`border-b border-l-4 ${getSeverityBg(alert.severity)} hover:bg-gray-50/50`}>
+                          <tr key={alert.id} className={`border-b border-l-4 ${getSeverityBg(alert.severity)} hover:bg-gray-50/50 cursor-pointer`}
+                              onClick={() => navigate(`/station/${alert.stationId}`)}>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
                                 {alert.severity === 'critical' ? (
@@ -293,6 +297,9 @@ export default function Monitoring() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="text-xs text-gray-500">{alert.startTime}</div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Icon name="ChevronRight" size={16} className="text-gray-400" />
                             </td>
                           </tr>
                         ))}
