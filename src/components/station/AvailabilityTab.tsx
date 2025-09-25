@@ -1,7 +1,34 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
 
+interface TooltipData {
+  interval: number;
+  startTime: string;
+  endTime: string;
+  onlineMinutes: number;
+  offlineMinutes: number;
+  x: number;
+  y: number;
+}
+
 export default function AvailabilityTab() {
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    const secs = Math.floor((minutes - Math.floor(minutes)) * 60);
+    
+    if (hours > 0) {
+      return `${hours} час${hours > 1 ? 'а' : ''}, ${mins} минут${mins > 1 ? 'ы' : ''}`;
+    } else if (mins > 0) {
+      return `${mins} минут${mins > 1 ? 'ы' : ''}, ${secs} секунд${secs > 1 ? 'ы' : 'а'}`;
+    } else {
+      return `${secs} секунд${secs > 1 ? 'ы' : 'а'}`;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -47,7 +74,7 @@ export default function AvailabilityTab() {
               
               {/* График */}
               <div className="ml-8">
-                <div className="flex items-end h-48 gap-px">
+                <div className="flex items-end h-48 gap-px relative">
                   {/* Данные за неделю - каждая полоска представляет 2 часа */}
                   {Array.from({ length: 84 }, (_, i) => {
                     // Каждый интервал = 2 часа (168 часов / 2 = 84 интервала)
@@ -55,12 +82,37 @@ export default function AvailabilityTab() {
                     const intervalInDay = i % 12;
                     const startHour = intervalInDay * 2;
                     
+                    // Дата начала недели (19 сентября)
+                    const baseDate = new Date(2025, 8, 19); // месяц 8 = сентябрь (0-indexed)
+                    const currentDate = new Date(baseDate);
+                    currentDate.setDate(baseDate.getDate() + day);
+                    currentDate.setHours(startHour, 0, 0, 0);
+                    
+                    const endDate = new Date(currentDate);
+                    endDate.setHours(startHour + 2, 0, 0, 0);
+                    
+                    const formatDateTime = (date: Date) => {
+                      const day = String(date.getDate()).padStart(2, '0');
+                      const month = String(date.getMonth() + 1).padStart(2, '0');
+                      const year = date.getFullYear();
+                      const hour = String(date.getHours()).padStart(2, '0');
+                      const minute = String(date.getMinutes()).padStart(2, '0');
+                      const second = String(date.getSeconds()).padStart(2, '0');
+                      return `${day}.${month}.${year}, ${hour}:${minute}:${second}`;
+                    };
+                    
                     // Симуляция данных доступности для 2-часового интервала
                     let onlineMinutes = 120; // По умолчанию весь интервал online
                     let offlineMinutes = 0;
                     
+                    // 22 сентября (день 3) - пример с частичным сбоем 13:00-15:00
+                    if (day === 3 && startHour === 12) {
+                      // 13:00-15:00 - частичный сбой (как на скриншоте)
+                      onlineMinutes = 67; // 1 час 7 минут
+                      offlineMinutes = 53; // 53 минуты
+                    }
                     // 20 сентября (день 1) - сбой с 18:00 до 21:00 (3 часа)
-                    if (day === 1 && startHour >= 18 && startHour < 22) {
+                    else if (day === 1 && startHour >= 18 && startHour < 22) {
                       if (startHour === 18) {
                         // 18:00-20:00 - полностью offline
                         onlineMinutes = 0;
@@ -71,13 +123,11 @@ export default function AvailabilityTab() {
                         offlineMinutes = 60;
                       }
                     }
-                    
-                    // 22 сентября (день 3) - долгий сбой с 8:00 до 20:00
-                    else if (day === 3 && startHour >= 8 && startHour < 20) {
+                    // 22 сентября (день 3) - другие интервалы с долгим сбоем
+                    else if (day === 3 && startHour >= 8 && startHour < 20 && startHour !== 12) {
                       onlineMinutes = 0;
                       offlineMinutes = 120;
                     }
-                    
                     // 24 сентября (день 5) - короткие сбои 14:00-16:00 и 20:00-22:00
                     else if (day === 5) {
                       if (startHour === 14 || startHour === 20) {
@@ -93,9 +143,21 @@ export default function AvailabilityTab() {
                     return (
                       <div
                         key={i}
-                        className="flex-1 min-w-[3px] flex flex-col justify-end"
+                        className="flex-1 min-w-[3px] flex flex-col justify-end cursor-pointer hover:opacity-80 transition-opacity"
                         style={{ height: '100%' }}
-                        title={`День ${day + 1}, ${startHour}:00-${startHour + 2}:00: Online ${Math.floor(onlineMinutes/60)}ч ${onlineMinutes%60}м, Offline ${Math.floor(offlineMinutes/60)}ч ${offlineMinutes%60}м`}
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          setTooltip({
+                            interval: i,
+                            startTime: formatDateTime(currentDate),
+                            endTime: formatDateTime(endDate),
+                            onlineMinutes,
+                            offlineMinutes,
+                            x: rect.left + rect.width / 2,
+                            y: rect.top - 10
+                          });
+                        }}
+                        onMouseLeave={() => setTooltip(null)}
                       >
                         {/* Красная часть (offline) сверху */}
                         {offlinePercent > 0 && (
@@ -163,6 +225,31 @@ export default function AvailabilityTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tooltip */}
+      {tooltip && (
+        <div
+          className="fixed bg-purple-100 border border-purple-200 rounded-lg p-3 shadow-lg z-50 text-sm pointer-events-none"
+          style={{
+            left: tooltip.x - 100,
+            top: tooltip.y - 120,
+            minWidth: '200px'
+          }}
+        >
+          <div className="space-y-1">
+            <div className="font-medium text-gray-900">{tooltip.startTime}</div>
+            <div className="font-medium text-gray-900">{tooltip.endTime}</div>
+            <div className="mt-2 space-y-1">
+              <div className="text-gray-700">
+                <span className="font-medium">Online:</span> {formatTime(tooltip.onlineMinutes)}
+              </div>
+              <div className="text-gray-700">
+                <span className="font-medium">Offline:</span> {formatTime(tooltip.offlineMinutes)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
