@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useState } from 'react';
+import Map, { Marker, Popup } from 'react-map-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface ChargingStation {
   id: string;
@@ -14,23 +13,6 @@ interface ChargingStation {
 interface MapProps {
   stations: ChargingStation[];
   onStationClick?: (stationId: string) => void;
-}
-
-// Component to fix marker icons issue
-function FixMarkerIcons() {
-  const map = useMap();
-  
-  useEffect(() => {
-    // Fix for default marker icons in Leaflet + bundlers
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-      iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-      iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-      shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    });
-  }, [map]);
-  
-  return null;
 }
 
 const getStatusColor = (status: string) => {
@@ -53,94 +35,84 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-// Create custom markers for different statuses
-const createStatusIcon = (status: string) => {
-  const color = getStatusColor(status);
-  
-  return L.divIcon({
-    className: 'custom-station-marker',
-    html: `
-      <div style="
-        width: 16px;
-        height: 16px;
-        background-color: ${color};
-        border: 2px solid white;
-        border-radius: 50%;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        ${status === 'charging' ? 'animation: pulse 2s infinite;' : ''}
-      "></div>
-      <style>
-        .custom-station-marker {
-          background: transparent !important;
-          border: none !important;
-        }
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-      </style>
-    `,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
-    popupAnchor: [0, -8]
-  });
-};
-
-export default function Map({ stations, onStationClick }: MapProps) {
+export default function MapComponent({ stations, onStationClick }: MapProps) {
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
-  
-  // Center map on Moscow
-  const center: [number, number] = [55.7558, 37.6176];
+  const [popupInfo, setPopupInfo] = useState<ChargingStation | null>(null);
 
   const handleMarkerClick = (station: ChargingStation) => {
     setSelectedStation(station);
+    setPopupInfo(station);
     onStationClick?.(station.id);
   };
 
   return (
     <div className="relative w-full">
-      <MapContainer 
-        center={center} 
-        zoom={11} 
-        style={{ height: '600px', width: '100%', borderRadius: '8px' }}
-        scrollWheelZoom={true}
-        zoomControl={true}
+      <Map
+        initialViewState={{
+          longitude: 37.6176,
+          latitude: 55.7558,
+          zoom: 11
+        }}
+        style={{
+          width: '100%',
+          height: '600px',
+          borderRadius: '8px'
+        }}
+        mapStyle="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+        attributionControl={true}
       >
-        <FixMarkerIcons />
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
         {stations.map((station) => (
           <Marker
             key={station.id}
-            position={station.coordinates}
-            icon={createStatusIcon(station.status)}
-            onclick={() => handleMarkerClick(station)}
+            longitude={station.coordinates[1]}
+            latitude={station.coordinates[0]}
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              handleMarkerClick(station);
+            }}
           >
-            <Popup>
-              <div className="p-2">
-                <h3 className="font-semibold mb-1">{station.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">{station.location}</p>
-                <div className="flex items-center gap-2">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: getStatusColor(station.status) }}
-                  />
-                  <span className="text-sm">{getStatusLabel(station.status)}</span>
-                </div>
-              </div>
-            </Popup>
+            <div
+              className={`
+                w-4 h-4 border-2 border-white rounded-full shadow-lg cursor-pointer
+                ${station.status === 'charging' ? 'animate-pulse' : ''}
+              `}
+              style={{ 
+                backgroundColor: getStatusColor(station.status),
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+              }}
+            />
           </Marker>
         ))}
-      </MapContainer>
-      
+
+        {popupInfo && (
+          <Popup
+            longitude={popupInfo.coordinates[1]}
+            latitude={popupInfo.coordinates[0]}
+            onClose={() => setPopupInfo(null)}
+            closeButton={true}
+            closeOnClick={false}
+            className="z-50"
+          >
+            <div className="p-2">
+              <h3 className="font-semibold mb-1">{popupInfo.name}</h3>
+              <p className="text-sm text-gray-600 mb-2">{popupInfo.location}</p>
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: getStatusColor(popupInfo.status) }}
+                />
+                <span className="text-sm">{getStatusLabel(popupInfo.status)}</span>
+              </div>
+            </div>
+          </Popup>
+        )}
+      </Map>
+
       {selectedStation && (
         <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs z-[1000]">
           <button 
             onClick={() => setSelectedStation(null)}
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl leading-none"
           >
             ×
           </button>
