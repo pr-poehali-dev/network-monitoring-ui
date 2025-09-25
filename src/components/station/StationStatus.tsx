@@ -81,11 +81,23 @@ export default function StationStatus({ station }: StationStatusProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3">
-            <Icon name="BatteryCharging" size={32} className="text-green-600" />
-            <div>
-              <p className="font-medium">Available</p>
-              <p className="text-sm text-gray-500">Available</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Icon name="BatteryCharging" size={32} className="text-green-600" />
+              <div>
+                <p className="font-medium">Available</p>
+                <p className="text-sm text-gray-500">Available</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50">
+                <Icon name="RotateCcw" size={16} />
+                ПЕРЕЗАГРУЗКА
+              </Button>
+              <Button variant="outline" size="sm" className="text-gray-600 border-gray-200 hover:bg-gray-50">
+                <Icon name="Wifi" size={16} />
+                OCPP ВКЛ/ВЫКЛ
+              </Button>
             </div>
           </div>
         </CardContent>

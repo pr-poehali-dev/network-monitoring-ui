@@ -15,16 +15,6 @@ export default function StationActions({ onAction }: StationActionsProps) {
       <CardContent className="space-y-4">
         <div className="flex justify-between items-center">
           <div>
-            <p className="font-medium">Перезагрузка</p>
-            <p className="text-sm text-gray-500">Отправить команду Reset</p>
-          </div>
-          <Button onClick={() => onAction('reset')}>
-            ПЕРЕЗАГРУЗКА
-          </Button>
-        </div>
-        <Separator />
-        <div className="flex justify-between items-center">
-          <div>
             <p className="font-medium">Комментарий</p>
             <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
           </div>
