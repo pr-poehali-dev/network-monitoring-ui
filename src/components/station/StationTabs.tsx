@@ -68,10 +68,159 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
       <TabsContent value="transactions">
         <Card>
           <CardHeader>
-            <CardTitle>История транзакций</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Icon name="CreditCard" size={20} />
+              История транзакций
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-gray-500">История транзакций будет отображаться здесь</p>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">ID транзакции</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Коннектор</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Энергия</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Длительность</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Причина завершения</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время начала</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время завершения</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b hover:bg-gray-50/50">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-sm text-blue-600">#TXN001234</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Zap" size={14} className="text-green-500" />
+                        <span className="text-sm">Коннектор 1</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-green-600">45.2 кВт⋅ч</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm">2ч 15м</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Успешно завершена</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">25.09.2025 14:30</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">25.09.2025 16:45</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-50/50">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-sm text-blue-600">#TXN001235</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Zap" size={14} className="text-green-500" />
+                        <span className="text-sm">Коннектор 2</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-green-600">12.8 кВт⋅ч</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm">45м</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-700">Прервана пользователем</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">25.09.2025 12:00</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">25.09.2025 12:45</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-50/50">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-sm text-blue-600">#TXN001236</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Zap" size={14} className="text-green-500" />
+                        <span className="text-sm">Коннектор 1</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-green-600">78.5 кВт⋅ч</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm">3ч 20м</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Автоматически</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">24.09.2025 18:15</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">24.09.2025 21:35</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-50/50">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-sm text-blue-600">#TXN001237</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Zap" size={14} className="text-green-500" />
+                        <span className="text-sm">Коннектор 3</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-green-600">25.1 кВт⋅ч</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm">1ч 10м</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-700">Ошибка связи</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">24.09.2025 09:30</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">24.09.2025 10:40</span>
+                    </td>
+                  </tr>
+                  <tr className="border-b hover:bg-gray-50/50">
+                    <td className="py-3 px-4">
+                      <span className="font-mono text-sm text-blue-600">#TXN001238</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <Icon name="Zap" size={14} className="text-green-500" />
+                        <span className="text-sm">Коннектор 2</span>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm font-medium text-green-600">92.7 кВт⋅ч</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-sm">4ч 5м</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">Успешно завершена</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">23.09.2025 15:45</span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-xs text-gray-500">23.09.2025 19:50</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
