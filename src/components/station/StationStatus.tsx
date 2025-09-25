@@ -44,21 +44,7 @@ const getStatusLabel = (status: string) => {
   }
 };
 
-const getConnectorIcon = (type: string) => {
-  switch (type) {
-    case 'CCS Combo 2':
-    case 'CCS':
-      return 'Zap';
-    case 'CHAdeMO':
-      return 'Battery';
-    case 'Type 2':
-      return 'Plug';
-    case 'GB/T DC':
-      return 'Power';
-    default:
-      return 'Plug';
-  }
-};
+
 
 export default function StationStatus({ station }: StationStatusProps) {
   return (
@@ -116,7 +102,7 @@ export default function StationStatus({ station }: StationStatusProps) {
                   <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                     <span className="text-sm font-medium text-green-800">{index + 1}</span>
                   </div>
-                  <Icon name={getConnectorIcon(connector.type)} size={24} className="text-green-600" />
+                  <Icon name="Plug" size={24} className="text-green-600" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
