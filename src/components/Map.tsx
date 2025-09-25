@@ -38,14 +38,31 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
   const [mapHtml, setMapHtml] = useState<string>('');
 
   useEffect(() => {
+    // Координаты границ карты OpenStreetMap (bbox=37.2,55.3,38.4,56.2)
+    const mapBounds = {
+      west: 37.2,   // левая граница (минимальная долгота)
+      east: 38.4,   // правая граница (максимальная долгота) 
+      south: 55.3,  // нижняя граница (минимальная широта)
+      north: 56.2   // верхняя граница (максимальная широта)
+    };
+
     // Генерируем HTML для встроенной карты с маркерами
     const markers = stations.map(station => {
       const color = getStatusColor(station.status);
+      const lat = station.coordinates[0]; // широта
+      const lng = station.coordinates[1]; // долгота
+      
+      // Правильный расчет позиции маркера на карте
+      // Долгота (X): чем больше долгота, тем правее на карте
+      const xPercent = ((lng - mapBounds.west) / (mapBounds.east - mapBounds.west)) * 100;
+      // Широта (Y): чем больше широта, тем выше на карте (инвертируем)
+      const yPercent = ((mapBounds.north - lat) / (mapBounds.north - mapBounds.south)) * 100;
+      
       return `
         <div style="
           position: absolute;
-          left: ${((station.coordinates[1] - 37.2) / 1.2) * 100}%;
-          top: ${((56.0 - station.coordinates[0]) / 0.9) * 100}%;
+          left: ${Math.max(0, Math.min(100, xPercent))}%;
+          top: ${Math.max(0, Math.min(100, yPercent))}%;
           transform: translate(-50%, -50%);
           z-index: 1000;
           cursor: pointer;
