@@ -41,11 +41,10 @@ export default function Map({ stations, onStationClick }: MapProps) {
     centerLng: 37.6176,
     zoom: 11,
     isDragging: false,
-    dragStart: { x: 0, y: 0 },
-    dragOffset: { x: 0, y: 0 }
+    lastMousePos: { x: 0, y: 0 }
   });
 
-  // Convert lat/lng to pixel coordinates
+  // Convert lat/lng to pixel coordinates (without drag offset for markers)
   const latLngToPixel = (lat: number, lng: number, mapWidth: number, mapHeight: number) => {
     const scale = Math.pow(2, mapState.zoom);
     const worldWidth = 256 * scale;
@@ -59,8 +58,17 @@ export default function Map({ stations, onStationClick }: MapProps) {
     const centerY = (1 - Math.log(Math.tan(mapState.centerLat * Math.PI / 180) + 1 / Math.cos(mapState.centerLat * Math.PI / 180)) / Math.PI) / 2 * worldHeight;
 
     return {
-      x: x - centerX + mapWidth / 2 + mapState.dragOffset.x,
-      y: y - centerY + mapHeight / 2 + mapState.dragOffset.y
+      x: x - centerX + mapWidth / 2,
+      y: y - centerY + mapHeight / 2
+    };
+  };
+
+  // Convert lat/lng to tile pixel coordinates (with drag offset for tiles)  
+  const latLngToTilePixel = (lat: number, lng: number, mapWidth: number, mapHeight: number, dragOffsetX: number, dragOffsetY: number) => {
+    const pixel = latLngToPixel(lat, lng, mapWidth, mapHeight);
+    return {
+      x: pixel.x + dragOffsetX,
+      y: pixel.y + dragOffsetY
     };
   };
 
@@ -73,8 +81,8 @@ export default function Map({ stations, onStationClick }: MapProps) {
     const centerX = (mapState.centerLng + 180) / 360 * worldWidth;
     const centerY = (1 - Math.log(Math.tan(mapState.centerLat * Math.PI / 180) + 1 / Math.cos(mapState.centerLat * Math.PI / 180)) / Math.PI) / 2 * worldHeight;
 
-    const worldX = x - mapWidth / 2 + centerX - mapState.dragOffset.x;
-    const worldY = y - mapHeight / 2 + centerY - mapState.dragOffset.y;
+    const worldX = x - mapWidth / 2 + centerX;
+    const worldY = y - mapHeight / 2 + centerY;
 
     const lng = (worldX / worldWidth) * 360 - 180;
     const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * worldY / worldHeight)));
@@ -83,7 +91,7 @@ export default function Map({ stations, onStationClick }: MapProps) {
     return { lat, lng };
   };
 
-  const renderMap = () => {
+  const renderMap = (dragOffsetX = 0, dragOffsetY = 0) => {
     if (!mapRef.current) return;
 
     const mapWidth = mapRef.current.offsetWidth;
@@ -105,8 +113,8 @@ export default function Map({ stations, onStationClick }: MapProps) {
     `;
 
     // Calculate tiles needed based on map size
-    const tilesX = Math.ceil(mapWidth / 256) + 2;
-    const tilesY = Math.ceil(mapHeight / 256) + 2;
+    const tilesX = Math.ceil(mapWidth / 256) + 3;
+    const tilesY = Math.ceil(mapHeight / 256) + 3;
 
     // Calculate center tile
     const scale = Math.pow(2, mapState.zoom);
@@ -116,7 +124,7 @@ export default function Map({ stations, onStationClick }: MapProps) {
     const startX = centerTileX - Math.floor(tilesX / 2);
     const startY = centerTileY - Math.floor(tilesY / 2);
 
-    // Load tiles
+    // Load tiles with drag offset
     for (let i = 0; i < tilesX; i++) {
       for (let j = 0; j < tilesY; j++) {
         const tileX = startX + i;
@@ -126,8 +134,8 @@ export default function Map({ stations, onStationClick }: MapProps) {
           const img = document.createElement('img');
           img.src = `https://tile.openstreetmap.org/${mapState.zoom}/${tileX}/${tileY}.png`;
           
-          const pixelX = (tileX - centerTileX) * 256 + mapWidth / 2 + mapState.dragOffset.x;
-          const pixelY = (tileY - centerTileY) * 256 + mapHeight / 2 + mapState.dragOffset.y;
+          const pixelX = (tileX - centerTileX) * 256 + mapWidth / 2 + dragOffsetX;
+          const pixelY = (tileY - centerTileY) * 256 + mapHeight / 2 + dragOffsetY;
           
           img.style.cssText = `
             position: absolute;
@@ -136,14 +144,16 @@ export default function Map({ stations, onStationClick }: MapProps) {
             width: 256px;
             height: 256px;
             pointer-events: none;
+            user-select: none;
           `;
           img.crossOrigin = 'anonymous';
+          img.draggable = false;
           tileContainer.appendChild(img);
         }
       }
     }
 
-    // Add station markers
+    // Add station markers (fixed to coordinates, not affected by drag offset)
     stations.forEach(station => {
       const pixel = latLngToPixel(station.coordinates[0], station.coordinates[1], mapWidth, mapHeight);
       
@@ -184,42 +194,53 @@ export default function Map({ stations, onStationClick }: MapProps) {
     });
 
     // Mouse events for dragging
+    let currentDragOffset = { x: 0, y: 0 };
+
     const handleMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
+      currentDragOffset = { x: 0, y: 0 };
       setMapState(prev => ({
         ...prev,
         isDragging: true,
-        dragStart: { x: e.clientX, y: e.clientY }
+        lastMousePos: { x: e.clientX, y: e.clientY }
       }));
     };
 
     const handleMouseMove = (e: MouseEvent) => {
       if (!mapState.isDragging) return;
+      e.preventDefault();
       
-      const deltaX = e.clientX - mapState.dragStart.x;
-      const deltaY = e.clientY - mapState.dragStart.y;
+      const deltaX = e.clientX - mapState.lastMousePos.x;
+      const deltaY = e.clientY - mapState.lastMousePos.y;
+      
+      currentDragOffset.x += deltaX;
+      currentDragOffset.y += deltaY;
+      
+      // Re-render with current drag offset for smooth movement
+      renderMap(currentDragOffset.x, currentDragOffset.y);
       
       setMapState(prev => ({
         ...prev,
-        dragOffset: {
-          x: prev.dragOffset.x + deltaX,
-          y: prev.dragOffset.y + deltaY
-        },
-        dragStart: { x: e.clientX, y: e.clientY }
+        lastMousePos: { x: e.clientX, y: e.clientY }
       }));
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: MouseEvent) => {
       if (!mapState.isDragging) return;
       
-      // Convert drag offset to new center
-      const newCenter = pixelToLatLng(mapWidth / 2 - mapState.dragOffset.x, mapHeight / 2 - mapState.dragOffset.y, mapWidth, mapHeight);
+      // Calculate new center based on total drag offset
+      const newCenter = pixelToLatLng(
+        mapWidth / 2 - currentDragOffset.x, 
+        mapHeight / 2 - currentDragOffset.y, 
+        mapWidth, 
+        mapHeight
+      );
       
       setMapState(prev => ({
         ...prev,
         centerLat: newCenter.lat,
         centerLng: newCenter.lng,
-        isDragging: false,
-        dragOffset: { x: 0, y: 0 }
+        isDragging: false
       }));
     };
 
@@ -252,7 +273,7 @@ export default function Map({ stations, onStationClick }: MapProps) {
   useEffect(() => {
     const cleanup = renderMap();
     return cleanup;
-  }, [mapState, stations, onStationClick]);
+  }, [mapState.centerLat, mapState.centerLng, mapState.zoom, stations, onStationClick]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -300,7 +321,7 @@ export default function Map({ stations, onStationClick }: MapProps) {
       </div>
       
       {selectedStation && (
-        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs">
+        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs z-20">
           <button 
             onClick={() => setSelectedStation(null)}
             className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
