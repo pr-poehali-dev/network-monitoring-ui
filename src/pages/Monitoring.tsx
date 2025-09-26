@@ -20,6 +20,19 @@ interface Alert {
   status: 'active' | 'acknowledged' | 'resolved';
 }
 
+interface CriticalNotification {
+  id: string;
+  station: string;
+  stationId: string;
+  issue: string;
+  description: string;
+  actionNeeded: string;
+  urgency: 'immediate' | 'urgent' | 'high';
+  occuredAt: string;
+  repeatCount?: number;
+  lastAttempt?: string;
+}
+
 const mockActiveAlerts: Alert[] = [
   {
     id: '1',
@@ -75,6 +88,62 @@ const mockActiveAlerts: Alert[] = [
     startTime: '24.09.2025 09:00:00',
     duration: '1д 7ч',
     status: 'active'
+  }
+];
+
+const mockCriticalNotifications: CriticalNotification[] = [
+  {
+    id: 'n1',
+    station: 'ЭЗС Центральная',
+    stationId: '1',
+    issue: 'Три неудачные попытки запуска зарядки',
+    description: 'Пользователь не может начать зарядку. Коннектор блокируется после каждой попытки.',
+    actionNeeded: 'Подключиться к станции и проверить состояние коннектора',
+    urgency: 'immediate',
+    occuredAt: '25.09.2025 15:45:00',
+    repeatCount: 3,
+    lastAttempt: '25.09.2025 15:47:00'
+  },
+  {
+    id: 'n2',
+    station: 'ЭЗС Парковая',
+    stationId: '3',
+    issue: 'Превышение температуры контроллера',
+    description: 'Температура достигла 85°C. Система охлаждения не справляется.',
+    actionNeeded: 'Немедленно проверить систему охлаждения и вентиляцию',
+    urgency: 'immediate',
+    occuredAt: '25.09.2025 15:30:00'
+  },
+  {
+    id: 'n3',
+    station: 'ЭЗС Торговый центр',
+    stationId: '2',
+    issue: 'Протечка охлаждающей жидкости',
+    description: 'Датчики влажности зафиксировали протечку в отсеке контроллера.',
+    actionNeeded: 'Отключить станцию и проверить систему охлаждения',
+    urgency: 'urgent',
+    occuredAt: '25.09.2025 14:15:00'
+  },
+  {
+    id: 'n4',
+    station: 'ЭЗС Промышленная',
+    stationId: '4',
+    issue: 'Неисправность контактора',
+    description: 'Контактор не размыкается после завершения зарядки.',
+    actionNeeded: 'Проверить и заменить контактор, обесточить станцию',
+    urgency: 'urgent',
+    occuredAt: '25.09.2025 13:20:00'
+  },
+  {
+    id: 'n5',
+    station: 'ЭЗС Центральная',
+    stationId: '1',
+    issue: 'Частые сбросы соединения RFID',
+    description: 'Считыватель карт работает нестабильно, 5 сбросов за час.',
+    actionNeeded: 'Проверить антенну RFID и кабельные соединения',
+    urgency: 'high',
+    occuredAt: '25.09.2025 12:30:00',
+    repeatCount: 5
   }
 ];
 
@@ -148,6 +217,33 @@ const getStatusText = (status: string) => {
   }
 };
 
+const getUrgencyColor = (urgency: string) => {
+  switch (urgency) {
+    case 'immediate': return 'bg-red-100 border-red-500 text-red-800';
+    case 'urgent': return 'bg-orange-100 border-orange-500 text-orange-800';
+    case 'high': return 'bg-yellow-100 border-yellow-500 text-yellow-800';
+    default: return 'bg-gray-100 border-gray-500 text-gray-800';
+  }
+};
+
+const getUrgencyText = (urgency: string) => {
+  switch (urgency) {
+    case 'immediate': return 'НЕМЕДЛЕННО';
+    case 'urgent': return 'СРОЧНО';
+    case 'high': return 'ВАЖНО';
+    default: return 'ОБЫЧНО';
+  }
+};
+
+const getUrgencyIcon = (urgency: string) => {
+  switch (urgency) {
+    case 'immediate': return 'Zap';
+    case 'urgent': return 'AlertTriangle';
+    case 'high': return 'AlertCircle';
+    default: return 'Info';
+  }
+};
+
 export default function Monitoring() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('active');
@@ -162,6 +258,20 @@ export default function Monitoring() {
     alert.station.toLowerCase().includes(searchTerm.toLowerCase()) ||
     alert.message.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const filteredNotifications = mockCriticalNotifications.filter(notification =>
+    notification.station.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    notification.issue.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleTakeAction = (notificationId: string, stationId: string) => {
+    console.log('Подключиться к станции:', stationId);
+    navigate(`/station/${stationId}`);
+  };
+
+  const handleDismissNotification = (notificationId: string) => {
+    console.log('Отклонить уведомление:', notificationId);
+  };
 
   const handleAcknowledge = (alertId: string) => {
     console.log('Подтвердить ошибку:', alertId);
@@ -185,16 +295,16 @@ export default function Monitoring() {
             {/* Summary Stats */}
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium">Требуют действий: {mockCriticalNotifications.length}</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                 <span className="text-sm font-medium">Критичные: 2</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
                 <span className="text-sm font-medium">Внимание: 5</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                <span className="text-sm font-medium">Уведомления: 12</span>
               </div>
             </div>
           </div>
@@ -230,6 +340,15 @@ export default function Monitoring() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
+            <TabsTrigger value="notifications" className="relative">
+              Требуют действий
+              <Badge variant="destructive" className="ml-2 text-xs animate-pulse">
+                {mockCriticalNotifications.length}
+              </Badge>
+              {mockCriticalNotifications.length > 0 && (
+                <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></div>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="active">
               Активные ошибки 
               <Badge variant="destructive" className="ml-2 text-xs">
@@ -238,6 +357,94 @@ export default function Monitoring() {
             </TabsTrigger>
             <TabsTrigger value="history">История ошибок</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="notifications">
+            {filteredNotifications.length === 0 ? (
+              <Card>
+                <CardContent className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <Icon name="CheckCircle" size={48} className="text-green-500 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Критичных уведомлений нет</h3>
+                    <p className="text-gray-500">Все станции работают в штатном режиме</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {filteredNotifications.map((notification) => (
+                  <Card key={notification.id} className={`border-l-4 ${getUrgencyColor(notification.urgency).includes('red') ? 'border-l-red-500' : notification.urgency === 'urgent' ? 'border-l-orange-500' : 'border-l-yellow-500'}`}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-3">
+                          <div className={`p-2 rounded-lg ${getUrgencyColor(notification.urgency)}`}>
+                            <Icon name={getUrgencyIcon(notification.urgency)} size={20} />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <CardTitle className="text-lg">{notification.issue}</CardTitle>
+                              <Badge className={`text-xs ${getUrgencyColor(notification.urgency)} border`}>
+                                {getUrgencyText(notification.urgency)}
+                              </Badge>
+                              {notification.repeatCount && (
+                                <Badge variant="outline" className="text-xs">
+                                  {notification.repeatCount}x
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-600 mb-2">
+                              <Icon name="MapPin" size={14} className="inline mr-1" />
+                              {notification.station}
+                            </div>
+                            <p className="text-sm text-gray-700 mb-3">{notification.description}</p>
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                              <div className="flex items-start gap-2">
+                                <Icon name="Lightbulb" size={16} className="text-blue-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                  <p className="text-sm font-medium text-blue-800 mb-1">Необходимые действия:</p>
+                                  <p className="text-sm text-blue-700">{notification.actionNeeded}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Icon name="Clock" size={12} />
+                                Возникло: {notification.occuredAt}
+                              </div>
+                              {notification.lastAttempt && (
+                                <div className="flex items-center gap-1">
+                                  <Icon name="RotateCcw" size={12} />
+                                  Последняя попытка: {notification.lastAttempt}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex items-center justify-end gap-3">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDismissNotification(notification.id)}
+                        >
+                          Отклонить
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => handleTakeAction(notification.id, notification.stationId)}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <Icon name="ExternalLink" size={16} className="mr-2" />
+                          Подключиться к станции
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
           <TabsContent value="active">
             {filteredActiveAlerts.length === 0 ? (
