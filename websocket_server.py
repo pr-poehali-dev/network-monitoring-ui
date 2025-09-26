@@ -252,7 +252,7 @@ class WebSocketServer:
             }
             await websocket.send(json.dumps(error_response))
     
-    async def handle_client(self, websocket: WebSocketServerProtocol, path: str):
+    async def handle_client(self, websocket: WebSocketServerProtocol):
         """Обработка подключения клиента"""
         await self.register_client(websocket)
         
