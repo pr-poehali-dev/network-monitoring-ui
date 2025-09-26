@@ -242,6 +242,7 @@ export default function InputMeterTab() {
               height="100%" 
               viewBox="0 0 800 280"
               className="overflow-visible"
+              preserveAspectRatio="none"
             >
               {/* Сетка */}
               <defs>
@@ -252,18 +253,18 @@ export default function InputMeterTab() {
               <rect width="100%" height="100%" fill="url(#grid)" />
               
               {/* Оси */}
-              <line x1="50" y1="260" x2="750" y2="260" stroke="#6b7280" strokeWidth="2" />
-              <line x1="50" y1="20" x2="50" y2="260" stroke="#6b7280" strokeWidth="2" />
+              <line x1="30" y1="260" x2="770" y2="260" stroke="#6b7280" strokeWidth="2" />
+              <line x1="30" y1="20" x2="30" y2="260" stroke="#6b7280" strokeWidth="2" />
               
               {/* Подписи осей */}
               <text x="400" y="280" textAnchor="middle" className="text-sm fill-gray-600">Время</text>
-              <text x="25" y="140" textAnchor="middle" transform="rotate(-90, 25, 140)" className="text-sm fill-gray-600">Напряжение (В)</text>
+              <text x="15" y="140" textAnchor="middle" transform="rotate(-90, 15, 140)" className="text-sm fill-gray-600">Напряжение (В)</text>
               
               {/* Масштаб по Y (200-250В) */}
               {[200, 210, 220, 230, 240, 250].map((voltage, i) => (
                 <g key={voltage}>
-                  <line x1="45" y1={260 - i * 40} x2="50" y2={260 - i * 40} stroke="#6b7280" strokeWidth="1" />
-                  <text x="40" y={265 - i * 40} textAnchor="end" className="text-xs fill-gray-600">{voltage}</text>
+                  <line x1="25" y1={260 - i * 40} x2="30" y2={260 - i * 40} stroke="#6b7280" strokeWidth="1" />
+                  <text x="20" y={265 - i * 40} textAnchor="end" className="text-xs fill-gray-600">{voltage}</text>
                 </g>
               ))}
               
@@ -276,7 +277,7 @@ export default function InputMeterTab() {
                     stroke="#dc2626"
                     strokeWidth="2"
                     points={voltageData.map((point, i) => 
-                      `${50 + (i * 700 / (voltageData.length - 1))},${260 - ((point.L1 - 200) * 200 / 50)}`
+                      `${30 + (i * 740 / (voltageData.length - 1))},${260 - ((point.L1 - 200) * 200 / 50)}`
                     ).join(' ')}
                   />
                   
@@ -286,7 +287,7 @@ export default function InputMeterTab() {
                     stroke="#eab308"
                     strokeWidth="2"
                     points={voltageData.map((point, i) => 
-                      `${50 + (i * 700 / (voltageData.length - 1))},${260 - ((point.L2 - 200) * 200 / 50)}`
+                      `${30 + (i * 740 / (voltageData.length - 1))},${260 - ((point.L2 - 200) * 200 / 50)}`
                     ).join(' ')}
                   />
                   
@@ -296,7 +297,7 @@ export default function InputMeterTab() {
                     stroke="#2563eb"
                     strokeWidth="2"
                     points={voltageData.map((point, i) => 
-                      `${50 + (i * 700 / (voltageData.length - 1))},${260 - ((point.L3 - 200) * 200 / 50)}`
+                      `${30 + (i * 740 / (voltageData.length - 1))},${260 - ((point.L3 - 200) * 200 / 50)}`
                     ).join(' ')}
                   />
                 </>
@@ -304,26 +305,33 @@ export default function InputMeterTab() {
 
               {/* Невидимая область для отслеживания мыши поверх графика */}
               <rect
-                x="50"
+                x="30"
                 y="20"
-                width="700"
+                width="740"
                 height="240"
                 fill="transparent"
                 onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
                   const svg = e.currentTarget.closest('svg')!;
                   const svgRect = svg.getBoundingClientRect();
+                  // Получаем точную позицию мыши относительно SVG
                   const mouseX = ((e.clientX - svgRect.left) / svgRect.width) * 800;
                   
-                  const dataIndex = Math.round(((mouseX - 50) / 700) * (voltageData.length - 1));
-                  if (dataIndex >= 0 && dataIndex < voltageData.length) {
-                    const actualX = 50 + (dataIndex * 700 / (voltageData.length - 1));
-                    setHoveredPoint({
-                      x: actualX,
-                      y: 140, // Фиксированная позиция для тултипа
-                      data: voltageData[dataIndex],
-                      index: dataIndex
-                    });
+                  // Ограничиваем область действия графика
+                  if (mouseX >= 30 && mouseX <= 770) {
+                    // Вычисляем индекс данных на основе позиции мыши в области графика
+                    const relativeX = mouseX - 30; // Смещение относительно начала графика
+                    const dataIndex = Math.round((relativeX / 740) * (voltageData.length - 1));
+                    
+                    if (dataIndex >= 0 && dataIndex < voltageData.length) {
+                      // Точная позиция линии на основе индекса данных
+                      const actualX = 30 + (dataIndex * 740 / (voltageData.length - 1));
+                      setHoveredPoint({
+                        x: actualX,
+                        y: 140,
+                        data: voltageData[dataIndex],
+                        index: dataIndex
+                      });
+                    }
                   }
                 }}
                 onMouseLeave={() => setHoveredPoint(null)}
@@ -379,10 +387,10 @@ export default function InputMeterTab() {
               {/* Подписи времени */}
               {voltageData.length > 0 && selectedPeriod !== '7d' && (
                 <>
-                  <text x="50" y="275" textAnchor="start" className="text-xs fill-gray-600">
+                  <text x="30" y="275" textAnchor="start" className="text-xs fill-gray-600">
                     {voltageData[0].time}
                   </text>
-                  <text x="750" y="275" textAnchor="end" className="text-xs fill-gray-600">
+                  <text x="770" y="275" textAnchor="end" className="text-xs fill-gray-600">
                     {voltageData[voltageData.length - 1].time}
                   </text>
                 </>
@@ -394,8 +402,10 @@ export default function InputMeterTab() {
               <div
                 className="absolute pointer-events-none bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-10 min-w-[120px]"
                 style={{
-                  left: hoveredPoint.x > 400 ? hoveredPoint.x - 140 : hoveredPoint.x + 20,
-                  top: 50
+                  // Позиционируем тултип относительно SVG контейнера с учетом новой ширины
+                  left: `${(hoveredPoint.x / 800) * 100}%`,
+                  top: 10,
+                  transform: hoveredPoint.x > 400 ? 'translateX(-100%)' : 'translateX(10px)'
                 }}
               >
                 <div className="text-xs font-semibold text-gray-700 mb-2">
