@@ -67,7 +67,7 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
             </div>
             <div className="text-center">
               <div className="text-lg font-bold text-yellow-600">{globalStats.maintenanceStations}</div>
-              <div className="text-xs text-gray-500">ТО</div>
+              <div className="text-xs text-gray-500">Зарядка</div>
             </div>
           </div>
         </CardContent>
