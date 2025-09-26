@@ -28,7 +28,8 @@ interface VoltagePoint {
 
 export default function InputMeterTab() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1h');
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; data: VoltagePoint } | null>(null);
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; data: VoltagePoint; index: number } | null>(null);
+  const [voltageDataCache, setVoltageDataCache] = useState<Record<string, VoltagePoint[]>>({});
 
   // Имитация текущих показаний прибора учета
   const currentReading: MeterReading = {
@@ -43,8 +44,12 @@ export default function InputMeterTab() {
     totalEnergy: 45672.8 // кВт⋅ч за все время
   };
 
-  // Имитация данных для графика напряжения
+  // Генерируем и кешируем данные для графика напряжения
   const generateVoltageData = (period: string): VoltagePoint[] => {
+    if (voltageDataCache[period]) {
+      return voltageDataCache[period];
+    }
+
     const points: VoltagePoint[] = [];
     const now = new Date();
     let intervals: number;
@@ -68,19 +73,24 @@ export default function InputMeterTab() {
         stepMinutes = 1;
     }
 
+    // Используем фиксированный seed для стабильных данных
     for (let i = intervals; i >= 0; i--) {
       const time = new Date(now.getTime() - i * stepMinutes * 60000);
+      const seed = i * 0.1; // Фиксированный seed вместо Math.random()
       points.push({
         time: time.toLocaleTimeString('ru-RU', { 
           hour: '2-digit', 
           minute: '2-digit',
           ...(period === '7d' && { day: '2-digit', month: '2-digit' })
         }),
-        L1: 230 + Math.sin(i * 0.1) * 3 + (Math.random() - 0.5) * 2,
-        L2: 230 + Math.cos(i * 0.1) * 3 + (Math.random() - 0.5) * 2,
-        L3: 230 + Math.sin(i * 0.15) * 3 + (Math.random() - 0.5) * 2
+        L1: 230 + Math.sin(seed) * 3 + Math.cos(seed * 2) * 1.5,
+        L2: 230 + Math.cos(seed) * 3 + Math.sin(seed * 1.5) * 1.5,
+        L3: 230 + Math.sin(seed * 1.5) * 3 + Math.cos(seed * 3) * 1.5
       });
     }
+    
+    // Кешируем данные
+    setVoltageDataCache(prev => ({ ...prev, [period]: points }));
     return points;
   };
 
@@ -231,25 +241,7 @@ export default function InputMeterTab() {
               width="100%" 
               height="100%" 
               viewBox="0 0 800 280"
-              onMouseMove={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const mouseX = ((e.clientX - rect.left) / rect.width) * 800;
-                const mouseY = ((e.clientY - rect.top) / rect.height) * 280;
-                
-                if (mouseX >= 50 && mouseX <= 750 && mouseY >= 20 && mouseY <= 260) {
-                  const dataIndex = Math.round(((mouseX - 50) / 700) * (voltageData.length - 1));
-                  if (dataIndex >= 0 && dataIndex < voltageData.length) {
-                    setHoveredPoint({
-                      x: mouseX,
-                      y: mouseY,
-                      data: voltageData[dataIndex]
-                    });
-                  }
-                } else {
-                  setHoveredPoint(null);
-                }
-              }}
-              onMouseLeave={() => setHoveredPoint(null)}
+              className="overflow-visible"
             >
               {/* Сетка */}
               <defs>
@@ -309,6 +301,33 @@ export default function InputMeterTab() {
                   />
                 </>
               )}
+
+              {/* Невидимая область для отслеживания мыши поверх графика */}
+              <rect
+                x="50"
+                y="20"
+                width="700"
+                height="240"
+                fill="transparent"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const svg = e.currentTarget.closest('svg')!;
+                  const svgRect = svg.getBoundingClientRect();
+                  const mouseX = ((e.clientX - svgRect.left) / svgRect.width) * 800;
+                  
+                  const dataIndex = Math.round(((mouseX - 50) / 700) * (voltageData.length - 1));
+                  if (dataIndex >= 0 && dataIndex < voltageData.length) {
+                    const actualX = 50 + (dataIndex * 700 / (voltageData.length - 1));
+                    setHoveredPoint({
+                      x: actualX,
+                      y: 140, // Фиксированная позиция для тултипа
+                      data: voltageData[dataIndex],
+                      index: dataIndex
+                    });
+                  }
+                }}
+                onMouseLeave={() => setHoveredPoint(null)}
+              />
 
               {/* Вертикальная линия при наведении */}
               {hoveredPoint && (
@@ -373,10 +392,10 @@ export default function InputMeterTab() {
             {/* Тултип с данными */}
             {hoveredPoint && (
               <div
-                className="absolute pointer-events-none bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-10"
+                className="absolute pointer-events-none bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-10 min-w-[120px]"
                 style={{
-                  left: Math.min(hoveredPoint.x + 20, 700),
-                  top: Math.max(hoveredPoint.y - 80, 10)
+                  left: hoveredPoint.x > 400 ? hoveredPoint.x - 140 : hoveredPoint.x + 20,
+                  top: 50
                 }}
               >
                 <div className="text-xs font-semibold text-gray-700 mb-2">
@@ -385,42 +404,52 @@ export default function InputMeterTab() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-xs">L1: {formatVoltage(hoveredPoint.data.L1)} В</span>
+                    <span className="text-xs font-mono">L1: {formatVoltage(hoveredPoint.data.L1)} В</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span className="text-xs">L2: {formatVoltage(hoveredPoint.data.L2)} В</span>
+                    <span className="text-xs font-mono">L2: {formatVoltage(hoveredPoint.data.L2)} В</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-xs">L3: {formatVoltage(hoveredPoint.data.L3)} В</span>
+                    <span className="text-xs font-mono">L3: {formatVoltage(hoveredPoint.data.L3)} В</span>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Статистика по периоду */}
+          {/* Статистика по периоду - вычисляем один раз */}
           <div className="mt-6 pt-6 border-t">
             <div className="grid grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-lg font-semibold text-red-600">
-                  {formatVoltage(voltageData.reduce((sum, p) => sum + p.L1, 0) / voltageData.length)} В
-                </div>
-                <div className="text-sm text-gray-600">Среднее L1</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-yellow-600">
-                  {formatVoltage(voltageData.reduce((sum, p) => sum + p.L2, 0) / voltageData.length)} В
-                </div>
-                <div className="text-sm text-gray-600">Среднее L2</div>
-              </div>
-              <div>
-                <div className="text-lg font-semibold text-blue-600">
-                  {formatVoltage(voltageData.reduce((sum, p) => sum + p.L3, 0) / voltageData.length)} В
-                </div>
-                <div className="text-sm text-gray-600">Среднее L3</div>
-              </div>
+              {(() => {
+                const avgL1 = voltageData.reduce((sum, p) => sum + p.L1, 0) / voltageData.length;
+                const avgL2 = voltageData.reduce((sum, p) => sum + p.L2, 0) / voltageData.length;
+                const avgL3 = voltageData.reduce((sum, p) => sum + p.L3, 0) / voltageData.length;
+                
+                return (
+                  <>
+                    <div>
+                      <div className="text-lg font-semibold text-red-600">
+                        {formatVoltage(avgL1)} В
+                      </div>
+                      <div className="text-sm text-gray-600">Среднее L1</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-yellow-600">
+                        {formatVoltage(avgL2)} В
+                      </div>
+                      <div className="text-sm text-gray-600">Среднее L2</div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-blue-600">
+                        {formatVoltage(avgL3)} В
+                      </div>
+                      <div className="text-sm text-gray-600">Среднее L3</div>
+                    </div>
+                  </>
+                );
+              })()} 
             </div>
           </div>
         </CardContent>
