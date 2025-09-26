@@ -33,9 +33,7 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{globalStats.totalEnergy.toLocaleString()} кВт⋅ч</div>
-          <p className="text-xs text-muted-foreground">
-            ≈ {Math.round(globalStats.totalEnergy / 30)} дней работы дома
-          </p>
+          <p className="text-xs text-muted-foreground">За все время</p>
         </CardContent>
       </Card>
 
