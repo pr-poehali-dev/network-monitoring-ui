@@ -11,14 +11,14 @@ pip install -r requirements.txt
 
 ### 2. Запуск сервера
 ```bash
-# Простой запуск (WS)
+# Простой запуск (WSS) - требует cert.pem и cert.key в корне
 python websocket_server.py
 
-# Или с параметрами
+# Или с параметрами (WSS по умолчанию)
 python run_server.py --host 0.0.0.0 --port 10009
 
-# С SSL (WSS)
-python run_server.py --host 0.0.0.0 --port 10009 --ssl-cert cert.pem --ssl-key key.pem
+# Без SSL (только для разработки)
+python run_server.py --host 0.0.0.0 --port 10009 --no-ssl
 ```
 
 ## Возможности
@@ -133,7 +133,17 @@ python run_server.py --host 0.0.0.0 --port 10009 --ssl-cert cert.pem --ssl-key k
 Убедитесь что в `src/services/websocket.ts` указан правильный URL:
 
 ```typescript
+// Для WSS (рекомендуется)
+export const wsService = new WebSocketService('wss://78.138.143.58:10009/ws');
+
+// Или для WS (только разработка)
 export const wsService = new WebSocketService('ws://78.138.143.58:10009/ws');
 ```
+
+## Требования SSL
+
+Для работы WSS требуются файлы сертификатов в корне проекта:
+- `cert.pem` - SSL сертификат
+- `cert.key` - приватный ключ
 
 Сервер готов к работе! 🚀

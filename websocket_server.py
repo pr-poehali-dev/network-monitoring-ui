@@ -8,6 +8,7 @@ import asyncio
 import json
 import logging
 import random
+import ssl
 from datetime import datetime, timedelta
 from typing import Dict, List, Any, Optional
 
@@ -102,6 +103,20 @@ class WebSocketServer:
         self.data_generator = MockDataGenerator()
         self.stations_cache = self.data_generator.generate_stations(100)
         self.connected_clients = set()
+        
+    def create_ssl_context(self) -> ssl.SSLContext:
+        """Создает SSL контекст для WSS"""
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        try:
+            ssl_context.load_cert_chain('cert.pem', 'cert.key')
+            logger.info("SSL сертификаты загружены успешно")
+        except FileNotFoundError as e:
+            logger.error(f"SSL файлы не найдены: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Ошибка загрузки SSL сертификатов: {e}")
+            raise
+        return ssl_context
     
     async def register_client(self, websocket: WebSocketServerProtocol):
         """Регистрация нового клиента"""
@@ -251,9 +266,10 @@ class WebSocketServer:
         finally:
             await self.unregister_client(websocket)
     
-    async def start_server(self):
+    async def start_server(self, use_ssl: bool = True):
         """Запуск сервера"""
-        logger.info(f"Запуск WebSocket сервера на {self.host}:{self.port}")
+        protocol = "wss" if use_ssl else "ws"
+        logger.info(f"Запуск {protocol.upper()} сервера на {self.host}:{self.port}")
         
         # Регенерируем данные каждые 30 секунд для имитации изменений
         async def update_data():
@@ -269,16 +285,28 @@ class WebSocketServer:
         # Запускаем задачу обновления данных
         asyncio.create_task(update_data())
         
+        # Настройки сервера
+        server_kwargs = {
+            'ping_interval': 20,
+            'ping_timeout': 10,
+            'max_size': 2**20,  # 1MB max message size
+            'max_queue': 2**5,  # 32 messages max queue
+        }
+        
+        # Добавляем SSL если требуется
+        if use_ssl:
+            ssl_context = self.create_ssl_context()
+            server_kwargs['ssl'] = ssl_context
+        
         # Запускаем WebSocket сервер
         server = await websockets.serve(
             self.handle_client,
             self.host,
             self.port,
-            ping_interval=20,
-            ping_timeout=10
+            **server_kwargs
         )
         
-        logger.info(f"Сервер запущен на ws://{self.host}:{self.port}/ws")
+        logger.info(f"Сервер запущен на {protocol}://{self.host}:{self.port}/ws")
         logger.info(f"Доступных станций: {len(self.stations_cache)}")
         logger.info("Нажмите Ctrl+C для остановки")
         
@@ -288,7 +316,9 @@ class WebSocketServer:
 async def main():
     """Главная функция"""
     server_instance = WebSocketServer()
-    server = await server_instance.start_server()
+    
+    # По умолчанию используем SSL (WSS)
+    server = await server_instance.start_server(use_ssl=True)
     
     try:
         await server.wait_closed()
