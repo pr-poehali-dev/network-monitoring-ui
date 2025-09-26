@@ -1,11 +1,15 @@
 import { StationStats, GlobalStats } from './types';
 
 export const calculateGlobalStats = (stations: StationStats[]): GlobalStats => {
-  const totalSessions = stations.reduce((sum, s) => sum + s.totalSessions, 0);
-  const successfulSessions = stations.reduce((sum, s) => sum + s.successfulSessions, 0);
-  const totalEnergy = stations.reduce((sum, s) => sum + s.totalEnergy, 0);
-  const totalErrors = stations.reduce((sum, s) => sum + s.errorsCount, 0);
-  const avgUtilization = stations.reduce((sum, s) => sum + s.utilization, 0) / stations.length;
+  const totalSessions = stations.reduce((sum, s) => sum + (s.totalSessions || 0), 0);
+  const successfulSessions = stations.reduce((sum, s) => sum + (s.successfulSessions || 0), 0);
+  const totalEnergy = stations.reduce((sum, s) => sum + (s.totalEnergy || 0), 0);
+  const totalErrors = stations.reduce((sum, s) => sum + (s.errorsCount || 0), 0);
+  
+  // Защита от деления на ноль
+  const avgUtilization = stations.length > 0 
+    ? stations.reduce((sum, s) => sum + (s.utilization || 0), 0) / stations.length 
+    : 0;
   
   return {
     totalStations: stations.length,
