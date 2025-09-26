@@ -19,6 +19,12 @@ const Sidebar = () => {
       active: location.pathname === '/' && location.search.includes('tab=list')
     },
     {
+      name: 'Статистика',
+      href: '/statistics',
+      icon: 'BarChart3',
+      active: location.pathname === '/statistics'
+    },
+    {
       name: 'Мониторинг',
       href: '/monitoring',
       icon: 'AlertTriangle',
