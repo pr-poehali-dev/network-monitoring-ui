@@ -115,16 +115,6 @@ const mockCriticalNotifications: CriticalNotification[] = [
     occuredAt: '25.09.2025 15:30:00'
   },
   {
-    id: 'n3',
-    station: 'ЭЗС Торговый центр',
-    stationId: '2',
-    issue: 'Протечка охлаждающей жидкости',
-    description: 'Датчики влажности зафиксировали протечку в отсеке контроллера.',
-    actionNeeded: 'Отключить станцию и проверить систему охлаждения',
-    urgency: 'urgent',
-    occuredAt: '25.09.2025 14:15:00'
-  },
-  {
     id: 'n4',
     station: 'ЭЗС Промышленная',
     stationId: '4',
@@ -133,17 +123,6 @@ const mockCriticalNotifications: CriticalNotification[] = [
     actionNeeded: 'Проверить и заменить контактор, обесточить станцию',
     urgency: 'urgent',
     occuredAt: '25.09.2025 13:20:00'
-  },
-  {
-    id: 'n5',
-    station: 'ЭЗС Центральная',
-    stationId: '1',
-    issue: 'Частые сбросы соединения RFID',
-    description: 'Считыватель карт работает нестабильно, 5 сбросов за час.',
-    actionNeeded: 'Проверить антенну RFID и кабельные соединения',
-    urgency: 'high',
-    occuredAt: '25.09.2025 12:30:00',
-    repeatCount: 5
   }
 ];
 
