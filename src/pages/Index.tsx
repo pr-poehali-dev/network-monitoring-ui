@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,10 @@ const mockStations: ChargingStation[] = [
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'available': return 'Доступна';
+    case 'active': return 'Активна';
     case 'charging': return 'Зарядка';
+    case 'inactive': return 'Неактивна';
+    case 'maintenance': return 'Обслуживание';
     case 'error': return 'Ошибка';
     case 'offline': return 'Офлайн';
     default: return 'Неизвестно';
@@ -97,9 +100,21 @@ export default function Index() {
 
   const currentTab = searchParams.get('tab') || 'map';
 
-  const filteredStations = mockStations.filter(station =>
+  // Автоматическая загрузка данных при переходе на список
+  useEffect(() => {
+    if (currentTab === 'list' && isConnected && stations.length === 0) {
+      console.log('🔄 Loading stations for list view...');
+      loadStations();
+    }
+  }, [currentTab, isConnected, stations.length, loadStations]);
+
+  // Для списка используем данные с сервера, для карты - моковые данные
+  const displayStations = currentTab === 'list' ? stations : mockStations;
+  
+  const filteredStations = displayStations.filter(station =>
     station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.location.toLowerCase().includes(searchQuery.toLowerCase())
+    station.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    station.city?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleStationClick = (stationId: string) => {
@@ -204,6 +219,18 @@ export default function Index() {
               </div>
             </div>
 
+            {/* Ошибки WebSocket */}
+            {error && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 text-red-600">
+                    <Icon name="AlertCircle" size={16} />
+                    <span className="text-sm">Ошибка соединения: {error}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Stations Table */}
             <Card>
               <CardHeader>
@@ -214,34 +241,62 @@ export default function Index() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Название</TableHead>
-                      <TableHead>Местоположение</TableHead>
+                      <TableHead>Город</TableHead>
+                      <TableHead>Владелец</TableHead>
                       <TableHead>Статус</TableHead>
-                      <TableHead>Коннекторы</TableHead>
-                      <TableHead>Сессии</TableHead>
-                      <TableHead>Активность</TableHead>
+                      <TableHead>Энергия</TableHead>
+                      <TableHead>Мощность</TableHead>
                       <TableHead>Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredStations.map((station) => (
+                    {loading && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8">
+                          <div className="flex items-center justify-center gap-2">
+                            <Icon name="Loader2" className="animate-spin" size={20} />
+                            Загружаем данные...
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!loading && filteredStations.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
+                          {currentTab === 'list' && !isConnected ? 'Нет подключения к серверу' : 'Нет данных'}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {!loading && filteredStations.map((station) => (
                       <TableRow key={station.id}>
                         <TableCell className="font-medium">{station.name}</TableCell>
-                        <TableCell>{station.location}</TableCell>
+                        <TableCell>{currentTab === 'list' ? station.city : station.location}</TableCell>
+                        <TableCell>{currentTab === 'list' ? station.owner : '-'}</TableCell>
                         <TableCell>
                           <Badge 
                             variant={station.status === 'error' ? 'destructive' : 'default'}
                             className={
-                              station.status === 'available' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                              station.status === 'charging' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                              station.status === 'available' || station.status === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                              station.status === 'charging' || station.status === 'inactive' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                              station.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
                               ''
                             }
                           >
                             {getStatusLabel(station.status)}
                           </Badge>
                         </TableCell>
-                        <TableCell>{station.connectors.length}</TableCell>
-                        <TableCell>{station.totalSessions}</TableCell>
-                        <TableCell className="text-gray-500">{station.lastActivity}</TableCell>
+                        <TableCell>
+                          {currentTab === 'list' ? 
+                            `${station.totalEnergy?.toLocaleString() || 0} кВт⋅ч` : 
+                            station.connectors?.length || 0
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {currentTab === 'list' ? 
+                            `${station.currentPower || 0} кВт` : 
+                            station.totalSessions || 0
+                          }
+                        </TableCell>
                         <TableCell>
                           <Link to={`/station/${station.id}`}>
                             <Button variant="outline" size="sm">
