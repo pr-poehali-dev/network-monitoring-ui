@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StatisticsHeader from '@/components/statistics/StatisticsHeader';
@@ -8,18 +8,32 @@ import StationsTable from '@/components/statistics/StationsTable';
 import ChartsView from '@/components/statistics/ChartsView';
 import { mockStationsStats } from '@/components/statistics/mockData';
 import { calculateGlobalStats, filterAndSortStations } from '@/components/statistics/utils';
+import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 
 export default function Statistics() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
   const [cityFilter, setCityFilter] = useState('');
+  
+  // WebSocket данные
+  const { isConnected } = useWebSocket();
+  const { stations, loading, loadStationsForStats } = useStations();
+
+  // Автоматическая загрузка данных при подключении
+  useEffect(() => {
+    if (isConnected && stations.length === 0) {
+      loadStationsForStats();
+    }
+  }, [isConnected, stations.length, loadStationsForStats]);
   const [ownerFilter, setOwnerFilter] = useState('');
   const [appFilter, setAppFilter] = useState('');
 
-  const globalStats = calculateGlobalStats(mockStationsStats);
+  // Используем данные с сервера если есть, иначе моковые
+  const stationsData = stations.length > 0 ? stations : mockStationsStats;
+  const globalStats = calculateGlobalStats(stationsData);
 
   const filteredStations = filterAndSortStations(
-    mockStationsStats,
+    stationsData,
     searchTerm,
     cityFilter,
     ownerFilter,

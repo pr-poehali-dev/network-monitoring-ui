@@ -122,13 +122,18 @@ export class WebSocketService {
   }
 
   // API методы
-  async getStations(filters?: any, pagination?: { page: number; limit: number }): Promise<StationData[]> {
+  async getStations(options?: {
+    fields?: string[];
+    filters?: any;
+    pagination?: { page: number; limit: number };
+  }): Promise<StationData[]> {
     const response = await this.sendMessage({
       type: 'request',
       action: 'getStations',
       data: {
-        filters,
-        pagination
+        fields: options?.fields,
+        filters: options?.filters,
+        pagination: options?.pagination
       },
       requestId: ''
     });

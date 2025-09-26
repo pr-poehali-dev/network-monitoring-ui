@@ -96,17 +96,20 @@ export default function Index() {
   
   // WebSocket подключение и данные
   const { isConnected, isConnecting, error } = useWebSocket();
-  const { stations, loading, loadStations } = useStations();
+  const { stations, loading, loadStationsForMap, loadStationsForList } = useStations();
 
   const currentTab = searchParams.get('tab') || 'map';
 
   // Автоматическая загрузка данных при переходе на список или карту
   useEffect(() => {
     if (isConnected && stations.length === 0) {
-      console.log(`🔄 Loading stations for ${currentTab} view...`);
-      loadStations();
+      if (currentTab === 'map') {
+        loadStationsForMap();
+      } else if (currentTab === 'list') {
+        loadStationsForList();
+      }
     }
-  }, [currentTab, isConnected, stations.length, loadStations]);
+  }, [currentTab, isConnected, stations.length, loadStationsForMap, loadStationsForList]);
 
   // Используем данные с сервера для обеих вкладок, fallback на моковые данные
   const displayStations = stations.length > 0 ? stations : mockStations;
@@ -141,10 +144,10 @@ export default function Index() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={() => loadStations()}
+                onClick={() => currentTab === 'map' ? loadStationsForMap() : loadStationsForList()}
                 disabled={!isConnected || loading}
               >
-                {loading ? 'Загрузка...' : 'Загрузить данные'}
+                {loading ? 'Загрузка...' : 'Обновить данные'}
               </Button>
               <Badge variant="outline" className="gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
