@@ -160,8 +160,4 @@ export class WebSocketService {
 }
 
 // Singleton instance
-export const wsService = new WebSocketService(
-  process.env.NODE_ENV === 'production' 
-    ? 'wss://your-websocket-url.com/ws'
-    : 'ws://localhost:8080/ws'
-);
+export const wsService = new WebSocketService('ws://78.138.143.58:10009/ws');
