@@ -190,5 +190,5 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance - временно используем WS для тестирования (без SSL)
-export const wsService = new WebSocketService('ws://78.138.143.58:10009/ws');
+// Singleton instance - используем WSS с SSL сертификатом
+export const wsService = new WebSocketService('wss://78.138.143.58:10009/ws');
