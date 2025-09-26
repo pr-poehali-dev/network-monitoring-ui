@@ -149,6 +149,19 @@ export class WebSocketService {
     return response.data?.station || null;
   }
 
+  async getStationDetail(stationId: string): Promise<StationData | null> {
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getStationDetail',
+      data: {
+        stationId
+      },
+      requestId: ''
+    });
+
+    return response.data?.station || null;
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close();

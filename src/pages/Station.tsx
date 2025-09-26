@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import StationHeader from '@/components/station/StationHeader';
 import StationTabs from '@/components/station/StationTabs';
+import { useWebSocket } from '@/hooks/useWebSocket';
+import { StationData } from '@/types/websocket';
 
 interface ChargingStation {
   id: string;
@@ -103,16 +105,80 @@ const mockLogs: LogEntry[] = [
 export default function Station() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('management');
+  const [station, setStation] = useState<StationData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const station = mockStations.find(s => s.id === id);
-  
-  if (!station) {
+  const { wsService, connected } = useWebSocket();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadStation = async () => {
+      if (!connected || !wsService || !id) {
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        console.log('🔍 Загружаем станцию с ID:', id);
+        
+        const stationData = await wsService.getStationDetail(id);
+        
+        if (isMounted) {
+          if (stationData) {
+            console.log('✅ Станция загружена:', stationData);
+            setStation(stationData);
+          } else {
+            console.log('❌ Станция не найдена');
+            setError(`Станция с ID ${id} не найдена`);
+          }
+        }
+      } catch (err) {
+        console.error('❌ Ошибка загрузки станции:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки станции');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    if (connected) {
+      loadStation();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [connected, wsService, id]);
+
+  // Показываем лоадер
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="Loader2" size={48} className="text-blue-500 mx-auto mb-4 animate-spin" />
+          <h1 className="text-2xl font-bold mb-2">Загрузка станции...</h1>
+          <p className="text-gray-500">Получаем данные о станции {id}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Показываем ошибку или "не найдена"
+  if (error || !station) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Станция не найдена</h1>
-          <p className="text-gray-500 mb-4">Станция с ID {id} не существует</p>
+          <p className="text-gray-500 mb-4">
+            {error || `Станция с ID ${id} не существует`}
+          </p>
           <Link to="/">
             <Button>Вернуться к списку</Button>
           </Link>
@@ -125,14 +191,34 @@ export default function Station() {
     console.log(`Действие: ${action} для станции ${station.id}`);
   };
 
+  // Конвертируем данные из WebSocket в формат для компонентов
+  const stationForComponent = {
+    id: station.id,
+    name: station.name,
+    location: station.address || station.city,
+    status: station.status as 'available' | 'charging' | 'error' | 'offline',
+    coordinates: [station.coordinates?.lat || 0, station.coordinates?.lng || 0] as [number, number],
+    totalSessions: station.totalSessions || 0,
+    lastActivity: station.lastUpdate || 'Неизвестно',
+    manufacturer: station.manufacturer || 'Неизвестно',
+    serialNumber: station.serialNumber || 'Неизвестно',
+    ocppId: station.id,
+    connectors: (station.connectors || []).map((conn, index) => ({
+      id: String(index + 1),
+      type: conn.type || 'Неизвестно',
+      status: conn.status as 'available' | 'charging' | 'error',
+      power: `${conn.power || 0} кВт`
+    }))
+  };
+
   return (
     <Layout>
-      <StationHeader station={station} />
+      <StationHeader station={stationForComponent} />
 
       {/* Одноколоночный лэйаут для всех разделов */}
       <div className="max-w-7xl mx-auto">
         <StationTabs 
-          station={station}
+          station={stationForComponent}
           mockLogs={mockLogs}
           activeTab={activeTab}
           onTabChange={setActiveTab}

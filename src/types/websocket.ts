@@ -6,7 +6,7 @@ export interface StationData {
   city: string;
   owner: string;
   connectedApp: string;
-  status: 'active' | 'inactive' | 'maintenance';
+  status: 'active' | 'inactive' | 'maintenance' | 'error' | 'offline';
   totalEnergy: number;
   currentPower: number;
   lastUpdate: string; // ISO timestamp
@@ -14,14 +14,71 @@ export interface StationData {
     lat: number;
     lng: number;
   };
+  
+  // Дополнительные поля для карточки станции
+  address?: string;
+  description?: string;
+  connectors?: Array<{
+    type: string;
+    power: number;
+    status: string;
+    price?: number;
+  }>;
+  workingHours?: string;
+  phone?: string;
+  email?: string;
+  rating?: number;
+  reviewsCount?: number;
+  amenities?: string[];
+  installationDate?: string;
+  lastMaintenance?: string;
+  firmware?: string;
+  serialNumber?: string;
+  manufacturer?: string;
+  
+  // Статистика и аналитика
+  totalSessions?: number;
+  successfulSessions?: number;
+  errorsCount?: number;
+  utilization?: number;
+  chargingHistory?: Array<{
+    date: string;
+    sessions: number;
+    energy: number;
+    revenue: number;
+  }>;
+  hourlyStats?: Array<{
+    hour: number;
+    sessions: number;
+    utilization: number;
+  }>;
+  recentSessions?: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    duration: number;
+    energy: number;
+    cost: number;
+    connector: string;
+    status: string;
+  }>;
+  totalRevenue?: number;
+  averageSessionDuration?: number;
+  todayStats?: {
+    sessions: number;
+    energy: number;
+    revenue: number;
+    utilization: number;
+  };
 }
 
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getStations' | 'getStationById' | 'getStationStats';
+  action: 'getStations' | 'getStationById' | 'getStationDetail' | 'getStationHistory' | 'getStationSessions' | 'getStationStats' | 'getAvailableStations';
   data?: {
     stationId?: string;
+    fields?: string[];
     filters?: {
       city?: string;
       owner?: string;
