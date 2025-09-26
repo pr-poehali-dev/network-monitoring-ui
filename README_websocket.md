@@ -31,7 +31,10 @@ python run_server.py --host 0.0.0.0 --port 10009 --no-ssl
 
 ✅ **Поддержка всех запросов frontend:**
 - `getStations` - список станций с фильтрами
-- `getStationById` - данные конкретной станции  
+- `getStationById` - базовые данные конкретной станции  
+- `getStationDetail` - подробная информация для карточки станции
+- `getStationHistory` - история работы станции (7 дней)
+- `getStationSessions` - последние сессии зарядки
 - `getStationStats` - данные для статистики
 
 ✅ **Оптимизация трафика:**
@@ -86,6 +89,18 @@ python run_server.py --host 0.0.0.0 --port 10009 --no-ssl
     "stationId": "station_001"
   },
   "requestId": "req_125"
+}
+```
+
+### Получить детальную информацию для карточки станции
+```json
+{
+  "type": "request",
+  "action": "getStationDetail", 
+  "data": {
+    "stationId": "station_001"
+  },
+  "requestId": "req_126"
 }
 ```
 

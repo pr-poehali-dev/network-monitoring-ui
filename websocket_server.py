@@ -68,7 +68,36 @@ class MockDataGenerator:
                 'totalSessions': random.randint(50, 1000),
                 'successfulSessions': None,  # Вычисляется ниже
                 'errorsCount': random.randint(0, 50),
-                'utilization': random.randint(20, 95)
+                'utilization': random.randint(20, 95),
+                
+                # Дополнительные поля для карточки станции
+                'address': f'г. {city}, ул. {random.choice(["Ленина", "Пушкина", "Гагарина", "Мира", "Победы"])}, д. {random.randint(1, 99)}',
+                'description': f'Станция быстрой зарядки электромобилей в {city}. Оборудована современными зарядными устройствами.',
+                'connectors': [
+                    {
+                        'type': 'CCS2',
+                        'power': random.choice([50, 75, 100, 150]),
+                        'status': random.choice(['available', 'charging', 'offline']),
+                        'price': round(random.uniform(15.5, 25.0), 1)
+                    },
+                    {
+                        'type': 'CHAdeMO', 
+                        'power': random.choice([50, 75, 100]),
+                        'status': random.choice(['available', 'charging', 'offline']),
+                        'price': round(random.uniform(15.5, 25.0), 1)
+                    }
+                ],
+                'workingHours': '24/7',
+                'phone': f'+7 ({random.randint(900, 999)}) {random.randint(100, 999)}-{random.randint(10, 99)}-{random.randint(10, 99)}',
+                'email': f'support@{random.choice(self.owners).lower().replace("ё", "e")}.ru',
+                'rating': round(random.uniform(3.5, 5.0), 1),
+                'reviewsCount': random.randint(5, 150),
+                'amenities': random.sample(['WiFi', 'Кафе', 'Туалет', 'Парковка', 'Магазин', 'Отдых'], k=random.randint(2, 4)),
+                'installationDate': (datetime.now() - timedelta(days=random.randint(30, 1095))).strftime('%Y-%m-%d'),
+                'lastMaintenance': (datetime.now() - timedelta(days=random.randint(1, 90))).strftime('%Y-%m-%d'),
+                'firmware': f'v{random.randint(1, 3)}.{random.randint(0, 9)}.{random.randint(0, 9)}',
+                'serialNumber': f'SN{random.randint(100000, 999999)}',
+                'manufacturer': random.choice(['ABB', 'Schneider Electric', 'EVBox', 'ChargePoint'])
             }
             
             # Успешные сессии не могут быть больше общих
@@ -101,8 +130,12 @@ class WebSocketServer:
         self.host = host
         self.port = port
         self.data_generator = MockDataGenerator()
+        # Генерируем станции один раз при инициализации
         self.stations_cache = self.data_generator.generate_stations(100)
         self.connected_clients = set()
+        
+        # Сохраняем исходные данные для восстановления при обновлениях
+        self.base_stations_data = [station.copy() for station in self.stations_cache]
         
     def create_ssl_context(self) -> ssl.SSLContext:
         """Создает SSL контекст для WSS"""
@@ -183,6 +216,11 @@ class WebSocketServer:
     def handle_get_station_by_id(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Обработка запроса конкретной станции"""
         station_id = request_data.get('stationId')
+        logger.info(f"Поиск станции с ID: {station_id}")
+        
+        # Логируем доступные ID для отладки
+        available_ids = [s['id'] for s in self.stations_cache]
+        logger.info(f"Доступные станции: {available_ids[:10]}...")  # Первые 10 для краткости
         
         station = next(
             (s for s in self.stations_cache if s['id'] == station_id),
@@ -190,10 +228,68 @@ class WebSocketServer:
         )
         
         if not station:
+            logger.error(f"Станция с ID {station_id} не найдена. Всего станций: {len(self.stations_cache)}")
             raise ValueError(f"Станция с ID {station_id} не найдена")
         
-        logger.info(f"Отправляем данные станции {station_id}")
-        return {'station': station}
+        # Генерируем дополнительные данные для карточки
+        station_detail = station.copy()
+        
+        # История зарядок за последние 7 дней
+        charging_history = []
+        for i in range(7):
+            date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+            charging_history.append({
+                'date': date,
+                'sessions': random.randint(10, 50),
+                'energy': random.randint(500, 2000),
+                'revenue': random.randint(7500, 35000)
+            })
+        charging_history.reverse()
+        
+        # Статистика по часам (последние 24 часа)
+        hourly_stats = []
+        for hour in range(24):
+            hourly_stats.append({
+                'hour': hour,
+                'sessions': random.randint(0, 8),
+                'utilization': random.randint(0, 100)
+            })
+        
+        # Последние сессии зарядки
+        recent_sessions = []
+        for i in range(10):
+            start_time = datetime.now() - timedelta(hours=random.randint(1, 72))
+            duration = random.randint(15, 180)  # минуты
+            energy = random.randint(10, 80)  # кВт*ч
+            
+            recent_sessions.append({
+                'id': f'session_{random.randint(1000, 9999)}',
+                'startTime': start_time.isoformat(),
+                'endTime': (start_time + timedelta(minutes=duration)).isoformat(),
+                'duration': duration,
+                'energy': energy,
+                'cost': round(energy * random.uniform(15.5, 25.0), 2),
+                'connector': random.choice(['CCS2', 'CHAdeMO']),
+                'status': random.choice(['completed', 'stopped', 'error'])
+            })
+        
+        # Добавляем дополнительные данные
+        station_detail.update({
+            'chargingHistory': charging_history,
+            'hourlyStats': hourly_stats,
+            'recentSessions': recent_sessions,
+            'totalRevenue': sum(session['cost'] for session in recent_sessions),
+            'averageSessionDuration': sum(session['duration'] for session in recent_sessions) // len(recent_sessions),
+            'todayStats': {
+                'sessions': random.randint(15, 45),
+                'energy': random.randint(800, 1500),
+                'revenue': random.randint(12000, 25000),
+                'utilization': random.randint(40, 85)
+            }
+        })
+        
+        logger.info(f"Отправляем детальные данные станции {station_id}")
+        return {'station': station_detail}
     
     async def handle_message(self, websocket: WebSocketServerProtocol, message: str):
         """Обработка входящего сообщения"""
@@ -213,9 +309,18 @@ class WebSocketServer:
                 response_data = self.handle_get_stations(request_data)
             elif action == 'getStationById':
                 response_data = self.handle_get_station_by_id(request_data)
+            elif action == 'getStationDetail':
+                # Подробная информация о станции для карточки
+                response_data = self.handle_get_station_by_id(request_data)
             elif action == 'getStationStats':
                 # Для статистики возвращаем все станции
                 response_data = self.handle_get_stations(request_data)
+            elif action == 'getStationHistory':
+                # История работы станции
+                response_data = self.handle_get_station_by_id(request_data)
+            elif action == 'getStationSessions':
+                # Сессии зарядки станции
+                response_data = self.handle_get_station_by_id(request_data)
             else:
                 raise ValueError(f"Неподдерживаемое действие: {action}")
             
@@ -271,16 +376,24 @@ class WebSocketServer:
         protocol = "wss" if use_ssl else "ws"
         logger.info(f"Запуск {protocol.upper()} сервера на {self.host}:{self.port}")
         
-        # Регенерируем данные каждые 30 секунд для имитации изменений
+        # Обновляем только изменяемые поля каждые 30 секунд
         async def update_data():
             while True:
                 await asyncio.sleep(30)
-                # Обновляем статус некоторых станций
+                # Обновляем только статус, мощность и время обновления
+                # НЕ удаляем и НЕ добавляем станции
                 for station in random.sample(self.stations_cache, min(5, len(self.stations_cache))):
+                    # Обновляем только динамические поля
                     station['status'] = random.choice(self.data_generator.statuses)
                     station['currentPower'] = random.randint(0, 150)
                     station['lastUpdate'] = datetime.now().isoformat()
-                logger.info("Данные станций обновлены")
+                    
+                    # Обновляем статусы коннекторов
+                    if 'connectors' in station:
+                        for connector in station['connectors']:
+                            connector['status'] = random.choice(['available', 'charging', 'offline'])
+                            
+                logger.info(f"Обновлены динамические данные {len(self.stations_cache)} станций")
         
         # Запускаем задачу обновления данных
         asyncio.create_task(update_data())
