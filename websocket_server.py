@@ -32,23 +32,53 @@ class MockDataGenerator:
         self.apps = ['ChargeApp', 'EcoDriver', 'PowerGO', 'ElectricWay', 'GreenRoute']
         self.statuses = ['active', 'inactive', 'maintenance', 'error', 'offline']
         
-        # Координаты для российских городов
+        # Координаты для российских городов (фиксированные)
         self.coordinates = {
-            'Москва': [(55.7558 + random.uniform(-0.3, 0.3), 37.6176 + random.uniform(-0.5, 0.5)) for _ in range(20)],
-            'Санкт-Петербург': [(59.9311 + random.uniform(-0.2, 0.2), 30.3609 + random.uniform(-0.3, 0.3)) for _ in range(15)],
-            'Новосибирск': [(55.0084 + random.uniform(-0.2, 0.2), 82.9357 + random.uniform(-0.3, 0.3)) for _ in range(10)],
-            'Екатеринбург': [(56.8431 + random.uniform(-0.2, 0.2), 60.6454 + random.uniform(-0.3, 0.3)) for _ in range(10)],
-            'Казань': [(55.8304 + random.uniform(-0.2, 0.2), 49.0661 + random.uniform(-0.3, 0.3)) for _ in range(8)],
-            'Нижний Новгород': [(56.2965 + random.uniform(-0.2, 0.2), 43.9361 + random.uniform(-0.3, 0.3)) for _ in range(7)]
+            'Москва': [
+                (55.7558, 37.6176), (55.7505, 37.6175), (55.7600, 37.6200), (55.7520, 37.6150),
+                (55.7580, 37.6190), (55.7540, 37.6170), (55.7560, 37.6180), (55.7570, 37.6160),
+                (55.7590, 37.6140), (55.7510, 37.6195), (55.7485, 37.6185), (55.7545, 37.6205),
+                (55.7565, 37.6125), (55.7575, 37.6215), (55.7555, 37.6135), (55.7535, 37.6155),
+                (55.7525, 37.6165), (55.7515, 37.6145), (55.7595, 37.6185), (55.7585, 37.6195)
+            ],
+            'Санкт-Петербург': [
+                (59.9311, 30.3609), (59.9350, 30.3650), (59.9280, 30.3580), (59.9320, 30.3620),
+                (59.9340, 30.3640), (59.9300, 30.3600), (59.9360, 30.3660), (59.9270, 30.3570),
+                (59.9330, 30.3630), (59.9290, 30.3590), (59.9310, 30.3610), (59.9325, 30.3615),
+                (59.9335, 30.3625), (59.9315, 30.3605), (59.9345, 30.3645)
+            ],
+            'Новосибирск': [
+                (55.0084, 82.9357), (55.0100, 82.9380), (55.0070, 82.9340), (55.0090, 82.9370),
+                (55.0110, 82.9390), (55.0080, 82.9350), (55.0060, 82.9330), (55.0120, 82.9400),
+                (55.0050, 82.9320), (55.0130, 82.9410)
+            ],
+            'Екатеринбург': [
+                (56.8431, 60.6454), (56.8450, 60.6470), (56.8410, 60.6440), (56.8440, 60.6460),
+                (56.8460, 60.6480), (56.8420, 60.6450), (56.8400, 60.6430), (56.8470, 60.6490),
+                (56.8390, 60.6420), (56.8480, 60.6500)
+            ],
+            'Казань': [
+                (55.8304, 49.0661), (55.8320, 49.0680), (55.8290, 49.0640), (55.8310, 49.0670),
+                (55.8330, 49.0690), (55.8280, 49.0630), (55.8340, 49.0700), (55.8270, 49.0620)
+            ],
+            'Нижний Новгород': [
+                (56.2965, 43.9361), (56.2980, 43.9380), (56.2950, 43.9340), (56.2970, 43.9370),
+                (56.2990, 43.9390), (56.2940, 43.9330), (56.3000, 43.9400)
+            ]
         }
     
     def generate_stations(self, count: int = 100) -> List[Dict[str, Any]]:
         """Генерирует список станций"""
         stations = []
         
+        # Фиксируем seed для воспроизводимости данных
+        random.seed(42)
+        
         for i in range(1, count + 1):
             city = random.choice(self.cities)
-            coords = random.choice(self.coordinates[city])
+            # Используем индекс станции для детерминированного выбора координат
+            coords_list = self.coordinates[city]
+            coords = coords_list[(i - 1) % len(coords_list)]
             
             station = {
                 'id': f'station_{i:03d}',
@@ -109,7 +139,13 @@ class MockDataGenerator:
             stations.append(station)
         
         logger.info(f"Сгенерировано {len(stations)} станций")
+        # Сбрасываем seed обратно для рандомных обновлений
+        random.seed()
         return stations
+    
+    def get_available_station_ids(self) -> List[str]:
+        """Возвращает список всех доступных ID станций"""
+        return [f'station_{i:03d}' for i in range(1, 101)]
     
     def filter_fields(self, station: Dict[str, Any], fields: Optional[List[str]] = None) -> Dict[str, Any]:
         """Фильтрует поля станции согласно запросу"""
@@ -136,6 +172,11 @@ class WebSocketServer:
         
         # Сохраняем исходные данные для восстановления при обновлениях
         self.base_stations_data = [station.copy() for station in self.stations_cache]
+        
+        # Логируем все созданные станции для отладки
+        station_ids = [s['id'] for s in self.stations_cache]
+        logger.info(f"Созданы станции: {station_ids[:10]}...{station_ids[-5:]}")
+        logger.info(f"Всего станций в кеше: {len(self.stations_cache)}")
         
     def create_ssl_context(self) -> ssl.SSLContext:
         """Создает SSL контекст для WSS"""
@@ -218,9 +259,21 @@ class WebSocketServer:
         station_id = request_data.get('stationId')
         logger.info(f"Поиск станции с ID: {station_id}")
         
+        # Проверяем целостность кеша
+        if len(self.stations_cache) != 100:
+            logger.warning(f"Неожиданное количество станций в кеше: {len(self.stations_cache)}")
+            
         # Логируем доступные ID для отладки
         available_ids = [s['id'] for s in self.stations_cache]
-        logger.info(f"Доступные станции: {available_ids[:10]}...")  # Первые 10 для краткости
+        logger.info(f"Всего станций в кеше: {len(available_ids)}")
+        logger.info(f"Первые 10 станций: {available_ids[:10]}")
+        logger.info(f"Последние 10 станций: {available_ids[-10:]}")
+        
+        # Проверяем, есть ли запрашиваемая станция
+        if station_id in available_ids:
+            logger.info(f"Станция {station_id} найдена в списке")
+        else:
+            logger.error(f"Станция {station_id} НЕ найдена в списке!")
         
         station = next(
             (s for s in self.stations_cache if s['id'] == station_id),
@@ -229,6 +282,7 @@ class WebSocketServer:
         
         if not station:
             logger.error(f"Станция с ID {station_id} не найдена. Всего станций: {len(self.stations_cache)}")
+            logger.error(f"Ожидаемые станции: station_001 до station_100")
             raise ValueError(f"Станция с ID {station_id} не найдена")
         
         # Генерируем дополнительные данные для карточки
@@ -321,6 +375,13 @@ class WebSocketServer:
             elif action == 'getStationSessions':
                 # Сессии зарядки станции
                 response_data = self.handle_get_station_by_id(request_data)
+            elif action == 'getAvailableStations':
+                # Список доступных ID станций
+                available_ids = self.data_generator.get_available_station_ids()
+                response_data = {
+                    'availableStationIds': available_ids,
+                    'totalStations': len(self.stations_cache)
+                }
             else:
                 raise ValueError(f"Неподдерживаемое действие: {action}")
             
