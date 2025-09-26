@@ -119,7 +119,7 @@ export default function InputMeterTab() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Общие параметры */}
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">{currentReading.totalPower} кВт</div>
@@ -133,55 +133,55 @@ export default function InputMeterTab() {
                 <div className="text-3xl font-bold text-indigo-600">{currentReading.frequency} Гц</div>
                 <div className="text-sm text-gray-600 mt-1">Частота</div>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-gray-600">{currentReading.phases.length}</div>
-                <div className="text-sm text-gray-600 mt-1">Фазы</div>
-              </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Показания по фазам */}
-        <div className="grid gap-4">
-          <h3 className="text-lg font-semibold">Показания по фазам</h3>
-          
-          {currentReading.phases.map((phase) => (
-            <Card key={phase.phase}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    phase.phase === 'L1' ? 'bg-red-500' :
-                    phase.phase === 'L2' ? 'bg-yellow-500' :
-                    'bg-blue-500'
-                  }`} />
-                  <span>Фаза {phase.phase}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-6">
-                  <div className="text-center">
-                    <div className={`text-2xl font-bold border-2 rounded-lg p-3 ${getPhaseColor(phase.phase)}`}>
-                      {formatVoltage(phase.voltage)} В
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">Напряжение</div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`text-2xl font-bold border-2 rounded-lg p-3 ${getPhaseColor(phase.phase)}`}>
-                      {formatCurrent(phase.current)} А
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">Ток</div>
-                  </div>
-                  <div className="text-center">
-                    <div className={`text-2xl font-bold border-2 rounded-lg p-3 ${getPhaseColor(phase.phase)}`}>
-                      {formatPower(phase.power)} кВт
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">Мощность</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Показания по фазам</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4">Фаза</th>
+                    <th className="text-center py-3 px-4">Напряжение</th>
+                    <th className="text-center py-3 px-4">Ток</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentReading.phases.map((phase) => (
+                    <tr key={phase.phase} className="border-b last:border-0">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-3 h-3 rounded-full ${
+                            phase.phase === 'L1' ? 'bg-red-500' :
+                            phase.phase === 'L2' ? 'bg-yellow-500' :
+                            'bg-blue-500'
+                          }`} />
+                          <span className="font-medium">Фаза {phase.phase}</span>
+                        </div>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <div className={`inline-block text-lg font-bold border-2 rounded-lg py-2 px-3 ${getPhaseColor(phase.phase)}`}>
+                          {formatVoltage(phase.voltage)} В
+                        </div>
+                      </td>
+                      <td className="text-center py-3 px-4">
+                        <div className={`inline-block text-lg font-bold border-2 rounded-lg py-2 px-3 ${getPhaseColor(phase.phase)}`}>
+                          {formatCurrent(phase.current)} А
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* График напряжения */}
@@ -339,14 +339,6 @@ export default function InputMeterTab() {
             <Button variant="outline" className="flex items-center gap-2">
               <Icon name="Download" size={16} />
               Экспорт данных
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Icon name="RotateCcw" size={16} />
-              Сброс показаний
-            </Button>
-            <Button variant="outline" className="flex items-center gap-2">
-              <Icon name="Calibrate" size={16} />
-              Калибровка
             </Button>
           </div>
         </CardContent>
