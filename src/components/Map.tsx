@@ -3,9 +3,16 @@ import { useState, useEffect } from 'react';
 interface ChargingStation {
   id: string;
   name: string;
-  location: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
-  coordinates: [number, number];
+  location?: string;
+  city?: string;
+  owner?: string;
+  status: 'available' | 'charging' | 'error' | 'offline' | 'active' | 'inactive' | 'maintenance';
+  coordinates?: [number, number] | { lat: number; lng: number };
+  totalEnergy?: number;
+  currentPower?: number;
+  connectors?: any[];
+  totalSessions?: number;
+  lastActivity?: string;
 }
 
 interface MapProps {
@@ -16,7 +23,10 @@ interface MapProps {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'available': return '#22C55E';
+    case 'active': return '#22C55E';
     case 'charging': return '#F97316';
+    case 'inactive': return '#F97316';
+    case 'maintenance': return '#EAB308';
     case 'error': return '#EF4444';
     case 'offline': return '#9CA3AF';
     default: return '#9CA3AF';
@@ -26,7 +36,10 @@ const getStatusColor = (status: string) => {
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'available': return 'Доступна';
+    case 'active': return 'Активна';
     case 'charging': return 'Зарядка';
+    case 'inactive': return 'Неактивна';
+    case 'maintenance': return 'Обслуживание';
     case 'error': return 'Ошибка';
     case 'offline': return 'Офлайн';
     default: return 'Неизвестно';
@@ -46,11 +59,28 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
       north: 56.2   // верхняя граница (максимальная широта)
     };
 
+    // Фильтруем станции с координатами
+    const stationsWithCoords = stations.filter(station => {
+      if (!station.coordinates) return false;
+      if (Array.isArray(station.coordinates)) {
+        return station.coordinates.length === 2 && station.coordinates[0] && station.coordinates[1];
+      }
+      return station.coordinates.lat && station.coordinates.lng;
+    });
+
     // Генерируем HTML для встроенной карты с маркерами
-    const markers = stations.map(station => {
+    const markers = stationsWithCoords.map(station => {
       const color = getStatusColor(station.status);
-      const lat = station.coordinates[0]; // широта
-      const lng = station.coordinates[1]; // долгота
+      
+      // Поддержка разных форматов координат
+      let lat, lng;
+      if (Array.isArray(station.coordinates)) {
+        lat = station.coordinates[0];
+        lng = station.coordinates[1];
+      } else {
+        lat = station.coordinates!.lat;
+        lng = station.coordinates!.lng;
+      }
       
       // Правильный расчет позиции маркера на карте
       // Долгота (X): чем больше долгота, тем правее на карте
@@ -81,9 +111,15 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
     }).join('');
 
     // Генерируем URL с маркерами для OpenStreetMap
-    const markersParam = stations.map(station => {
-      const lat = station.coordinates[0];
-      const lng = station.coordinates[1];
+    const markersParam = stationsWithCoords.map(station => {
+      let lat, lng;
+      if (Array.isArray(station.coordinates)) {
+        lat = station.coordinates[0];
+        lng = station.coordinates[1];
+      } else {
+        lat = station.coordinates!.lat;
+        lng = station.coordinates!.lng;
+      }
       return `${lng},${lat}`;
     }).join(';');
 
@@ -138,14 +174,17 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             }
           }, 100);
 
-          // Данные станций
-          const stations = ${JSON.stringify(stations)};
+          // Данные станций (только с координатами)
+          const stations = ${JSON.stringify(stationsWithCoords)};
           
           // Функция для получения цвета по статусу
           function getStatusColor(status) {
             switch (status) {
               case 'available': return '#22C55E';
+              case 'active': return '#22C55E';
               case 'charging': return '#F97316';
+              case 'inactive': return '#F97316';
+              case 'maintenance': return '#EAB308';
               case 'error': return '#EF4444';
               case 'offline': return '#9CA3AF';
               default: return '#9CA3AF';
@@ -156,9 +195,19 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           stations.forEach(station => {
             const color = getStatusColor(station.status);
             
+            // Поддержка разных форматов координат
+            let lat, lng;
+            if (Array.isArray(station.coordinates)) {
+              lat = station.coordinates[0];
+              lng = station.coordinates[1];
+            } else {
+              lat = station.coordinates.lat;
+              lng = station.coordinates.lng;
+            }
+            
             // Создаем кастомную иконку
             const customIcon = L.divIcon({
-              className: station.status === 'charging' ? 'charging-marker' : '',
+              className: station.status === 'charging' || station.status === 'inactive' ? 'charging-marker' : '',
               html: \`<div style="
                 width: 16px;
                 height: 16px;
@@ -172,14 +221,24 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             });
 
             // Добавляем маркер на карту
-            const marker = L.marker([station.coordinates[0], station.coordinates[1]], {
+            const marker = L.marker([lat, lng], {
               icon: customIcon
             }).addTo(map);
 
             // Получаем статус текст
-            const statusText = station.status === 'available' ? 'Доступна' : 
-              station.status === 'charging' ? 'Зарядка' :
-              station.status === 'error' ? 'Ошибка' : 'Офлайн';
+            function getStatusText(status) {
+              switch (status) {
+                case 'available': return 'Доступна';
+                case 'active': return 'Активна';
+                case 'charging': return 'Зарядка';
+                case 'inactive': return 'Неактивна';
+                case 'maintenance': return 'Обслуживание';
+                case 'error': return 'Ошибка';
+                case 'offline': return 'Офлайн';
+                default: return 'Неизвестно';
+              }
+            }
+            const statusText = getStatusText(station.status);
             
             // Единая кнопка для всех станций
             const buttonHtml = \`<button onclick="openStationDetails('\${station.id}')" style="
@@ -197,11 +256,15 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               Перейти
             </button>\`;
 
+            // Формируем информацию о местоположении
+            const locationInfo = station.city || station.location || 'Местоположение не указано';
+            
             // Добавляем popup с кнопкой
             marker.bindPopup(\`
               <div style="min-width: 200px;">
                 <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">\${station.name}</h3>
-                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6B7280;">\${station.location}</p>
+                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6B7280;">\${locationInfo}</p>
+                \${station.owner ? \`<p style="margin: 0 0 8px 0; font-size: 12px; color: #9CA3AF;">Владелец: \${station.owner}</p>\` : ''}
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
                   <div style="
                     width: 10px;
@@ -213,6 +276,8 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                   "></div>
                   <span style="font-size: 13px; font-weight: 500; color: #374151;">\${statusText}</span>
                 </div>
+                \${station.totalEnergy ? \`<p style="margin: 0 0 4px 0; font-size: 12px; color: #6B7280;">Энергия: \${station.totalEnergy.toLocaleString()} кВт⋅ч</p>\` : ''}
+                \${station.currentPower ? \`<p style="margin: 0 0 8px 0; font-size: 12px; color: #6B7280;">Мощность: \${station.currentPower} кВт</p>\` : ''}
                 \${buttonHtml}
               </div>
             \`, {
@@ -265,8 +330,9 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           <div className="text-sm font-medium mb-2">Статус станций:</div>
           <div className="space-y-1 text-xs">
             {[
-              { status: 'available', label: 'Доступна' },
-              { status: 'charging', label: 'Зарядка' },
+              { status: 'active', label: 'Активна' },
+              { status: 'inactive', label: 'Неактивна' },
+              { status: 'maintenance', label: 'Обслуживание' },
               { status: 'error', label: 'Ошибка' },
               { status: 'offline', label: 'Офлайн' }
             ].map(({ status, label }) => (

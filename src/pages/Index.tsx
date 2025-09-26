@@ -100,16 +100,16 @@ export default function Index() {
 
   const currentTab = searchParams.get('tab') || 'map';
 
-  // Автоматическая загрузка данных при переходе на список
+  // Автоматическая загрузка данных при переходе на список или карту
   useEffect(() => {
-    if (currentTab === 'list' && isConnected && stations.length === 0) {
-      console.log('🔄 Loading stations for list view...');
+    if (isConnected && stations.length === 0) {
+      console.log(`🔄 Loading stations for ${currentTab} view...`);
       loadStations();
     }
   }, [currentTab, isConnected, stations.length, loadStations]);
 
-  // Для списка используем данные с сервера, для карты - моковые данные
-  const displayStations = currentTab === 'list' ? stations : mockStations;
+  // Используем данные с сервера для обеих вкладок, fallback на моковые данные
+  const displayStations = stations.length > 0 ? stations : mockStations;
   
   const filteredStations = displayStations.filter(station =>
     station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -165,10 +165,20 @@ export default function Index() {
         {/* Map view */}
         {currentTab === 'map' && (
           <div className="space-y-4">
+            {loading && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-2 text-blue-600">
+                    <Icon name="Loader2" className="animate-spin" size={16} />
+                    <span className="text-sm">Загружаем станции для карты...</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card className="h-[600px] relative">
               <CardContent className="p-0 h-full">
                 <Map 
-                  stations={mockStations} 
+                  stations={displayStations} 
                   onStationClick={handleStationClick}
                 />
               </CardContent>
