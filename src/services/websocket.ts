@@ -162,5 +162,5 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance
+// Singleton instance - используем WS для разработки
 export const wsService = new WebSocketService('ws://78.138.143.58:10009/ws');
