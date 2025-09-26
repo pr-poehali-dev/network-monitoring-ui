@@ -11,17 +11,15 @@ export class WebSocketService {
 
   constructor(url: string) {
     this.url = url;
-    console.log('🔌 WebSocket service created with URL:', url);
   }
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
-        console.log('🔄 Attempting to connect to:', this.url);
         this.ws = new WebSocket(this.url);
 
         this.ws.onopen = () => {
-          console.log('✅ WebSocket connected to:', this.url);
+          console.log('WebSocket connected');
           this.reconnectAttempts = 0;
           resolve();
         };
@@ -35,14 +33,13 @@ export class WebSocketService {
           }
         };
 
-        this.ws.onclose = (event) => {
-          console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
+        this.ws.onclose = () => {
+          console.log('WebSocket disconnected');
           this.handleReconnect();
         };
 
         this.ws.onerror = (error) => {
-          console.error('❌ WebSocket error:', error);
-          console.error('Failed to connect to:', this.url);
+          console.error('WebSocket error:', error);
           reject(error);
         };
       } catch (error) {
@@ -162,5 +159,9 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance - используем WSS с самоподписанным сертификатом
-export const wsService = new WebSocketService('wss://78.138.143.58:10009/ws');
+// Singleton instance
+export const wsService = new WebSocketService(
+  process.env.NODE_ENV === 'production' 
+    ? 'wss://your-websocket-url.com/ws'
+    : 'ws://localhost:8080/ws'
+);
