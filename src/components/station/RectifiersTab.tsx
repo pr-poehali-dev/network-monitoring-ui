@@ -354,21 +354,7 @@ export default function RectifiersTab() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <h4 className="font-semibold text-gray-800">Цвета температуры:</h4>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span className="text-sm">Нормальная (&lt; 25°C)</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                <span className="text-sm">Повышенная (25-30°C)</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-sm">Высокая (≥ 30°C)</span>
-              </div>
-            </div>
+
           </div>
         </CardContent>
       </Card>

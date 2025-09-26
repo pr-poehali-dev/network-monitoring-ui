@@ -28,6 +28,7 @@ interface VoltagePoint {
 
 export default function InputMeterTab() {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1h');
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; data: VoltagePoint } | null>(null);
 
   // Имитация текущих показаний прибора учета
   const currentReading: MeterReading = {
@@ -224,9 +225,32 @@ export default function InputMeterTab() {
             </div>
           </div>
 
-          {/* Простой график в виде SVG */}
-          <div className="w-full h-80 border rounded-lg bg-gray-50 p-4">
-            <svg width="100%" height="100%" viewBox="0 0 800 280">
+          {/* Интерактивный график в виде SVG */}
+          <div className="w-full h-80 border rounded-lg bg-gray-50 p-4 relative">
+            <svg 
+              width="100%" 
+              height="100%" 
+              viewBox="0 0 800 280"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const mouseX = ((e.clientX - rect.left) / rect.width) * 800;
+                const mouseY = ((e.clientY - rect.top) / rect.height) * 280;
+                
+                if (mouseX >= 50 && mouseX <= 750 && mouseY >= 20 && mouseY <= 260) {
+                  const dataIndex = Math.round(((mouseX - 50) / 700) * (voltageData.length - 1));
+                  if (dataIndex >= 0 && dataIndex < voltageData.length) {
+                    setHoveredPoint({
+                      x: mouseX,
+                      y: mouseY,
+                      data: voltageData[dataIndex]
+                    });
+                  }
+                } else {
+                  setHoveredPoint(null);
+                }
+              }}
+              onMouseLeave={() => setHoveredPoint(null)}
+            >
               {/* Сетка */}
               <defs>
                 <pattern id="grid" width="40" height="28" patternUnits="userSpaceOnUse">
@@ -285,6 +309,53 @@ export default function InputMeterTab() {
                   />
                 </>
               )}
+
+              {/* Вертикальная линия при наведении */}
+              {hoveredPoint && (
+                <line
+                  x1={hoveredPoint.x}
+                  y1="20"
+                  x2={hoveredPoint.x}
+                  y2="260"
+                  stroke="#6b7280"
+                  strokeWidth="1"
+                  strokeDasharray="4,4"
+                  opacity="0.7"
+                />
+              )}
+
+              {/* Точки на линиях при наведении */}
+              {hoveredPoint && voltageData.length > 0 && (
+                <>
+                  {/* Точка L1 */}
+                  <circle
+                    cx={hoveredPoint.x}
+                    cy={260 - ((hoveredPoint.data.L1 - 200) * 200 / 50)}
+                    r="4"
+                    fill="#dc2626"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  {/* Точка L2 */}
+                  <circle
+                    cx={hoveredPoint.x}
+                    cy={260 - ((hoveredPoint.data.L2 - 200) * 200 / 50)}
+                    r="4"
+                    fill="#eab308"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                  {/* Точка L3 */}
+                  <circle
+                    cx={hoveredPoint.x}
+                    cy={260 - ((hoveredPoint.data.L3 - 200) * 200 / 50)}
+                    r="4"
+                    fill="#2563eb"
+                    stroke="white"
+                    strokeWidth="2"
+                  />
+                </>
+              )}
               
               {/* Подписи времени */}
               {voltageData.length > 0 && selectedPeriod !== '7d' && (
@@ -298,6 +369,35 @@ export default function InputMeterTab() {
                 </>
               )}
             </svg>
+
+            {/* Тултип с данными */}
+            {hoveredPoint && (
+              <div
+                className="absolute pointer-events-none bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-10"
+                style={{
+                  left: Math.min(hoveredPoint.x + 20, 700),
+                  top: Math.max(hoveredPoint.y - 80, 10)
+                }}
+              >
+                <div className="text-xs font-semibold text-gray-700 mb-2">
+                  {hoveredPoint.data.time}
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                    <span className="text-xs">L1: {formatVoltage(hoveredPoint.data.L1)} В</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                    <span className="text-xs">L2: {formatVoltage(hoveredPoint.data.L2)} В</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-xs">L3: {formatVoltage(hoveredPoint.data.L3)} В</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Статистика по периоду */}
