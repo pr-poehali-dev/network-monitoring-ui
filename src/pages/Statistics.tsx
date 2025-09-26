@@ -17,7 +17,6 @@ interface StationStats {
   totalSessions: number;
   successfulSessions: number;
   totalEnergy: number; // kWh
-  totalRevenue: number; // рубли
   errorsCount: number;
   avgSessionDuration: number; // минуты
   status: 'online' | 'offline' | 'maintenance';
@@ -30,7 +29,6 @@ interface GlobalStats {
   totalSessions: number;
   successfulSessions: number;
   totalEnergy: number;
-  totalRevenue: number;
   avgSuccessRate: number;
   totalErrors: number;
   activeStations: number;
@@ -49,7 +47,6 @@ const mockStationsStats: StationStats[] = [
     totalSessions: 1247,
     successfulSessions: 1189,
     totalEnergy: 15843.2,
-    totalRevenue: 475296,
     errorsCount: 58,
     avgSessionDuration: 45,
     status: 'online',
@@ -65,7 +62,6 @@ const mockStationsStats: StationStats[] = [
     totalSessions: 892,
     successfulSessions: 856,
     totalEnergy: 11567.8,
-    totalRevenue: 347034,
     errorsCount: 36,
     avgSessionDuration: 38,
     status: 'online',
@@ -81,7 +77,6 @@ const mockStationsStats: StationStats[] = [
     totalSessions: 1456,
     successfulSessions: 1398,
     totalEnergy: 18923.4,
-    totalRevenue: 567702,
     errorsCount: 58,
     avgSessionDuration: 52,
     status: 'offline',
@@ -97,7 +92,6 @@ const mockStationsStats: StationStats[] = [
     totalSessions: 2134,
     successfulSessions: 2089,
     totalEnergy: 26784.6,
-    totalRevenue: 803538,
     errorsCount: 45,
     avgSessionDuration: 48,
     status: 'online',
@@ -113,7 +107,6 @@ const mockStationsStats: StationStats[] = [
     totalSessions: 756,
     successfulSessions: 723,
     totalEnergy: 9876.3,
-    totalRevenue: 296289,
     errorsCount: 33,
     avgSessionDuration: 41,
     status: 'maintenance',
@@ -129,7 +122,6 @@ const mockStationsStats: StationStats[] = [
     totalSessions: 1098,
     successfulSessions: 1034,
     totalEnergy: 13452.7,
-    totalRevenue: 403581,
     errorsCount: 64,
     avgSessionDuration: 47,
     status: 'online',
@@ -142,7 +134,6 @@ const calculateGlobalStats = (stations: StationStats[]): GlobalStats => {
   const totalSessions = stations.reduce((sum, s) => sum + s.totalSessions, 0);
   const successfulSessions = stations.reduce((sum, s) => sum + s.successfulSessions, 0);
   const totalEnergy = stations.reduce((sum, s) => sum + s.totalEnergy, 0);
-  const totalRevenue = stations.reduce((sum, s) => sum + s.totalRevenue, 0);
   const totalErrors = stations.reduce((sum, s) => sum + s.errorsCount, 0);
   const avgUtilization = stations.reduce((sum, s) => sum + s.utilization, 0) / stations.length;
   
@@ -151,7 +142,6 @@ const calculateGlobalStats = (stations: StationStats[]): GlobalStats => {
     totalSessions,
     successfulSessions,
     totalEnergy,
-    totalRevenue,
     avgSuccessRate: totalSessions > 0 ? (successfulSessions / totalSessions) * 100 : 0,
     totalErrors,
     activeStations: stations.filter(s => s.status === 'online').length,
@@ -182,9 +172,9 @@ const getStatusText = (status: string) => {
 export default function Statistics() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('name');
-  const [filterCity, setFilterCity] = useState('all');
-  const [filterOwner, setFilterOwner] = useState('all');
-  const [filterApp, setFilterApp] = useState('all');
+  const [cityFilter, setCityFilter] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [appFilter, setAppFilter] = useState('');
 
   const globalStats = calculateGlobalStats(mockStationsStats);
 
@@ -193,9 +183,9 @@ export default function Statistics() {
     const matchesSearch = station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          station.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          station.owner.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCity = filterCity === 'all' || station.city === filterCity;
-    const matchesOwner = filterOwner === 'all' || station.owner === filterOwner;
-    const matchesApp = filterApp === 'all' || station.connectedApp === filterApp;
+    const matchesCity = cityFilter === '' || station.city.toLowerCase().includes(cityFilter.toLowerCase());
+    const matchesOwner = ownerFilter === '' || station.owner.toLowerCase().includes(ownerFilter.toLowerCase());
+    const matchesApp = appFilter === '' || station.connectedApp.toLowerCase().includes(appFilter.toLowerCase());
     
     return matchesSearch && matchesCity && matchesOwner && matchesApp;
   });
@@ -207,8 +197,6 @@ export default function Statistics() {
         return b.totalSessions - a.totalSessions;
       case 'energy':
         return b.totalEnergy - a.totalEnergy;
-      case 'revenue':
-        return b.totalRevenue - a.totalRevenue;
       case 'errors':
         return b.errorsCount - a.errorsCount;
       case 'utilization':
@@ -222,9 +210,18 @@ export default function Statistics() {
     }
   });
 
-  const cities = [...new Set(mockStationsStats.map(s => s.city))];
-  const owners = [...new Set(mockStationsStats.map(s => s.owner))];
-  const apps = [...new Set(mockStationsStats.map(s => s.connectedApp))];
+  const clearFilters = () => {
+    setCityFilter('');
+    setOwnerFilter('');
+    setAppFilter('');
+  };
+
+  const hasActiveFilters = cityFilter !== '' || ownerFilter !== '' || appFilter !== '';
+
+  // Для графиков используем уникальные значения из отфильтрованных данных
+  const cities = [...new Set(filteredStations.map(s => s.city))];
+  const owners = [...new Set(filteredStations.map(s => s.owner))];
+  const apps = [...new Set(filteredStations.map(s => s.connectedApp))];
 
   return (
     <Layout>
@@ -286,13 +283,13 @@ export default function Statistics() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Общий доход</CardTitle>
-              <Icon name="DollarSign" className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Общие ошибки</CardTitle>
+              <Icon name="AlertTriangle" className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{globalStats.totalRevenue.toLocaleString()} ₽</div>
+              <div className="text-2xl font-bold text-red-600">{globalStats.totalErrors}</div>
               <p className="text-xs text-muted-foreground">
-                Средний доход на станцию: {Math.round(globalStats.totalRevenue / globalStats.totalStations).toLocaleString()} ₽
+                Среднее на станцию: {Math.round(globalStats.totalErrors / globalStats.totalStations)}
               </p>
             </CardContent>
           </Card>
@@ -348,7 +345,6 @@ export default function Statistics() {
                   <SelectItem value="name">По названию</SelectItem>
                   <SelectItem value="sessions">По сессиям</SelectItem>
                   <SelectItem value="energy">По энергии</SelectItem>
-                  <SelectItem value="revenue">По доходу</SelectItem>
                   <SelectItem value="errors">По ошибкам</SelectItem>
                   <SelectItem value="utilization">По загрузке</SelectItem>
                   <SelectItem value="city">По городу</SelectItem>
@@ -360,54 +356,44 @@ export default function Statistics() {
 
           {/* Дополнительные фильтры */}
           <div className="flex items-center gap-4">
-            <Select value={filterCity} onValueChange={setFilterCity}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Все города" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все города</SelectItem>
-                {cities.map(city => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Фильтр по городу..."
+                value={cityFilter}
+                onChange={(e) => setCityFilter(e.target.value)}
+                className="pl-9 w-48"
+              />
+            </div>
 
-            <Select value={filterOwner} onValueChange={setFilterOwner}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Все собственники" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все собственники</SelectItem>
-                {owners.map(owner => (
-                  <SelectItem key={owner} value={owner}>{owner}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Icon name="Building" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Фильтр по собственнику..."
+                value={ownerFilter}
+                onChange={(e) => setOwnerFilter(e.target.value)}
+                className="pl-9 w-48"
+              />
+            </div>
 
-            <Select value={filterApp} onValueChange={setFilterApp}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Все приложения" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все приложения</SelectItem>
-                {apps.map(app => (
-                  <SelectItem key={app} value={app}>{app}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Icon name="Smartphone" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Фильтр по приложению..."
+                value={appFilter}
+                onChange={(e) => setAppFilter(e.target.value)}
+                className="pl-9 w-48"
+              />
+            </div>
 
-            {(filterCity !== 'all' || filterOwner !== 'all' || filterApp !== 'all') && (
+            {hasActiveFilters && (
               <Button 
                 variant="outline" 
-                size="sm" 
-                onClick={() => {
-                  setFilterCity('all');
-                  setFilterOwner('all');
-                  setFilterApp('all');
-                }}
+                size="sm"
+                onClick={clearFilters}
               >
                 <Icon name="X" size={16} className="mr-1" />
-                Сбросить
+                Сбросить фильтры
               </Button>
             )}
           </div>
@@ -424,7 +410,6 @@ export default function Statistics() {
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Сессии</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Успешность</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Энергия</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Доход</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Ошибки</th>
                         <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Загрузка</th>
                       </tr>
@@ -458,9 +443,6 @@ export default function Statistics() {
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-medium text-sm">{station.totalEnergy.toLocaleString()} кВт⋅ч</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-sm">{station.totalRevenue.toLocaleString()} ₽</div>
                           </td>
                           <td className="py-3 px-4">
                             <div className={`font-medium text-sm ${station.errorsCount > 50 ? 'text-red-600' : station.errorsCount > 30 ? 'text-orange-600' : 'text-gray-600'}`}>
@@ -497,7 +479,7 @@ export default function Statistics() {
                   <div className="space-y-3">
                     {cities.map(city => {
                       const cityStations = filteredStations.filter(s => s.city === city);
-                      const percentage = (cityStations.length / filteredStations.length) * 100;
+                      const percentage = filteredStations.length > 0 ? (cityStations.length / filteredStations.length) * 100 : 0;
                       return (
                         <div key={city} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -525,7 +507,7 @@ export default function Statistics() {
                   <div className="space-y-3">
                     {owners.map(owner => {
                       const ownerStations = filteredStations.filter(s => s.owner === owner);
-                      const percentage = (ownerStations.length / filteredStations.length) * 100;
+                      const percentage = filteredStations.length > 0 ? (ownerStations.length / filteredStations.length) * 100 : 0;
                       return (
                         <div key={owner} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -553,7 +535,7 @@ export default function Statistics() {
                   <div className="space-y-3">
                     {apps.map(app => {
                       const appStations = filteredStations.filter(s => s.connectedApp === app);
-                      const percentage = (appStations.length / filteredStations.length) * 100;
+                      const percentage = filteredStations.length > 0 ? (appStations.length / filteredStations.length) * 100 : 0;
                       return (
                         <div key={app} className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -575,13 +557,13 @@ export default function Statistics() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Топ по доходности</CardTitle>
+                  <CardTitle className="text-lg">Топ по энергии</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {filteredStations
                       .slice()
-                      .sort((a, b) => b.totalRevenue - a.totalRevenue)
+                      .sort((a, b) => b.totalEnergy - a.totalEnergy)
                       .slice(0, 5)
                       .map((station, index) => (
                         <div key={station.id} className="flex items-center justify-between">
@@ -594,8 +576,8 @@ export default function Statistics() {
                               <div className="text-xs text-gray-500">{station.city}</div>
                             </div>
                           </div>
-                          <div className="text-sm font-medium text-green-600">
-                            {station.totalRevenue.toLocaleString()} ₽
+                          <div className="text-sm font-medium text-blue-600">
+                            {station.totalEnergy.toLocaleString()} кВт⋅ч
                           </div>
                         </div>
                       ))}
