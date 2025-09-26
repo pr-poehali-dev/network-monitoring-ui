@@ -75,10 +75,15 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getStations' | 'getStationById' | 'getStationDetail' | 'getStationHistory' | 'getStationSessions' | 'getStationStats' | 'getAvailableStations';
+  action: 'getStations' | 'getStationById' | 'getStationDetail' | 'getStationHistory' | 
+          'getStationSessions' | 'getStationStats' | 'getAvailableStations' |
+          'getMonitoringData' | 'getStatisticsData' | 'getMapData' | 
+          'getGlobalStats' | 'getChartData';
   data?: {
     stationId?: string;
     fields?: string[];
+    chartType?: 'energy' | 'utilization' | 'cities';
+    period?: 'day' | 'week' | 'month';
     filters?: {
       city?: string;
       owner?: string;
@@ -123,4 +128,70 @@ export interface StationUpdate {
   stationId: string;
   updates: Partial<StationData>;
   timestamp: string;
+}
+
+// Данные мониторинга
+export interface MonitoringData {
+  summary: {
+    totalStations: number;
+    activeStations: number;
+    errorStations: number;
+    offlineStations: number;
+    totalPower: number;
+    averageUtilization: number;
+  };
+  alerts: Alert[];
+  recentActivity: Activity[];
+}
+
+export interface Alert {
+  id: string;
+  stationId: string;
+  stationName: string;
+  type: 'error' | 'warning' | 'maintenance';
+  message: string;
+  timestamp: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface Activity {
+  id: string;
+  type: 'session_start' | 'session_end' | 'error' | 'maintenance';
+  stationId: string;
+  stationName: string;
+  timestamp: string;
+  details: {
+    energy?: number;
+    duration?: number;
+    connector?: string;
+  };
+}
+
+// Глобальная статистика
+export interface GlobalStats {
+  totalStations: number;
+  activeStations: number;
+  totalEnergy: number;
+  totalSessions: number;
+  averageUtilization: number;
+  totalRevenue: number;
+  carbonSaved: number;
+  vehiclesCharged: number;
+  trends: {
+    energy: 'up' | 'down' | 'stable';
+    sessions: 'up' | 'down' | 'stable';
+    revenue: 'up' | 'down' | 'stable';
+  };
+}
+
+// Данные для графиков
+export interface ChartData {
+  chartType: string;
+  period: string;
+  data: any[];
+  summary: {
+    total: number;
+    average: number;
+    trend: 'up' | 'down' | 'stable';
+  };
 }

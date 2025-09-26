@@ -202,6 +202,54 @@ class WebSocketServer:
         self.connected_clients.discard(websocket)
         logger.info(f"Клиент отключен. Всего клиентов: {len(self.connected_clients)}")
     
+    async def broadcast_updates(self, changed_station_ids: List[str]):
+        """Отправка real-time обновлений всем подключенным клиентам"""
+        if not self.connected_clients or not changed_station_ids:
+            return
+            
+        # Собираем обновленные данные
+        updates = []
+        for station_id in changed_station_ids:
+            station = next((s for s in self.stations_cache if s['id'] == station_id), None)
+            if station:
+                updates.append({
+                    'stationId': station['id'],
+                    'updates': {
+                        'status': station['status'],
+                        'currentPower': station['currentPower'],
+                        'lastUpdate': station['lastUpdate'],
+                        'connectors': station.get('connectors', [])
+                    }
+                })
+        
+        # Формируем сообщение обновления
+        update_message = {
+            'type': 'update',
+            'action': 'stationUpdate',
+            'data': {
+                'updates': updates,
+                'timestamp': datetime.now().isoformat()
+            }
+        }
+        
+        # Отправляем всем клиентам
+        disconnected = set()
+        for client in self.connected_clients:
+            try:
+                await client.send(json.dumps(update_message))
+            except websockets.exceptions.ConnectionClosed:
+                disconnected.add(client)
+            except Exception as e:
+                logger.error(f"Ошибка отправки обновления: {e}")
+                disconnected.add(client)
+        
+        # Удаляем отключенных клиентов
+        for client in disconnected:
+            self.connected_clients.discard(client)
+        
+        if updates:
+            logger.info(f"Отправлено обновление {len(updates)} станций {len(self.connected_clients)} клиентам")
+    
     def handle_get_stations(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Обработка запроса списка станций"""
         fields = request_data.get('fields')
@@ -345,6 +393,204 @@ class WebSocketServer:
         logger.info(f"Отправляем детальные данные станции {station_id}")
         return {'station': station_detail}
     
+    def handle_get_monitoring_data(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Обработка запроса данных мониторинга"""
+        # Генерируем real-time метрики
+        active_stations = [s for s in self.stations_cache if s['status'] in ['active', 'charging']]
+        error_stations = [s for s in self.stations_cache if s['status'] == 'error']
+        
+        monitoring_data = {
+            'summary': {
+                'totalStations': len(self.stations_cache),
+                'activeStations': len(active_stations),
+                'errorStations': len(error_stations),
+                'offlineStations': len([s for s in self.stations_cache if s['status'] == 'offline']),
+                'totalPower': sum(s.get('currentPower', 0) for s in self.stations_cache),
+                'averageUtilization': sum(s.get('utilization', 0) for s in self.stations_cache) // len(self.stations_cache)
+            },
+            'alerts': [
+                {
+                    'id': f'alert_{i}',
+                    'stationId': station['id'],
+                    'stationName': station['name'],
+                    'type': random.choice(['error', 'warning', 'maintenance']),
+                    'message': random.choice([
+                        'Ошибка связи с коннектором',
+                        'Превышение температуры',
+                        'Низкое напряжение в сети',
+                        'Требуется обслуживание'
+                    ]),
+                    'timestamp': datetime.now().isoformat(),
+                    'priority': random.choice(['high', 'medium', 'low'])
+                }
+                for i, station in enumerate(error_stations[:5])  # Максимум 5 алертов
+            ],
+            'recentActivity': [
+                {
+                    'id': f'activity_{i}',
+                    'type': random.choice(['session_start', 'session_end', 'error', 'maintenance']),
+                    'stationId': random.choice(self.stations_cache)['id'],
+                    'stationName': random.choice(self.stations_cache)['name'],
+                    'timestamp': (datetime.now() - timedelta(minutes=random.randint(1, 60))).isoformat(),
+                    'details': {
+                        'energy': random.randint(10, 50),
+                        'duration': random.randint(15, 120),
+                        'connector': random.choice(['CCS2', 'CHAdeMO'])
+                    }
+                }
+                for i in range(10)
+            ]
+        }
+        
+        logger.info("Отправляем данные мониторинга")
+        return monitoring_data
+    
+    def handle_get_statistics_data(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Обработка запроса статистических данных"""
+        # Берем фильтры из запроса
+        filters = request_data.get('filters', {})
+        
+        # Фильтруем станции
+        filtered_stations = self.stations_cache
+        if filters.get('city'):
+            filtered_stations = [s for s in filtered_stations if filters['city'].lower() in s['city'].lower()]
+        if filters.get('owner'):
+            filtered_stations = [s for s in filtered_stations if filters['owner'].lower() in s['owner'].lower()]
+        
+        # Дополняем станции статистическими данными
+        stats_stations = []
+        for station in filtered_stations:
+            stats_station = station.copy()
+            stats_station.update({
+                'avgSessionDuration': random.randint(30, 90),
+                'successRate': random.randint(85, 99),
+                'peakHours': [random.randint(8, 20) for _ in range(3)],
+                'weeklyTrend': random.choice(['up', 'down', 'stable']),
+                'revenue': random.randint(50000, 500000)
+            })
+            stats_stations.append(stats_station)
+        
+        return {
+            'stations': stats_stations,
+            'summary': {
+                'totalStations': len(stats_stations),
+                'totalEnergy': sum(s['totalEnergy'] for s in stats_stations),
+                'totalSessions': sum(s['totalSessions'] for s in stats_stations),
+                'averageUtilization': sum(s['utilization'] for s in stats_stations) // max(len(stats_stations), 1)
+            }
+        }
+    
+    def handle_get_map_data(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Обработка запроса данных для карты"""
+        # Возвращаем только необходимые поля для карты
+        map_stations = []
+        for station in self.stations_cache:
+            map_stations.append({
+                'id': station['id'],
+                'name': station['name'],
+                'coordinates': station['coordinates'],
+                'status': station['status'],
+                'connectors': station.get('connectors', []),
+                'city': station['city'],
+                'address': station.get('address', '')
+            })
+        
+        return {
+            'stations': map_stations,
+            'clusters': self._calculate_clusters(map_stations)
+        }
+    
+    def _calculate_clusters(self, stations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Вычисляет кластеры станций для карты"""
+        # Простая группировка по городам
+        clusters = {}
+        for station in stations:
+            city = station['city']
+            if city not in clusters:
+                clusters[city] = {
+                    'city': city,
+                    'count': 0,
+                    'center': station['coordinates']
+                }
+            clusters[city]['count'] += 1
+        
+        return list(clusters.values())
+    
+    def handle_get_global_stats(self) -> Dict[str, Any]:
+        """Обработка запроса глобальной статистики"""
+        total_energy = sum(s['totalEnergy'] for s in self.stations_cache)
+        total_sessions = sum(s['totalSessions'] for s in self.stations_cache)
+        active_count = len([s for s in self.stations_cache if s['status'] in ['active', 'charging']])
+        
+        return {
+            'totalStations': len(self.stations_cache),
+            'activeStations': active_count,
+            'totalEnergy': total_energy,
+            'totalSessions': total_sessions,
+            'averageUtilization': sum(s['utilization'] for s in self.stations_cache) // len(self.stations_cache),
+            'totalRevenue': total_energy * random.uniform(15.0, 25.0),
+            'carbonSaved': total_energy * 0.5,  # кг CO2
+            'vehiclesCharged': total_sessions,
+            'trends': {
+                'energy': random.choice(['up', 'down', 'stable']),
+                'sessions': random.choice(['up', 'down', 'stable']),
+                'revenue': random.choice(['up', 'down', 'stable'])
+            }
+        }
+    
+    def handle_get_chart_data(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Обработка запроса данных для графиков"""
+        chart_type = request_data.get('chartType', 'energy')
+        period = request_data.get('period', 'week')
+        
+        if chart_type == 'energy':
+            # График потребления энергии
+            data_points = []
+            for i in range(7 if period == 'week' else 30):
+                date = (datetime.now() - timedelta(days=i)).strftime('%Y-%m-%d')
+                data_points.append({
+                    'date': date,
+                    'value': random.randint(5000, 15000),
+                    'sessions': random.randint(100, 300)
+                })
+            data_points.reverse()
+            
+        elif chart_type == 'utilization':
+            # График загрузки по часам
+            data_points = []
+            for hour in range(24):
+                data_points.append({
+                    'hour': hour,
+                    'value': random.randint(20, 95),
+                    'stations': random.randint(10, 50)
+                })
+                
+        elif chart_type == 'cities':
+            # Распределение по городам
+            cities = list(set(s['city'] for s in self.stations_cache))
+            data_points = []
+            for city in cities:
+                city_stations = [s for s in self.stations_cache if s['city'] == city]
+                data_points.append({
+                    'city': city,
+                    'stations': len(city_stations),
+                    'energy': sum(s['totalEnergy'] for s in city_stations),
+                    'sessions': sum(s['totalSessions'] for s in city_stations)
+                })
+        else:
+            data_points = []
+        
+        return {
+            'chartType': chart_type,
+            'period': period,
+            'data': data_points,
+            'summary': {
+                'total': sum(p.get('value', 0) for p in data_points),
+                'average': sum(p.get('value', 0) for p in data_points) // max(len(data_points), 1),
+                'trend': random.choice(['up', 'down', 'stable'])
+            }
+        }
+    
     async def handle_message(self, websocket: WebSocketServerProtocol, message: str):
         """Обработка входящего сообщения"""
         try:
@@ -382,6 +628,21 @@ class WebSocketServer:
                     'availableStationIds': available_ids,
                     'totalStations': len(self.stations_cache)
                 }
+            elif action == 'getMonitoringData':
+                # Данные для мониторинга с real-time обновлениями
+                response_data = self.handle_get_monitoring_data(request_data)
+            elif action == 'getStatisticsData':
+                # Данные для статистики с графиками
+                response_data = self.handle_get_statistics_data(request_data)
+            elif action == 'getMapData':
+                # Данные для карты
+                response_data = self.handle_get_map_data(request_data)
+            elif action == 'getGlobalStats':
+                # Глобальная статистика
+                response_data = self.handle_get_global_stats()
+            elif action == 'getChartData':
+                # Данные для графиков
+                response_data = self.handle_get_chart_data(request_data)
             else:
                 raise ValueError(f"Неподдерживаемое действие: {action}")
             
@@ -443,7 +704,9 @@ class WebSocketServer:
                 await asyncio.sleep(30)
                 # Обновляем только статус, мощность и время обновления
                 # НЕ удаляем и НЕ добавляем станции
+                changed_stations = []
                 for station in random.sample(self.stations_cache, min(5, len(self.stations_cache))):
+                    old_status = station['status']
                     # Обновляем только динамические поля
                     station['status'] = random.choice(self.data_generator.statuses)
                     station['currentPower'] = random.randint(0, 150)
@@ -453,8 +716,15 @@ class WebSocketServer:
                     if 'connectors' in station:
                         for connector in station['connectors']:
                             connector['status'] = random.choice(['available', 'charging', 'offline'])
+                    
+                    # Запоминаем изменения
+                    if old_status != station['status']:
+                        changed_stations.append(station['id'])
                             
                 logger.info(f"Обновлены динамические данные {len(self.stations_cache)} станций")
+                
+                # Отправляем real-time обновления всем клиентам
+                await self.broadcast_updates(changed_stations)
         
         # Запускаем задачу обновления данных
         asyncio.create_task(update_data())

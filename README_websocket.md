@@ -36,6 +36,11 @@ python run_server.py --host 0.0.0.0 --port 10009 --no-ssl
 - `getStationHistory` - история работы станции (7 дней)
 - `getStationSessions` - последние сессии зарядки
 - `getStationStats` - данные для статистики
+- `getMonitoringData` - данные для страницы мониторинга
+- `getStatisticsData` - полная статистика с фильтрами
+- `getMapData` - оптимизированные данные для карты
+- `getGlobalStats` - глобальная статистика
+- `getChartData` - данные для графиков
 
 ✅ **Оптимизация трафика:**
 - Параметр `fields` для выборочной загрузки полей
@@ -45,6 +50,8 @@ python run_server.py --host 0.0.0.0 --port 10009 --no-ssl
 ✅ **Real-time обновления:**
 - Автоматическое изменение статусов станций каждые 30 сек
 - Обновление мощности и времени последнего обновления
+- Broadcast обновлений всем подключенным клиентам
+- События: `stationUpdate` с изменениями станций
 
 ## Примеры запросов
 
@@ -101,6 +108,50 @@ python run_server.py --host 0.0.0.0 --port 10009 --no-ssl
     "stationId": "station_001"
   },
   "requestId": "req_126"
+}
+```
+
+### Получить данные мониторинга
+```json
+{
+  "type": "request",
+  "action": "getMonitoringData",
+  "data": {},
+  "requestId": "req_127"
+}
+```
+
+### Получить данные для графиков
+```json
+{
+  "type": "request",
+  "action": "getChartData",
+  "data": {
+    "chartType": "energy",
+    "period": "week"
+  },
+  "requestId": "req_128"
+}
+```
+
+### Real-time обновления (от сервера к клиенту)
+```json
+{
+  "type": "update",
+  "action": "stationUpdate",
+  "data": {
+    "updates": [
+      {
+        "stationId": "station_001",
+        "updates": {
+          "status": "charging",
+          "currentPower": 120,
+          "lastUpdate": "2024-01-20T10:35:00.000Z"
+        }
+      }
+    ],
+    "timestamp": "2024-01-20T10:35:00.000Z"
+  }
 }
 ```
 

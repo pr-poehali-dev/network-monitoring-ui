@@ -11,6 +11,7 @@ import Layout from '@/components/Layout';
 import WebSocketStatus from '@/components/WebSocketStatus';
 import StationFiltersAndSearch from '@/components/StationFiltersAndSearch';
 import { useWebSocket, useStations } from '@/hooks/useWebSocket';
+import { useMap } from '@/hooks/useMap';
 
 interface ChargingStation {
   id: string;
@@ -102,6 +103,7 @@ export default function Index() {
   // WebSocket подключение и данные
   const { isConnected, isConnecting, error } = useWebSocket();
   const { stations, loading, loadStations } = useStations();
+  const { mapData, loading: mapLoading } = useMap();
 
   const currentTab = searchParams.get('tab') || 'map';
 
@@ -114,7 +116,11 @@ export default function Index() {
   }, [currentTab, isConnected, stations.length, loadStations]);
 
   // Используем данные с сервера для обеих вкладок, fallback на моковые данные
-  const displayStations = stations.length > 0 ? stations : mockStations;
+  const displayStations = currentTab === 'map' && mapData?.stations 
+    ? mapData.stations 
+    : stations.length > 0 
+    ? stations 
+    : mockStations;
   
   const clearFilters = () => {
     setCityFilter('');

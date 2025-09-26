@@ -67,11 +67,26 @@ export class WebSocketService {
   }
 
   private handleRealtimeUpdate(message: WSServerMessage) {
-    // Эмитируем событие для компонентов
-    const event = new CustomEvent('stationUpdate', {
-      detail: message.data
-    });
-    window.dispatchEvent(event);
+    console.log('📡 Real-time обновление:', message);
+    
+    if (message.action === 'stationUpdate') {
+      const updates = message.data?.updates || [];
+      
+      // Вызываем все зарегистрированные коллбэки
+      this.updateCallbacks.forEach(callback => {
+        try {
+          callback(updates);
+        } catch (error) {
+          console.error('Ошибка в коллбэке обновления:', error);
+        }
+      });
+      
+      // Эмитируем событие для компонентов
+      const event = new CustomEvent('stationUpdate', {
+        detail: { updates }
+      });
+      window.dispatchEvent(event);
+    }
   }
 
   private handleReconnect() {
@@ -177,12 +192,75 @@ export class WebSocketService {
     return response.data?.station || null;
   }
 
+  async getMonitoringData(): Promise<any> {
+    console.log('📡 Запрашиваем данные мониторинга');
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getMonitoringData',
+      data: {},
+      requestId: ''
+    });
+    return response.data || {};
+  }
+
+  async getStatisticsData(filters?: any): Promise<any> {
+    console.log('📡 Запрашиваем данные статистики');
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getStatisticsData',
+      data: { filters },
+      requestId: ''
+    });
+    return response.data || {};
+  }
+
+  async getMapData(): Promise<any> {
+    console.log('📡 Запрашиваем данные для карты');
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getMapData',
+      data: {},
+      requestId: ''
+    });
+    return response.data || {};
+  }
+
+  async getGlobalStats(): Promise<any> {
+    console.log('📡 Запрашиваем глобальную статистику');
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getGlobalStats',
+      data: {},
+      requestId: ''
+    });
+    return response.data || {};
+  }
+
+  async getChartData(chartType: string, period: string = 'week'): Promise<any> {
+    console.log('📡 Запрашиваем данные для графика:', chartType);
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getChartData',
+      data: { chartType, period },
+      requestId: ''
+    });
+    return response.data || {};
+  }
+
+  // Подписка на real-time обновления
+  onStationUpdate(callback: (updates: any[]) => void) {
+    this.updateCallbacks.push(callback);
+  }
+
+  private updateCallbacks: ((updates: any[]) => void)[] = [];
+
   disconnect() {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
     this.messageHandlers.clear();
+    this.updateCallbacks = [];
   }
 
   isConnected(): boolean {
