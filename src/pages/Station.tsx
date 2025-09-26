@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import StationHeader from '@/components/station/StationHeader';
 import StationTabs from '@/components/station/StationTabs';
-import StationLogs from '@/components/station/StationLogs';
 
 interface ChargingStation {
   id: string;
@@ -130,36 +129,16 @@ export default function Station() {
     <Layout>
       <StationHeader station={station} />
 
-      {/* Условный лэйаут в зависимости от активной вкладки */}
-      {activeTab === 'management' ? (
-        // Двухколоночный лэйаут для панели управления (с логами)
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Основной контент (левая колонка) */}
-          <div className="xl:col-span-2">
-            <StationTabs 
-              station={station}
-              mockLogs={mockLogs}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              onAction={handleAction}
-            />
-          </div>
-
-          {/* Правая колонка - Логи */}
-          <StationLogs mockLogs={mockLogs} />
-        </div>
-      ) : (
-        // Одноколоночный лэйаут для остальных разделов (без логов)
-        <div className="max-w-7xl mx-auto">
-          <StationTabs 
-            station={station}
-            mockLogs={mockLogs}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            onAction={handleAction}
-          />
-        </div>
-      )}
+      {/* Одноколоночный лэйаут для всех разделов */}
+      <div className="max-w-7xl mx-auto">
+        <StationTabs 
+          station={station}
+          mockLogs={mockLogs}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          onAction={handleAction}
+        />
+      </div>
     </Layout>
   );
 }
