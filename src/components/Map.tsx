@@ -105,6 +105,9 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           .charging-marker {
             animation: pulse 2s infinite;
           }
+          .leaflet-attribution-flag {
+            display: none !important;
+          }
         </style>
       </head>
       <body>
@@ -117,6 +120,14 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
           }).addTo(map);
+
+          // Скрываем флаг в attribution после загрузки карты
+          setTimeout(() => {
+            const flagElement = document.querySelector('.leaflet-attribution-flag');
+            if (flagElement) {
+              flagElement.style.display = 'none';
+            }
+          }, 100);
 
           // Данные станций
           const stations = ${JSON.stringify(stations)};
