@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Icon from '@/components/ui/icon';
 import Map from '@/components/Map';
 import Layout from '@/components/Layout';
-import WebSocketStatus from '@/components/WebSocketStatus';
-import StationFiltersAndSearch from '@/components/StationFiltersAndSearch';
-import { useWebSocket, useStations } from '@/hooks/useWebSocket';
-import { useMap } from '@/hooks/useMap';
 
 interface ChargingStation {
   id: string;
@@ -81,10 +77,7 @@ const mockStations: ChargingStation[] = [
 const getStatusLabel = (status: string) => {
   switch (status) {
     case 'available': return 'Доступна';
-    case 'active': return 'Активна';
     case 'charging': return 'Зарядка';
-    case 'inactive': return 'Неактивна';
-    case 'maintenance': return 'Обслуживание';
     case 'error': return 'Ошибка';
     case 'offline': return 'Офлайн';
     default: return 'Неизвестно';
@@ -93,79 +86,15 @@ const getStatusLabel = (status: string) => {
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('name');
-  const [cityFilter, setCityFilter] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [appFilter, setAppFilter] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  
-  // WebSocket подключение и данные
-  const { isConnected, isConnecting, error } = useWebSocket();
-  const { stations, loading, loadStations } = useStations();
-  const { mapData, loading: mapLoading } = useMap();
 
   const currentTab = searchParams.get('tab') || 'map';
 
-  // Автоматическая загрузка данных при переходе на список или карту
-  useEffect(() => {
-    if (isConnected && stations.length === 0) {
-      console.log(`🔄 Loading stations for ${currentTab} view...`);
-      loadStations();
-    }
-  }, [currentTab, isConnected, stations.length, loadStations]);
-
-  // Используем данные с сервера для обеих вкладок, fallback на моковые данные
-  const displayStations = currentTab === 'map' && mapData?.stations 
-    ? mapData.stations 
-    : stations.length > 0 
-    ? stations 
-    : mockStations;
-  
-  const clearFilters = () => {
-    setCityFilter('');
-    setOwnerFilter('');
-    setAppFilter('');
-  };
-
-  const hasActiveFilters = cityFilter !== '' || ownerFilter !== '' || appFilter !== '';
-  
-  // Продвинутая фильтрация как в статистике
-  const filteredStations = displayStations
-    .filter(station => {
-      const matchesSearch = station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        station.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        station.city?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchesCity = !cityFilter || 
-        station.city?.toLowerCase().includes(cityFilter.toLowerCase());
-      
-      const matchesOwner = !ownerFilter || 
-        station.owner?.toLowerCase().includes(ownerFilter.toLowerCase());
-        
-      const matchesApp = !appFilter || 
-        station.connectedApp?.toLowerCase().includes(appFilter.toLowerCase());
-
-      return matchesSearch && matchesCity && matchesOwner && matchesApp;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'city':
-          return (a.city || '').localeCompare(b.city || '');
-        case 'owner':
-          return (a.owner || '').localeCompare(b.owner || '');
-        case 'sessions':
-          return (b.totalSessions || 0) - (a.totalSessions || 0);
-        case 'energy':
-          return (b.totalEnergy || 0) - (a.totalEnergy || 0);
-        case 'errors':
-          return (b.errorsCount || 0) - (a.errorsCount || 0);
-        default:
-          return 0;
-      }
-    });
+  const filteredStations = mockStations.filter(station =>
+    station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    station.location.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleStationClick = (stationId: string) => {
     navigate(`/station/${stationId}`);
@@ -186,16 +115,6 @@ export default function Index() {
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <WebSocketStatus />
-              {/* Кнопка для тестирования загрузки данных */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => loadStations()}
-                disabled={!isConnected || loading}
-              >
-                {loading ? 'Загрузка...' : 'Загрузить данные'}
-              </Button>
               <Badge variant="outline" className="gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 Онлайн: 18
@@ -215,20 +134,10 @@ export default function Index() {
         {/* Map view */}
         {currentTab === 'map' && (
           <div className="space-y-4">
-            {loading && (
-              <Card className="border-blue-200 bg-blue-50">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 text-blue-600">
-                    <Icon name="Loader2" className="animate-spin" size={16} />
-                    <span className="text-sm">Загружаем станции для карты...</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
             <Card className="h-[600px] relative">
               <CardContent className="p-0 h-full">
                 <Map 
-                  stations={displayStations} 
+                  stations={mockStations} 
                   onStationClick={handleStationClick}
                 />
               </CardContent>
@@ -266,110 +175,68 @@ export default function Index() {
         {/* List view */}
         {currentTab === 'list' && (
           <div className="space-y-4">
-            {/* Filters and Search - копируем из статистики */}
-            <StationFiltersAndSearch 
-              searchTerm={searchQuery}
-              setSearchTerm={setSearchQuery}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              cityFilter={cityFilter}
-              setCityFilter={setCityFilter}
-              ownerFilter={ownerFilter}
-              setOwnerFilter={setOwnerFilter}
-              appFilter={appFilter}
-              setAppFilter={setAppFilter}
-              clearFilters={clearFilters}
-              hasActiveFilters={hasActiveFilters}
-            />
+            {/* Search */}
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Поиск станций..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
 
-            {/* Ошибки WebSocket */}
-            {error && (
-              <Card className="border-red-200 bg-red-50">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-2 text-red-600">
-                    <Icon name="AlertCircle" size={16} />
-                    <span className="text-sm">Ошибка соединения: {error}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Stations Table - стиль как в статистике */}
+            {/* Stations Table */}
             <Card>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50">
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Станция</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Статус</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Коннекторы</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Сессии</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Действия</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loading && (
-                        <tr>
-                          <td colSpan={5} className="text-center py-8">
-                            <div className="flex items-center justify-center gap-2">
-                              <Icon name="Loader2" className="animate-spin" size={20} />
-                              Загружаем данные...
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                      {!loading && filteredStations.length === 0 && (
-                        <tr>
-                          <td colSpan={5} className="text-center py-8 text-gray-500">
-                            {!isConnected ? 'Нет подключения к серверу' : 'Нет данных'}
-                          </td>
-                        </tr>
-                      )}
-                      {!loading && filteredStations.map((station) => (
-                        <tr key={station.id} className="border-b hover:bg-gray-50">
-                          <td className="py-3 px-4">
-                            <div>
-                              <div className="font-medium text-gray-900 text-sm">{station.name}</div>
-                              <div className="text-xs text-gray-600">{station.city || station.location} • {station.owner || 'Неизвестно'}</div>
-                              <div className="text-xs text-blue-600">{station.connectedApp || 'Не подключено'}</div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Badge 
-                              className={`text-xs ${
-                                station.status === 'available' || station.status === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                                station.status === 'charging' || station.status === 'inactive' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
-                                station.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                                station.status === 'error' || station.status === 'offline' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
-                                'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                              }`}
-                            >
-                              {getStatusLabel(station.status)}
-                            </Badge>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-sm">{station.connectors?.length || 0}</div>
-                            <div className="text-xs text-gray-500">
-                              {station.connectors?.filter(c => c.status === 'available').length || 0} доступно
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="font-medium text-sm">{(station.totalSessions || 0).toLocaleString()}</div>
-                            <div className="text-xs text-gray-500">всего</div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <Link to={`/station/${station.id}`}>
-                              <Button variant="outline" size="sm">
-                                Подробнее
-                              </Button>
-                            </Link>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+              <CardHeader>
+                <CardTitle>Зарядные станции</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Название</TableHead>
+                      <TableHead>Местоположение</TableHead>
+                      <TableHead>Статус</TableHead>
+                      <TableHead>Коннекторы</TableHead>
+                      <TableHead>Сессии</TableHead>
+                      <TableHead>Активность</TableHead>
+                      <TableHead>Действия</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredStations.map((station) => (
+                      <TableRow key={station.id}>
+                        <TableCell className="font-medium">{station.name}</TableCell>
+                        <TableCell>{station.location}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={station.status === 'error' ? 'destructive' : 'default'}
+                            className={
+                              station.status === 'available' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                              station.status === 'charging' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                              ''
+                            }
+                          >
+                            {getStatusLabel(station.status)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{station.connectors.length}</TableCell>
+                        <TableCell>{station.totalSessions}</TableCell>
+                        <TableCell className="text-gray-500">{station.lastActivity}</TableCell>
+                        <TableCell>
+                          <Link to={`/station/${station.id}`}>
+                            <Button variant="outline" size="sm">
+                              Подробнее
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </div>
