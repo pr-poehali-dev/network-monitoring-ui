@@ -91,16 +91,16 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
   return (
     <>
       <Tabs value={activeTab} onValueChange={onTabChange}>
-        <TabsList className="mb-6 grid w-full grid-cols-3 lg:grid-cols-9">
-          <TabsTrigger value="management">Панель управления</TabsTrigger>
-          <TabsTrigger value="transactions">Транзакции</TabsTrigger>
-          <TabsTrigger value="settings">Настройки</TabsTrigger>
-          <TabsTrigger value="errors">Ошибки</TabsTrigger>
-          <TabsTrigger value="logs">Логи</TabsTrigger>
-          <TabsTrigger value="stats">Статистика</TabsTrigger>
-          <TabsTrigger value="availability">Доступность</TabsTrigger>
-          <TabsTrigger value="input-meter">Прибор учета</TabsTrigger>
-          <TabsTrigger value="rectifiers">Выпрямители</TabsTrigger>
+        <TabsList className="mb-6 inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto">
+          <TabsTrigger value="management" className="whitespace-nowrap">Панель управления</TabsTrigger>
+          <TabsTrigger value="transactions" className="whitespace-nowrap">Транзакции</TabsTrigger>
+          <TabsTrigger value="settings" className="whitespace-nowrap">Настройки</TabsTrigger>
+          <TabsTrigger value="errors" className="whitespace-nowrap">Ошибки</TabsTrigger>
+          <TabsTrigger value="logs" className="whitespace-nowrap">Логи</TabsTrigger>
+          <TabsTrigger value="stats" className="whitespace-nowrap">Статистика</TabsTrigger>
+          <TabsTrigger value="availability" className="whitespace-nowrap">Доступность</TabsTrigger>
+          <TabsTrigger value="input-meter" className="whitespace-nowrap">Прибор учета</TabsTrigger>
+          <TabsTrigger value="rectifiers" className="whitespace-nowrap">Выпрямители</TabsTrigger>
         </TabsList>
 
         <TabsContent value="management" className="space-y-6">
