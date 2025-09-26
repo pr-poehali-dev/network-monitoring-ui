@@ -9,6 +9,7 @@ import Icon from '@/components/ui/icon';
 import Map from '@/components/Map';
 import Layout from '@/components/Layout';
 import WebSocketStatus from '@/components/WebSocketStatus';
+import StationFiltersAndSearch from '@/components/StationFiltersAndSearch';
 import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 
 interface ChargingStation {
@@ -91,6 +92,10 @@ const getStatusLabel = (status: string) => {
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+  const [cityFilter, setCityFilter] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [appFilter, setAppFilter] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   
@@ -111,11 +116,50 @@ export default function Index() {
   // Используем данные с сервера для обеих вкладок, fallback на моковые данные
   const displayStations = stations.length > 0 ? stations : mockStations;
   
-  const filteredStations = displayStations.filter(station =>
-    station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.city?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const clearFilters = () => {
+    setCityFilter('');
+    setOwnerFilter('');
+    setAppFilter('');
+  };
+
+  const hasActiveFilters = cityFilter !== '' || ownerFilter !== '' || appFilter !== '';
+  
+  // Продвинутая фильтрация как в статистике
+  const filteredStations = displayStations
+    .filter(station => {
+      const matchesSearch = station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        station.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        station.city?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesCity = !cityFilter || 
+        station.city?.toLowerCase().includes(cityFilter.toLowerCase());
+      
+      const matchesOwner = !ownerFilter || 
+        station.owner?.toLowerCase().includes(ownerFilter.toLowerCase());
+        
+      const matchesApp = !appFilter || 
+        station.connectedApp?.toLowerCase().includes(appFilter.toLowerCase());
+
+      return matchesSearch && matchesCity && matchesOwner && matchesApp;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'city':
+          return (a.city || '').localeCompare(b.city || '');
+        case 'owner':
+          return (a.owner || '').localeCompare(b.owner || '');
+        case 'sessions':
+          return (b.totalSessions || 0) - (a.totalSessions || 0);
+        case 'energy':
+          return (b.totalEnergy || 0) - (a.totalEnergy || 0);
+        case 'errors':
+          return (b.errorsCount || 0) - (a.errorsCount || 0);
+        default:
+          return 0;
+      }
+    });
 
   const handleStationClick = (stationId: string) => {
     navigate(`/station/${stationId}`);
@@ -216,18 +260,21 @@ export default function Index() {
         {/* List view */}
         {currentTab === 'list' && (
           <div className="space-y-4">
-            {/* Search */}
-            <div className="flex gap-4">
-              <div className="relative flex-1">
-                <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Поиск станций..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+            {/* Filters and Search - копируем из статистики */}
+            <StationFiltersAndSearch 
+              searchTerm={searchQuery}
+              setSearchTerm={setSearchQuery}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              cityFilter={cityFilter}
+              setCityFilter={setCityFilter}
+              ownerFilter={ownerFilter}
+              setOwnerFilter={setOwnerFilter}
+              appFilter={appFilter}
+              setAppFilter={setAppFilter}
+              clearFilters={clearFilters}
+              hasActiveFilters={hasActiveFilters}
+            />
 
             {/* Ошибки WebSocket */}
             {error && (
@@ -241,83 +288,82 @@ export default function Index() {
               </Card>
             )}
 
-            {/* Stations Table */}
+            {/* Stations Table - стиль как в статистике */}
             <Card>
-              <CardHeader>
-                <CardTitle>Зарядные станции</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Название</TableHead>
-                      <TableHead>Город</TableHead>
-                      <TableHead>Владелец</TableHead>
-                      <TableHead>Статус</TableHead>
-                      <TableHead>Энергия</TableHead>
-                      <TableHead>Мощность</TableHead>
-                      <TableHead>Действия</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">
-                          <div className="flex items-center justify-center gap-2">
-                            <Icon name="Loader2" className="animate-spin" size={20} />
-                            Загружаем данные...
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {!loading && filteredStations.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          {currentTab === 'list' && !isConnected ? 'Нет подключения к серверу' : 'Нет данных'}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                    {!loading && filteredStations.map((station) => (
-                      <TableRow key={station.id}>
-                        <TableCell className="font-medium">{station.name}</TableCell>
-                        <TableCell>{currentTab === 'list' ? station.city : station.location}</TableCell>
-                        <TableCell>{currentTab === 'list' ? station.owner : '-'}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={station.status === 'error' ? 'destructive' : 'default'}
-                            className={
-                              station.status === 'available' || station.status === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                              station.status === 'charging' || station.status === 'inactive' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
-                              station.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
-                              ''
-                            }
-                          >
-                            {getStatusLabel(station.status)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {currentTab === 'list' ? 
-                            `${station.totalEnergy?.toLocaleString() || 0} кВт⋅ч` : 
-                            station.connectors?.length || 0
-                          }
-                        </TableCell>
-                        <TableCell>
-                          {currentTab === 'list' ? 
-                            `${station.currentPower || 0} кВт` : 
-                            station.totalSessions || 0
-                          }
-                        </TableCell>
-                        <TableCell>
-                          <Link to={`/station/${station.id}`}>
-                            <Button variant="outline" size="sm">
-                              Подробнее
-                            </Button>
-                          </Link>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Станция</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Статус</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Коннекторы</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Сессии</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loading && (
+                        <tr>
+                          <td colSpan={5} className="text-center py-8">
+                            <div className="flex items-center justify-center gap-2">
+                              <Icon name="Loader2" className="animate-spin" size={20} />
+                              Загружаем данные...
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {!loading && filteredStations.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="text-center py-8 text-gray-500">
+                            {!isConnected ? 'Нет подключения к серверу' : 'Нет данных'}
+                          </td>
+                        </tr>
+                      )}
+                      {!loading && filteredStations.map((station) => (
+                        <tr key={station.id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <div>
+                              <div className="font-medium text-gray-900 text-sm">{station.name}</div>
+                              <div className="text-xs text-gray-600">{station.city || station.location} • {station.owner || 'Неизвестно'}</div>
+                              <div className="text-xs text-blue-600">{station.connectedApp || 'Не подключено'}</div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Badge 
+                              className={`text-xs ${
+                                station.status === 'available' || station.status === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                                station.status === 'charging' || station.status === 'inactive' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                                station.status === 'maintenance' ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200' :
+                                station.status === 'error' || station.status === 'offline' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
+                                'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                              }`}
+                            >
+                              {getStatusLabel(station.status)}
+                            </Badge>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-sm">{station.connectors?.length || 0}</div>
+                            <div className="text-xs text-gray-500">
+                              {station.connectors?.filter(c => c.status === 'available').length || 0} доступно
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-sm">{(station.totalSessions || 0).toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">всего</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Link to={`/station/${station.id}`}>
+                              <Button variant="outline" size="sm">
+                                Подробнее
+                              </Button>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           </div>
