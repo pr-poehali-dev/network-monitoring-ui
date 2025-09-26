@@ -9,6 +9,8 @@ import TransactionDetailModal from './TransactionDetailModal';
 import SimpleTabContent from './SimpleTabContent';
 import AvailabilityTab from './AvailabilityTab';
 import StatisticsTab from './StatisticsTab';
+import InputMeterTab from './InputMeterTab';
+import RectifiersTab from './RectifiersTab';
 
 interface Connector {
   id: string;
@@ -89,7 +91,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
   return (
     <>
       <Tabs value={activeTab} onValueChange={onTabChange}>
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 grid w-full grid-cols-3 lg:grid-cols-9">
           <TabsTrigger value="management">Панель управления</TabsTrigger>
           <TabsTrigger value="transactions">Транзакции</TabsTrigger>
           <TabsTrigger value="settings">Настройки</TabsTrigger>
@@ -97,6 +99,8 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
           <TabsTrigger value="logs">Логи</TabsTrigger>
           <TabsTrigger value="stats">Статистика</TabsTrigger>
           <TabsTrigger value="availability">Доступность</TabsTrigger>
+          <TabsTrigger value="input-meter">Прибор учета</TabsTrigger>
+          <TabsTrigger value="rectifiers">Выпрямители</TabsTrigger>
         </TabsList>
 
         <TabsContent value="management" className="space-y-6">
@@ -129,6 +133,14 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
 
         <TabsContent value="availability">
           <AvailabilityTab />
+        </TabsContent>
+
+        <TabsContent value="input-meter">
+          <InputMeterTab />
+        </TabsContent>
+
+        <TabsContent value="rectifiers">
+          <RectifiersTab />
         </TabsContent>
       </Tabs>
 

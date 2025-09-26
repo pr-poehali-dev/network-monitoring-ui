@@ -1,0 +1,356 @@
+import { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Icon from '@/components/ui/icon';
+
+interface PhaseData {
+  phase: 'L1' | 'L2' | 'L3';
+  voltage: number; // Вольты
+  current: number; // Амперы
+  power: number;   // Ватты
+}
+
+interface MeterReading {
+  timestamp: string;
+  phases: PhaseData[];
+  frequency: number; // Герцы
+  totalPower: number; // Общая мощность кВт
+  totalEnergy: number; // Общая энергия кВт⋅ч
+}
+
+interface VoltagePoint {
+  time: string;
+  L1: number;
+  L2: number;
+  L3: number;
+}
+
+export default function InputMeterTab() {
+  const [selectedPeriod, setSelectedPeriod] = useState<string>('1h');
+
+  // Имитация текущих показаний прибора учета
+  const currentReading: MeterReading = {
+    timestamp: new Date().toISOString(),
+    phases: [
+      { phase: 'L1', voltage: 231.4, current: 15.8, power: 3656 },
+      { phase: 'L2', voltage: 229.7, current: 16.2, power: 3721 },
+      { phase: 'L3', voltage: 232.1, current: 15.1, power: 3505 }
+    ],
+    frequency: 49.95,
+    totalPower: 10.88, // кВт
+    totalEnergy: 45672.8 // кВт⋅ч за все время
+  };
+
+  // Имитация данных для графика напряжения
+  const generateVoltageData = (period: string): VoltagePoint[] => {
+    const points: VoltagePoint[] = [];
+    const now = new Date();
+    let intervals: number;
+    let stepMinutes: number;
+
+    switch (period) {
+      case '1h':
+        intervals = 60;
+        stepMinutes = 1;
+        break;
+      case '24h':
+        intervals = 24;
+        stepMinutes = 60;
+        break;
+      case '7d':
+        intervals = 7 * 24;
+        stepMinutes = 60;
+        break;
+      default:
+        intervals = 60;
+        stepMinutes = 1;
+    }
+
+    for (let i = intervals; i >= 0; i--) {
+      const time = new Date(now.getTime() - i * stepMinutes * 60000);
+      points.push({
+        time: time.toLocaleTimeString('ru-RU', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          ...(period === '7d' && { day: '2-digit', month: '2-digit' })
+        }),
+        L1: 230 + Math.sin(i * 0.1) * 3 + (Math.random() - 0.5) * 2,
+        L2: 230 + Math.cos(i * 0.1) * 3 + (Math.random() - 0.5) * 2,
+        L3: 230 + Math.sin(i * 0.15) * 3 + (Math.random() - 0.5) * 2
+      });
+    }
+    return points;
+  };
+
+  const voltageData = generateVoltageData(selectedPeriod);
+
+  const getPhaseColor = (phase: string) => {
+    switch (phase) {
+      case 'L1': return 'text-red-600 border-red-200 bg-red-50';
+      case 'L2': return 'text-yellow-600 border-yellow-200 bg-yellow-50';
+      case 'L3': return 'text-blue-600 border-blue-200 bg-blue-50';
+      default: return 'text-gray-600 border-gray-200 bg-gray-50';
+    }
+  };
+
+  const getPeriodLabel = (period: string) => {
+    switch (period) {
+      case '1h': return 'Последний час';
+      case '24h': return 'Последние 24 часа';
+      case '7d': return 'Последняя неделя';
+      default: return 'Период';
+    }
+  };
+
+  const formatVoltage = (voltage: number) => voltage.toFixed(1);
+  const formatCurrent = (current: number) => current.toFixed(1);
+  const formatPower = (power: number) => (power / 1000).toFixed(2);
+
+  return (
+    <div className="space-y-6">
+      {/* Текущие показания */}
+      <div className="grid gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Icon name="Gauge" size={20} />
+              Текущие показания входного прибора учета
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Общие параметры */}
+              <div className="text-center">
+                <div className="text-3xl font-bold text-green-600">{currentReading.totalPower} кВт</div>
+                <div className="text-sm text-gray-600 mt-1">Общая мощность</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-purple-600">{currentReading.totalEnergy.toLocaleString()} кВт⋅ч</div>
+                <div className="text-sm text-gray-600 mt-1">Всего энергии</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-indigo-600">{currentReading.frequency} Гц</div>
+                <div className="text-sm text-gray-600 mt-1">Частота</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-600">{currentReading.phases.length}</div>
+                <div className="text-sm text-gray-600 mt-1">Фазы</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Показания по фазам */}
+        <div className="grid gap-4">
+          <h3 className="text-lg font-semibold">Показания по фазам</h3>
+          
+          {currentReading.phases.map((phase) => (
+            <Card key={phase.phase}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-3">
+                  <div className={`w-3 h-3 rounded-full ${
+                    phase.phase === 'L1' ? 'bg-red-500' :
+                    phase.phase === 'L2' ? 'bg-yellow-500' :
+                    'bg-blue-500'
+                  }`} />
+                  <span>Фаза {phase.phase}</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold border-2 rounded-lg p-3 ${getPhaseColor(phase.phase)}`}>
+                      {formatVoltage(phase.voltage)} В
+                    </div>
+                    <div className="text-sm text-gray-600 mt-2">Напряжение</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold border-2 rounded-lg p-3 ${getPhaseColor(phase.phase)}`}>
+                      {formatCurrent(phase.current)} А
+                    </div>
+                    <div className="text-sm text-gray-600 mt-2">Ток</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`text-2xl font-bold border-2 rounded-lg p-3 ${getPhaseColor(phase.phase)}`}>
+                      {formatPower(phase.power)} кВт
+                    </div>
+                    <div className="text-sm text-gray-600 mt-2">Мощность</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* График напряжения */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="flex items-center gap-2">
+              <Icon name="TrendingUp" size={20} />
+              График напряжения по фазам
+            </CardTitle>
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1h">Последний час</SelectItem>
+                <SelectItem value="24h">Последние 24 часа</SelectItem>
+                <SelectItem value="7d">Последняя неделя</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p className="text-sm text-gray-500">
+            {getPeriodLabel(selectedPeriod)} • Обновлено: {new Date().toLocaleTimeString('ru-RU')}
+          </p>
+        </CardHeader>
+        <CardContent>
+          {/* Легенда */}
+          <div className="flex justify-center gap-6 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full" />
+              <span className="text-sm">Фаза L1</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+              <span className="text-sm">Фаза L2</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full" />
+              <span className="text-sm">Фаза L3</span>
+            </div>
+          </div>
+
+          {/* Простой график в виде SVG */}
+          <div className="w-full h-80 border rounded-lg bg-gray-50 p-4">
+            <svg width="100%" height="100%" viewBox="0 0 800 280">
+              {/* Сетка */}
+              <defs>
+                <pattern id="grid" width="40" height="28" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 28" fill="none" stroke="#e5e7eb" strokeWidth="1"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+              
+              {/* Оси */}
+              <line x1="50" y1="260" x2="750" y2="260" stroke="#6b7280" strokeWidth="2" />
+              <line x1="50" y1="20" x2="50" y2="260" stroke="#6b7280" strokeWidth="2" />
+              
+              {/* Подписи осей */}
+              <text x="400" y="280" textAnchor="middle" className="text-sm fill-gray-600">Время</text>
+              <text x="25" y="140" textAnchor="middle" transform="rotate(-90, 25, 140)" className="text-sm fill-gray-600">Напряжение (В)</text>
+              
+              {/* Масштаб по Y (200-250В) */}
+              {[200, 210, 220, 230, 240, 250].map((voltage, i) => (
+                <g key={voltage}>
+                  <line x1="45" y1={260 - i * 40} x2="50" y2={260 - i * 40} stroke="#6b7280" strokeWidth="1" />
+                  <text x="40" y={265 - i * 40} textAnchor="end" className="text-xs fill-gray-600">{voltage}</text>
+                </g>
+              ))}
+              
+              {/* Линии графика */}
+              {voltageData.length > 1 && (
+                <>
+                  {/* L1 - красная */}
+                  <polyline
+                    fill="none"
+                    stroke="#dc2626"
+                    strokeWidth="2"
+                    points={voltageData.map((point, i) => 
+                      `${50 + (i * 700 / (voltageData.length - 1))},${260 - ((point.L1 - 200) * 200 / 50)}`
+                    ).join(' ')}
+                  />
+                  
+                  {/* L2 - желтая */}
+                  <polyline
+                    fill="none"
+                    stroke="#eab308"
+                    strokeWidth="2"
+                    points={voltageData.map((point, i) => 
+                      `${50 + (i * 700 / (voltageData.length - 1))},${260 - ((point.L2 - 200) * 200 / 50)}`
+                    ).join(' ')}
+                  />
+                  
+                  {/* L3 - синяя */}
+                  <polyline
+                    fill="none"
+                    stroke="#2563eb"
+                    strokeWidth="2"
+                    points={voltageData.map((point, i) => 
+                      `${50 + (i * 700 / (voltageData.length - 1))},${260 - ((point.L3 - 200) * 200 / 50)}`
+                    ).join(' ')}
+                  />
+                </>
+              )}
+              
+              {/* Подписи времени */}
+              {voltageData.length > 0 && selectedPeriod !== '7d' && (
+                <>
+                  <text x="50" y="275" textAnchor="start" className="text-xs fill-gray-600">
+                    {voltageData[0].time}
+                  </text>
+                  <text x="750" y="275" textAnchor="end" className="text-xs fill-gray-600">
+                    {voltageData[voltageData.length - 1].time}
+                  </text>
+                </>
+              )}
+            </svg>
+          </div>
+
+          {/* Статистика по периоду */}
+          <div className="mt-6 pt-6 border-t">
+            <div className="grid grid-cols-3 gap-6 text-center">
+              <div>
+                <div className="text-lg font-semibold text-red-600">
+                  {formatVoltage(voltageData.reduce((sum, p) => sum + p.L1, 0) / voltageData.length)} В
+                </div>
+                <div className="text-sm text-gray-600">Среднее L1</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-yellow-600">
+                  {formatVoltage(voltageData.reduce((sum, p) => sum + p.L2, 0) / voltageData.length)} В
+                </div>
+                <div className="text-sm text-gray-600">Среднее L2</div>
+              </div>
+              <div>
+                <div className="text-lg font-semibold text-blue-600">
+                  {formatVoltage(voltageData.reduce((sum, p) => sum + p.L3, 0) / voltageData.length)} В
+                </div>
+                <div className="text-sm text-gray-600">Среднее L3</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Дополнительные действия */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="Settings" size={20} />
+            Действия с прибором учета
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-3">
+            <Button variant="outline" className="flex items-center gap-2">
+              <Icon name="Download" size={16} />
+              Экспорт данных
+            </Button>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Icon name="RotateCcw" size={16} />
+              Сброс показаний
+            </Button>
+            <Button variant="outline" className="flex items-center gap-2">
+              <Icon name="Calibrate" size={16} />
+              Калибровка
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
