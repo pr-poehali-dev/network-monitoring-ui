@@ -258,7 +258,6 @@ export default function InputMeterTab() {
               
               {/* Подписи осей */}
               <text x="400" y="280" textAnchor="middle" className="text-sm fill-gray-600">Время</text>
-              <text x="8" y="140" textAnchor="middle" transform="rotate(-90, 8, 140)" className="text-xs fill-gray-600">Напряжение (В)</text>
               
               {/* Масштаб по Y (200-250В) */}
               {[200, 210, 220, 230, 240, 250].map((voltage, i) => (
