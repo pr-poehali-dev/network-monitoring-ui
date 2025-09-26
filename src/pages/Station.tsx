@@ -6,6 +6,7 @@ import Icon from '@/components/ui/icon';
 import StationHeader from '@/components/station/StationHeader';
 import StationTabs from '@/components/station/StationTabs';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { wsService } from '@/services/websocket';
 import { StationData } from '@/types/websocket';
 
 interface ChargingStation {
@@ -109,7 +110,7 @@ export default function Station() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  const { wsService, connected } = useWebSocket();
+  const { isConnected: connected } = useWebSocket();
 
   useEffect(() => {
     let isMounted = true;
@@ -123,8 +124,11 @@ export default function Station() {
         setLoading(true);
         setError(null);
         console.log('🔍 Загружаем станцию с ID:', id);
+        console.log('🔌 WebSocket connected:', connected);
+        console.log('🔌 WebSocket state:', wsService.isConnected());
         
         const stationData = await wsService.getStationDetail(id);
+        console.log('📦 Получены данные станции:', stationData);
         
         if (isMounted) {
           if (stationData) {

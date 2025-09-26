@@ -92,6 +92,7 @@ export class WebSocketService {
   private sendMessage(message: WSClientMessage): Promise<WSServerMessage> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        console.error('❌ WebSocket не подключен. Состояние:', this.ws?.readyState);
         reject(new Error('WebSocket is not connected'));
         return;
       }
@@ -99,8 +100,11 @@ export class WebSocketService {
       const requestId = this.generateRequestId();
       message.requestId = requestId;
 
+      console.log('📤 Отправляем сообщение:', JSON.stringify(message, null, 2));
+
       // Устанавливаем обработчик ответа
       this.messageHandlers.set(requestId, (response: WSServerMessage) => {
+        console.log('📥 Получен ответ:', JSON.stringify(response, null, 2));
         if (response.type === 'error') {
           reject(new Error(response.error?.message || 'Unknown error'));
         } else {
@@ -109,12 +113,19 @@ export class WebSocketService {
       });
 
       // Отправляем сообщение
-      this.ws.send(JSON.stringify(message));
+      try {
+        this.ws.send(JSON.stringify(message));
+        console.log('✅ Сообщение отправлено, ожидаем ответ...');
+      } catch (error) {
+        console.error('❌ Ошибка отправки сообщения:', error);
+        reject(error);
+      }
 
       // Таймаут для запроса
       setTimeout(() => {
         if (this.messageHandlers.has(requestId)) {
           this.messageHandlers.delete(requestId);
+          console.error('⏰ Таймаут запроса:', requestId);
           reject(new Error('Request timeout'));
         }
       }, 10000); // 10 секунд таймаут
@@ -150,6 +161,9 @@ export class WebSocketService {
   }
 
   async getStationDetail(stationId: string): Promise<StationData | null> {
+    console.log('📡 Отправляем запрос getStationDetail для:', stationId);
+    console.log('🔌 Состояние WebSocket:', this.ws?.readyState);
+    
     const response = await this.sendMessage({
       type: 'request',
       action: 'getStationDetail',
@@ -159,6 +173,7 @@ export class WebSocketService {
       requestId: ''
     });
 
+    console.log('📡 Получен ответ getStationDetail:', response);
     return response.data?.station || null;
   }
 
@@ -175,5 +190,5 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance - используем WSS с самоподписанным сертификатом
-export const wsService = new WebSocketService('wss://78.138.143.58:10009/ws');
+// Singleton instance - временно используем WS для тестирования (без SSL)
+export const wsService = new WebSocketService('ws://78.138.143.58:10009/ws');
