@@ -218,7 +218,7 @@ export default function RectifiersTab() {
   }) => {
     if (isTemperature) {
       return (
-        <div className={`font-mono text-sm ${getTemperatureColor(value as number, isDisabled || false)}`}>
+        <div className={`font-mono text-sm font-semibold ${getTemperatureColor(value as number, isDisabled || false)}`}>
           {(value as number).toFixed(1)}
         </div>
       );
@@ -228,20 +228,26 @@ export default function RectifiersTab() {
       return (
         <div className="flex justify-center">
           {value ? (
-            <div className="w-4 h-4 bg-red-500 rounded-sm border border-gray-400"></div>
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+              OFF
+            </div>
           ) : (
-            <div className="w-4 h-4 bg-gray-200 rounded-sm border border-gray-400"></div>
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+              ON
+            </div>
           )}
         </div>
       );
     }
 
-    // Для обычных статусов - черные квадраты для false, белые для true (как на изображении)
+    // Для обычных статусов - круглые индикаторы
     return (
       <div className="flex justify-center">
-        <div className={`w-3 h-3 border border-gray-600 ${
-          value ? 'bg-white' : 'bg-black'
-        }`}></div>
+        {value ? (
+          <div className="w-3 h-3 bg-red-500 rounded-full border border-red-300 shadow-sm"></div>
+        ) : (
+          <div className="w-3 h-3 bg-green-500 rounded-full border border-green-300 shadow-sm"></div>
+        )}
       </div>
     );
   };
@@ -259,7 +265,7 @@ export default function RectifiersTab() {
         <CardContent>
           <div className="text-sm text-gray-600">
             Диагностическая таблица показывает текущее состояние всех выпрямительных модулей и их параметры.
-            Черные квадраты означают нормальное состояние, белые - наличие проблемы.
+            Зеленые индикаторы означают нормальное состояние, красные - наличие проблемы.
           </div>
         </CardContent>
       </Card>
@@ -271,12 +277,12 @@ export default function RectifiersTab() {
             <table className="w-full border-collapse">
               {/* Заголовок таблицы */}
               <thead>
-                <tr className="bg-green-100">
-                  <th className="border border-gray-400 px-4 py-3 text-left font-semibold text-gray-800 min-w-[200px]">
+                <tr className="bg-gray-50 border-b-2 border-gray-200">
+                  <th className="px-3 py-2 text-left font-semibold text-gray-700 min-w-[180px] text-sm">
                     Параметр
                   </th>
                   {rectifiers.map((rectifier) => (
-                    <th key={rectifier.id} className="border border-gray-400 px-4 py-3 text-center font-semibold text-gray-800 min-w-[80px]">
+                    <th key={rectifier.id} className="px-2 py-2 text-center font-semibold text-gray-700 min-w-[70px] text-sm">
                       {rectifier.name}
                     </th>
                   ))}
@@ -286,12 +292,14 @@ export default function RectifiersTab() {
               {/* Строки данных */}
               <tbody>
                 {statusRows.map((row, rowIndex) => (
-                  <tr key={row.key} className={rowIndex % 2 === 0 ? 'bg-green-50' : 'bg-green-100'}>
-                    <td className="border border-gray-400 px-4 py-3 font-medium text-gray-800">
+                  <tr key={row.key} className={`border-b border-gray-100 hover:bg-gray-25 ${
+                    rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                  }`}>
+                    <td className="px-3 py-2 font-medium text-gray-700 text-sm">
                       {row.label}
                     </td>
                     {rectifiers.map((rectifier) => (
-                      <td key={rectifier.id} className="border border-gray-400 px-4 py-3 text-center">
+                      <td key={rectifier.id} className="px-2 py-2 text-center">
                         <StatusCell 
                           value={getStatusValue(rectifier, row.key)}
                           isTemperature={row.isTemperature}
@@ -321,11 +329,11 @@ export default function RectifiersTab() {
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-800">Статусы неисправностей:</h4>
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-black border border-gray-600"></div>
-                <span className="text-sm">Нормальное состояние (нет проблемы)</span>
+                <div className="w-3 h-3 bg-green-500 rounded-full border border-green-300 shadow-sm"></div>
+                <span className="text-sm">Нормальное состояние</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-white border border-gray-600"></div>
+                <div className="w-3 h-3 bg-red-500 rounded-full border border-red-300 shadow-sm"></div>
                 <span className="text-sm">Обнаружена проблема</span>
               </div>
             </div>
@@ -333,11 +341,15 @@ export default function RectifiersTab() {
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-800">Состояние модуля:</h4>
               <div className="flex items-center gap-3">
-                <div className="w-4 h-4 bg-gray-200 rounded-sm border border-gray-400"></div>
+                <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                  ON
+                </div>
                 <span className="text-sm">Модуль включен</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-4 h-4 bg-red-500 rounded-sm border border-gray-400"></div>
+                <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                  OFF
+                </div>
                 <span className="text-sm">Модуль отключен</span>
               </div>
             </div>
