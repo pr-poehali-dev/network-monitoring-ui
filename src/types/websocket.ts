@@ -22,7 +22,6 @@ export interface WSClientMessage {
   action: 'getStations' | 'getStationById' | 'getStationStats';
   data?: {
     stationId?: string;
-    fields?: string[]; // Какие поля возвращать ['id', 'name', 'status', 'coordinates']
     filters?: {
       city?: string;
       owner?: string;

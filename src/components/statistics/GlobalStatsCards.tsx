@@ -15,13 +15,13 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
           <Icon name="Activity" className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{(globalStats.totalSessions || 0).toLocaleString()}</div>
+          <div className="text-2xl font-bold">{globalStats.totalSessions.toLocaleString()}</div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              Успешные: {(globalStats.successfulSessions || 0).toLocaleString()}
+              Успешные: {globalStats.successfulSessions.toLocaleString()}
             </div>
-            <span>({(globalStats.avgSuccessRate || 0).toFixed(1)}%)</span>
+            <span>({globalStats.avgSuccessRate.toFixed(1)}%)</span>
           </div>
         </CardContent>
       </Card>
@@ -32,7 +32,7 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
           <Icon name="Zap" className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{(globalStats.totalEnergy || 0).toLocaleString()} кВт⋅ч</div>
+          <div className="text-2xl font-bold">{globalStats.totalEnergy.toLocaleString()} кВт⋅ч</div>
           <p className="text-xs text-muted-foreground">За все время</p>
         </CardContent>
       </Card>
@@ -43,9 +43,9 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
           <Icon name="AlertTriangle" className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{globalStats.totalErrors || 0}</div>
+          <div className="text-2xl font-bold text-red-600">{globalStats.totalErrors}</div>
           <p className="text-xs text-muted-foreground">
-            Среднее на станцию: {globalStats.totalStations > 0 ? Math.round((globalStats.totalErrors || 0) / globalStats.totalStations) : 0}
+            Среднее на станцию: {Math.round(globalStats.totalErrors / globalStats.totalStations)}
           </p>
         </CardContent>
       </Card>
@@ -58,15 +58,15 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{globalStats.activeStations || 0}</div>
+              <div className="text-lg font-bold text-green-600">{globalStats.activeStations}</div>
               <div className="text-xs text-gray-500">Активные</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{globalStats.offlineStations || 0}</div>
+              <div className="text-lg font-bold text-red-600">{globalStats.offlineStations}</div>
               <div className="text-xs text-gray-500">Оффлайн</div>
             </div>
             <div className="text-center">
-              <div className="text-lg font-bold text-yellow-600">{globalStats.maintenanceStations || 0}</div>
+              <div className="text-lg font-bold text-yellow-600">{globalStats.maintenanceStations}</div>
               <div className="text-xs text-gray-500">Зарядка</div>
             </div>
           </div>

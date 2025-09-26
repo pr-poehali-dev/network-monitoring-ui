@@ -56,16 +56,12 @@ export function useStations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStations = useCallback(async (options?: {
-    fields?: string[];
-    filters?: any;
-    pagination?: { page: number; limit: number };
-  }) => {
+  const loadStations = useCallback(async (filters?: any, pagination?: { page: number; limit: number }) => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await wsService.getStations(options);
+      const data = await wsService.getStations(filters, pagination);
       setStations(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stations');
@@ -102,36 +98,11 @@ export function useStations() {
     };
   }, []);
 
-  // Специализированные методы для разных view
-  const loadStationsForMap = useCallback(async () => {
-    console.log('🗺️ Loading stations for map with minimal fields...');
-    return loadStations({
-      fields: ['id', 'name', 'city', 'status', 'coordinates', 'owner']
-    });
-  }, [loadStations]);
-
-  const loadStationsForList = useCallback(async () => {
-    console.log('📋 Loading stations for list with full fields...');
-    return loadStations({
-      fields: ['id', 'name', 'city', 'owner', 'status', 'totalEnergy', 'currentPower', 'connectedApp', 'lastUpdate']
-    });
-  }, [loadStations]);
-
-  const loadStationsForStats = useCallback(async () => {
-    console.log('📊 Loading stations for statistics...');
-    return loadStations({
-      fields: ['id', 'city', 'owner', 'connectedApp', 'totalEnergy']
-    });
-  }, [loadStations]);
-
   return {
     stations,
     loading,
     error,
     loadStations,
-    loadStationsForMap,
-    loadStationsForList,
-    loadStationsForStats,
     getStationById
   };
 }
