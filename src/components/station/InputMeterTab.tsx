@@ -258,13 +258,13 @@ export default function InputMeterTab() {
               
               {/* Подписи осей */}
               <text x="400" y="280" textAnchor="middle" className="text-sm fill-gray-600">Время</text>
-              <text x="15" y="140" textAnchor="middle" transform="rotate(-90, 15, 140)" className="text-sm fill-gray-600">Напряжение (В)</text>
+              <text x="8" y="140" textAnchor="middle" transform="rotate(-90, 8, 140)" className="text-xs fill-gray-600">Напряжение (В)</text>
               
               {/* Масштаб по Y (200-250В) */}
               {[200, 210, 220, 230, 240, 250].map((voltage, i) => (
                 <g key={voltage}>
                   <line x1="25" y1={260 - i * 40} x2="30" y2={260 - i * 40} stroke="#6b7280" strokeWidth="1" />
-                  <text x="20" y={265 - i * 40} textAnchor="end" className="text-xs fill-gray-600">{voltage}</text>
+                  <text x="23" y={264 - i * 40} textAnchor="end" className="text-xs fill-gray-600">{voltage}</text>
                 </g>
               ))}
               
