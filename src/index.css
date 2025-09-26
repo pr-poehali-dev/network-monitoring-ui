@@ -102,3 +102,8 @@
     font-family: "Roboto", system-ui, sans-serif;
   }
 }
+
+/* Leaflet customization */
+.leaflet-attribution-flag {
+  display: none !important;
+}
