@@ -121,6 +121,15 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             attribution: '© OpenStreetMap contributors'
           }).addTo(map);
 
+          // Убираем ссылки из attribution, оставляем только текст
+          setTimeout(() => {
+            const attributionControl = document.querySelector('.leaflet-control-attribution');
+            if (attributionControl) {
+              // Заменяем содержимое на простой текст без ссылок
+              attributionControl.innerHTML = '© OpenStreetMap contributors';
+            }
+          }, 100);
+
           // Скрываем флаг в attribution после загрузки карты
           setTimeout(() => {
             const flagElement = document.querySelector('.leaflet-attribution-flag');
