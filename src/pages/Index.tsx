@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Icon from '@/components/ui/icon';
 import Map from '@/components/Map';
 import Layout from '@/components/Layout';
+import WebSocketStatus from '@/components/WebSocketStatus';
+import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 
 interface ChargingStation {
   id: string;
@@ -88,6 +90,10 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  
+  // WebSocket подключение и данные
+  const { isConnected, isConnecting, error } = useWebSocket();
+  const { stations, loading, loadStations } = useStations();
 
   const currentTab = searchParams.get('tab') || 'map';
 
@@ -115,6 +121,16 @@ export default function Index() {
               </p>
             </div>
             <div className="flex items-center gap-4">
+              <WebSocketStatus />
+              {/* Кнопка для тестирования загрузки данных */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => loadStations()}
+                disabled={!isConnected || loading}
+              >
+                {loading ? 'Загрузка...' : 'Загрузить данные'}
+              </Button>
               <Badge variant="outline" className="gap-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                 Онлайн: 18

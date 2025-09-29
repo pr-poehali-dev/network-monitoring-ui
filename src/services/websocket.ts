@@ -67,26 +67,11 @@ export class WebSocketService {
   }
 
   private handleRealtimeUpdate(message: WSServerMessage) {
-    console.log('📡 Real-time обновление:', message);
-    
-    if (message.action === 'stationUpdate') {
-      const updates = message.data?.updates || [];
-      
-      // Вызываем все зарегистрированные коллбэки
-      this.updateCallbacks.forEach(callback => {
-        try {
-          callback(updates);
-        } catch (error) {
-          console.error('Ошибка в коллбэке обновления:', error);
-        }
-      });
-      
-      // Эмитируем событие для компонентов
-      const event = new CustomEvent('stationUpdate', {
-        detail: { updates }
-      });
-      window.dispatchEvent(event);
-    }
+    // Эмитируем событие для компонентов
+    const event = new CustomEvent('stationUpdate', {
+      detail: message.data
+    });
+    window.dispatchEvent(event);
   }
 
   private handleReconnect() {
@@ -107,7 +92,6 @@ export class WebSocketService {
   private sendMessage(message: WSClientMessage): Promise<WSServerMessage> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-        console.error('❌ WebSocket не подключен. Состояние:', this.ws?.readyState);
         reject(new Error('WebSocket is not connected'));
         return;
       }
@@ -115,11 +99,8 @@ export class WebSocketService {
       const requestId = this.generateRequestId();
       message.requestId = requestId;
 
-      console.log('📤 Отправляем сообщение:', JSON.stringify(message, null, 2));
-
       // Устанавливаем обработчик ответа
       this.messageHandlers.set(requestId, (response: WSServerMessage) => {
-        console.log('📥 Получен ответ:', JSON.stringify(response, null, 2));
         if (response.type === 'error') {
           reject(new Error(response.error?.message || 'Unknown error'));
         } else {
@@ -128,19 +109,12 @@ export class WebSocketService {
       });
 
       // Отправляем сообщение
-      try {
-        this.ws.send(JSON.stringify(message));
-        console.log('✅ Сообщение отправлено, ожидаем ответ...');
-      } catch (error) {
-        console.error('❌ Ошибка отправки сообщения:', error);
-        reject(error);
-      }
+      this.ws.send(JSON.stringify(message));
 
       // Таймаут для запроса
       setTimeout(() => {
         if (this.messageHandlers.has(requestId)) {
           this.messageHandlers.delete(requestId);
-          console.error('⏰ Таймаут запроса:', requestId);
           reject(new Error('Request timeout'));
         }
       }, 10000); // 10 секунд таймаут
@@ -175,92 +149,12 @@ export class WebSocketService {
     return response.data?.station || null;
   }
 
-  async getStationDetail(stationId: string): Promise<StationData | null> {
-    console.log('📡 Отправляем запрос getStationDetail для:', stationId);
-    console.log('🔌 Состояние WebSocket:', this.ws?.readyState);
-    
-    const response = await this.sendMessage({
-      type: 'request',
-      action: 'getStationDetail',
-      data: {
-        stationId
-      },
-      requestId: ''
-    });
-
-    console.log('📡 Получен ответ getStationDetail:', response);
-    return response.data?.station || null;
-  }
-
-  async getMonitoringData(): Promise<any> {
-    console.log('📡 Запрашиваем данные мониторинга');
-    const response = await this.sendMessage({
-      type: 'request',
-      action: 'getMonitoringData',
-      data: {},
-      requestId: ''
-    });
-    return response.data || {};
-  }
-
-  async getStatisticsData(filters?: any): Promise<any> {
-    console.log('📡 Запрашиваем данные статистики');
-    const response = await this.sendMessage({
-      type: 'request',
-      action: 'getStatisticsData',
-      data: { filters },
-      requestId: ''
-    });
-    return response.data || {};
-  }
-
-  async getMapData(): Promise<any> {
-    console.log('📡 Запрашиваем данные для карты');
-    const response = await this.sendMessage({
-      type: 'request',
-      action: 'getMapData',
-      data: {},
-      requestId: ''
-    });
-    return response.data || {};
-  }
-
-  async getGlobalStats(): Promise<any> {
-    console.log('📡 Запрашиваем глобальную статистику');
-    const response = await this.sendMessage({
-      type: 'request',
-      action: 'getGlobalStats',
-      data: {},
-      requestId: ''
-    });
-    return response.data || {};
-  }
-
-  async getChartData(chartType: string, period: string = 'week'): Promise<any> {
-    console.log('📡 Запрашиваем данные для графика:', chartType);
-    const response = await this.sendMessage({
-      type: 'request',
-      action: 'getChartData',
-      data: { chartType, period },
-      requestId: ''
-    });
-    return response.data || {};
-  }
-
-  // Подписка на real-time обновления
-  onStationUpdate(callback: (updates: any[]) => void) {
-    this.updateCallbacks.push(callback);
-  }
-
-  private updateCallbacks: ((updates: any[]) => void)[] = [];
-
   disconnect() {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
     this.messageHandlers.clear();
-    this.updateCallbacks = [];
   }
 
   isConnected(): boolean {
@@ -268,5 +162,5 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance - используем WSS с SSL сертификатом
+// Singleton instance - используем WSS с самоподписанным сертификатом
 export const wsService = new WebSocketService('wss://78.138.143.58:10009/ws');
