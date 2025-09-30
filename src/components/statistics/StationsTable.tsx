@@ -20,8 +20,6 @@ export default function StationsTable({ stations }: StationsTableProps) {
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Сессии</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Успешность</th>
                 <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Энергия</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Ошибки</th>
-                <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Загрузка</th>
               </tr>
             </thead>
             <tbody>
@@ -53,22 +51,6 @@ export default function StationsTable({ stations }: StationsTableProps) {
                   </td>
                   <td className="py-3 px-4">
                     <div className="font-medium text-sm">{station.totalEnergy.toLocaleString()} кВт⋅ч</div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className={`font-medium text-sm ${station.errorsCount > 50 ? 'text-red-600' : station.errorsCount > 30 ? 'text-orange-600' : 'text-gray-600'}`}>
-                      {station.errorsCount}
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 bg-gray-200 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full ${station.utilization > 80 ? 'bg-red-500' : station.utilization > 60 ? 'bg-orange-500' : 'bg-green-500'}`}
-                          style={{ width: `${station.utilization}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-medium">{station.utilization}%</span>
-                    </div>
                   </td>
                 </tr>
               ))}

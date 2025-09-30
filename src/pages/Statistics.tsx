@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import Layout from '@/components/Layout';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StatisticsHeader from '@/components/statistics/StatisticsHeader';
 import GlobalStatsCards from '@/components/statistics/GlobalStatsCards';
 import FiltersAndSearch from '@/components/statistics/FiltersAndSearch';
 import StationsTable from '@/components/statistics/StationsTable';
-import ChartsView from '@/components/statistics/ChartsView';
 import { mockStationsStats } from '@/components/statistics/mockData';
 import { calculateGlobalStats, filterAndSortStations } from '@/components/statistics/utils';
 
@@ -39,40 +37,25 @@ export default function Statistics() {
     <Layout>
       <StatisticsHeader />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <GlobalStatsCards globalStats={globalStats} />
 
-        <Tabs defaultValue="table" className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="table">Таблица</TabsTrigger>
-              <TabsTrigger value="charts">Графики</TabsTrigger>
-            </TabsList>
-          </div>
+        <FiltersAndSearch 
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          cityFilter={cityFilter}
+          setCityFilter={setCityFilter}
+          ownerFilter={ownerFilter}
+          setOwnerFilter={setOwnerFilter}
+          appFilter={appFilter}
+          setAppFilter={setAppFilter}
+          clearFilters={clearFilters}
+          hasActiveFilters={hasActiveFilters}
+        />
 
-          <FiltersAndSearch 
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            cityFilter={cityFilter}
-            setCityFilter={setCityFilter}
-            ownerFilter={ownerFilter}
-            setOwnerFilter={setOwnerFilter}
-            appFilter={appFilter}
-            setAppFilter={setAppFilter}
-            clearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-          />
-
-          <TabsContent value="table">
-            <StationsTable stations={filteredStations} />
-          </TabsContent>
-
-          <TabsContent value="charts">
-            <ChartsView stations={filteredStations} />
-          </TabsContent>
-        </Tabs>
+        <StationsTable stations={filteredStations} />
       </div>
     </Layout>
   );
