@@ -4,6 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
 
 interface Connector {
@@ -52,6 +53,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
   const [cityFilter, setCityFilter] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('');
   const [appFilter, setAppFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     // Координаты границ карты OpenStreetMap (bbox=37.2,55.3,38.4,56.2)
@@ -501,7 +503,19 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                   />
                 </div>
 
-                {(cityFilter || ownerFilter || appFilter) && (
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Статус станций" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Все статусы</SelectItem>
+                    <SelectItem value="online">Онлайн</SelectItem>
+                    <SelectItem value="offline">Офлайн</SelectItem>
+                    <SelectItem value="error">Ошибка</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {(cityFilter || ownerFilter || appFilter || statusFilter !== 'all') && (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -509,6 +523,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                       setCityFilter('');
                       setOwnerFilter('');
                       setAppFilter('');
+                      setStatusFilter('all');
                     }}
                     className="w-full h-9 text-sm"
                   >
