@@ -13,7 +13,7 @@ interface ChargingStation {
   id: string;
   name: string;
   location: string;
-  status: 'online' | 'offline' | 'maintenance';
+  status: 'online' | 'offline' | 'error';
   connectors: Connector[];
   totalSessions: number;
   lastActivity: string;
@@ -23,7 +23,7 @@ interface ChargingStation {
 interface Connector {
   id: string;
   type: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
+  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
   power: number;
   currentSession?: {
     startTime: string;
@@ -66,7 +66,7 @@ const mockStations: ChargingStation[] = [
     id: '3',
     name: 'ЭЗС Южная',
     location: 'ул. Победы, 12',
-    status: 'maintenance',
+    status: 'error',
     coordinates: [55.7430, 37.6156],
     totalSessions: 203,
     lastActivity: '1 час назад',
@@ -81,7 +81,7 @@ const getStatusLabel = (status: string) => {
   switch (status) {
     case 'online': return 'Онлайн';
     case 'offline': return 'Офлайн';
-    case 'maintenance': return 'Обслуживание';
+    case 'error': return 'Ошибка';
     default: return 'Неизвестно';
   }
 };
@@ -185,7 +185,7 @@ export default function Index() {
                             variant={station.status === 'offline' ? 'destructive' : 'default'}
                             className={
                               station.status === 'online' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                              station.status === 'maintenance' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                              station.status === 'error' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
                               ''
                             }
                           >

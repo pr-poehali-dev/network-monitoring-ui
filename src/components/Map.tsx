@@ -3,7 +3,7 @@ import { generateMarkerSVG } from './map/StationMarker';
 
 interface Connector {
   id: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
+  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
   type: string;
   power: number;
 }
@@ -12,7 +12,7 @@ interface ChargingStation {
   id: string;
   name: string;
   location: string;
-  status: 'online' | 'offline' | 'maintenance';
+  status: 'online' | 'offline' | 'error';
   coordinates: [number, number];
   connectors: Connector[];
 }
@@ -26,7 +26,7 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case 'online': return '#22C55E';
     case 'offline': return '#9CA3AF';
-    case 'maintenance': return '#F59E0B';
+    case 'error': return '#EF4444';
     default: return '#9CA3AF';
   }
 };
@@ -35,7 +35,7 @@ const getStatusLabel = (status: string) => {
   switch (status) {
     case 'online': return 'Онлайн';
     case 'offline': return 'Офлайн';
-    case 'maintenance': return 'Обслуживание';
+    case 'error': return 'Ошибка';
     default: return 'Неизвестно';
   }
 };
@@ -153,7 +153,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             switch (status) {
               case 'online': return '#22C55E';
               case 'offline': return '#9CA3AF';
-              case 'maintenance': return '#F59E0B';
+              case 'error': return '#EF4444';
               default: return '#9CA3AF';
             }
           }
@@ -163,6 +163,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             switch (status) {
               case 'available': return '#22C55E';
               case 'charging': return '#F97316';
+              case 'occupied': return '#3B82F6';
               case 'error': return '#EF4444';
               case 'offline': return '#9CA3AF';
               default: return '#9CA3AF';
@@ -256,13 +257,14 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
 
             // Получаем статус текст
             const statusText = station.status === 'online' ? 'Онлайн' : 
-              station.status === 'offline' ? 'Офлайн' : 'Обслуживание';
+              station.status === 'offline' ? 'Офлайн' : 'Ошибка';
             
             // Формируем HTML для коннекторов
             const connectorsHTML = station.connectors ? station.connectors.map(conn => {
               const connColor = getConnectorStatusColor(conn.status);
               const connStatusText = conn.status === 'available' ? 'Свободен' :
                 conn.status === 'charging' ? 'Зарядка' :
+                conn.status === 'occupied' ? 'Занят' :
                 conn.status === 'error' ? 'Ошибка' : 'Офлайн';
               return \`
                 <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0;">
@@ -365,7 +367,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               {[
                 { status: 'online', label: 'Онлайн' },
                 { status: 'offline', label: 'Офлайн' },
-                { status: 'maintenance', label: 'Обслуживание' }
+                { status: 'error', label: 'Ошибка' }
               ].map(({ status, label }) => (
                 <div key={status} className="flex items-center gap-2">
                   <div
@@ -383,6 +385,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               {[
                 { status: 'available', label: 'Свободен', color: '#22C55E' },
                 { status: 'charging', label: 'Зарядка', color: '#F97316' },
+                { status: 'occupied', label: 'Занят', color: '#3B82F6' },
                 { status: 'error', label: 'Ошибка', color: '#EF4444' },
                 { status: 'offline', label: 'Офлайн', color: '#9CA3AF' }
               ].map(({ status, label, color }) => (
@@ -431,6 +434,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                           backgroundColor:
                             conn.status === 'available' ? '#22C55E' :
                             conn.status === 'charging' ? '#F97316' :
+                            conn.status === 'occupied' ? '#3B82F6' :
                             conn.status === 'error' ? '#EF4444' : '#9CA3AF'
                         }}
                       />
@@ -455,8 +459,8 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             </div>
           )}
           
-          {selectedStation.status === 'maintenance' && (
-            <div className="text-sm text-orange-600 font-medium mt-3">
+          {selectedStation.status === 'error' && (
+            <div className="text-sm text-red-600 font-medium mt-3">
               Требует обслуживания
             </div>
           )}

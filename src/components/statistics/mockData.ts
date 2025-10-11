@@ -98,7 +98,7 @@ export const mockStationsStats: StationStats[] = [
     totalEnergy: 9876.3,
     errorsCount: 33,
     avgSessionDuration: 41,
-    status: 'maintenance',
+    status: 'error',
     lastUpdate: '24.09.2025 14:00:00',
     utilization: 0,
     coordinates: [56.7430, 60.8063],

@@ -1,6 +1,6 @@
 export interface Connector {
   id: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
+  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
   type: string;
   power: number; // кВт
 }
@@ -16,7 +16,7 @@ export interface StationStats {
   totalEnergy: number; // kWh
   errorsCount: number;
   avgSessionDuration: number; // минуты
-  status: 'online' | 'offline' | 'maintenance';
+  status: 'online' | 'offline' | 'error';
   lastUpdate: string;
   utilization: number; // процент загруженности
   coordinates?: [number, number]; // [latitude, longitude]

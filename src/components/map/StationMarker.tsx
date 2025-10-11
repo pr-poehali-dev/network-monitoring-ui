@@ -1,11 +1,11 @@
 interface Connector {
   id: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
+  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
   type: string;
 }
 
 interface StationMarkerProps {
-  stationStatus: 'online' | 'offline' | 'maintenance';
+  stationStatus: 'online' | 'offline' | 'error';
   connectors: Connector[];
   size?: number;
 }
@@ -14,7 +14,7 @@ const getStationStatusColor = (status: string) => {
   switch (status) {
     case 'online': return '#22C55E';
     case 'offline': return '#9CA3AF';
-    case 'maintenance': return '#F59E0B';
+    case 'error': return '#EF4444';
     default: return '#9CA3AF';
   }
 };
@@ -23,6 +23,7 @@ const getConnectorStatusColor = (status: string) => {
   switch (status) {
     case 'available': return '#22C55E';
     case 'charging': return '#F97316';
+    case 'occupied': return '#3B82F6';
     case 'error': return '#EF4444';
     case 'offline': return '#9CA3AF';
     default: return '#9CA3AF';
