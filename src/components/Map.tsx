@@ -407,25 +407,11 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           style={{ width: '100%', height: '100%', border: 'none' }}
           title="Карта зарядных станций"
         />
-        
-        {/* Переключатель кластеризации */}
-        <div className="absolute top-4 left-4 bg-white px-4 py-3 rounded-lg shadow-lg border z-[1001]">
-          <div className="flex items-center gap-3">
-            <Switch
-              id="clustering-mode"
-              checked={clusteringEnabled}
-              onCheckedChange={setClusteringEnabled}
-            />
-            <Label htmlFor="clustering-mode" className="text-sm font-medium cursor-pointer">
-              Группировать станции
-            </Label>
-          </div>
-        </div>
       </div>
 
-      {/* Легенда под картой */}
+      {/* Легенда и настройки под картой */}
       <div className="bg-white p-4 rounded-lg border">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div>
             <div className="text-sm font-semibold mb-3 text-gray-700">Статус станций:</div>
             <div className="space-y-2">
@@ -462,6 +448,19 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                   <span className="text-sm">{label}</span>
                 </div>
               ))}
+            </div>
+          </div>
+          <div>
+            <div className="text-sm font-semibold mb-3 text-gray-700">Настройки отображения:</div>
+            <div className="flex items-center gap-3 py-1">
+              <Switch
+                id="clustering-mode"
+                checked={clusteringEnabled}
+                onCheckedChange={setClusteringEnabled}
+              />
+              <Label htmlFor="clustering-mode" className="text-sm cursor-pointer">
+                Группировать станции
+              </Label>
             </div>
           </div>
         </div>
