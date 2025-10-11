@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { generateMarkerSVG } from './map/StationMarker';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface Connector {
   id: string;
@@ -43,6 +45,7 @@ const getStatusLabel = (status: string) => {
 export default function MapComponent({ stations, onStationClick }: MapProps) {
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
   const [mapHtml, setMapHtml] = useState<string>('');
+  const [clusteringEnabled, setClusteringEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     // Координаты границ карты OpenStreetMap (bbox=37.2,55.3,38.4,56.2)
@@ -100,7 +103,10 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
       <head>
         <meta charset="utf-8">
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body { height: 100%; overflow: hidden; }
@@ -114,6 +120,14 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           }
           .leaflet-attribution-flag {
             display: none !important;
+          }
+          .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
+            background-color: rgba(59, 130, 246, 0.6);
+          }
+          .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div {
+            background-color: rgba(59, 130, 246, 0.8);
+            color: white;
+            font-weight: bold;
           }
         </style>
       </head>
@@ -234,6 +248,38 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             \`;
           }
 
+          // Проверяем включена ли кластеризация
+          const clusteringEnabled = ${clusteringEnabled};
+          
+          // Создаем группу маркеров с кластеризацией или без
+          const markerGroup = clusteringEnabled ? L.markerClusterGroup({
+            maxClusterRadius: 80,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            iconCreateFunction: function(cluster) {
+              const count = cluster.getChildCount();
+              return L.divIcon({
+                html: \`<div style="
+                  width: 48px;
+                  height: 48px;
+                  border-radius: 50%;
+                  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  color: white;
+                  font-weight: bold;
+                  font-size: 16px;
+                  border: 3px solid white;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+                ">\${count}</div>\`,
+                className: 'custom-cluster-icon',
+                iconSize: [48, 48]
+              });
+            }
+          }) : L.layerGroup();
+
           // Добавляем маркеры станций
           stations.forEach(station => {
             const color = getStationStatusColor(station.status);
@@ -250,10 +296,12 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               popupAnchor: [0, -56]
             });
 
-            // Добавляем маркер на карту
+            // Добавляем маркер в группу
             const marker = L.marker([station.coordinates[0], station.coordinates[1]], {
               icon: customIcon
-            }).addTo(map);
+            });
+            
+            markerGroup.addLayer(marker);
 
             // Получаем статус текст
             const statusText = station.status === 'online' ? 'Онлайн' : 
@@ -320,6 +368,9 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             });
           });
 
+          // Добавляем группу маркеров на карту
+          map.addLayer(markerGroup);
+
           // Функция для открытия детальной информации о станции
           function openStationDetails(stationId) {
             window.parent.postMessage({type: 'stationClick', stationId: stationId}, '*');
@@ -330,7 +381,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
     `;
     
     setMapHtml(html);
-  }, [stations]);
+  }, [stations, clusteringEnabled]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -356,6 +407,20 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           style={{ width: '100%', height: '100%', border: 'none' }}
           title="Карта зарядных станций"
         />
+        
+        {/* Переключатель кластеризации */}
+        <div className="absolute top-4 left-4 bg-white px-4 py-3 rounded-lg shadow-lg border z-[1001]">
+          <div className="flex items-center gap-3">
+            <Switch
+              id="clustering-mode"
+              checked={clusteringEnabled}
+              onCheckedChange={setClusteringEnabled}
+            />
+            <Label htmlFor="clustering-mode" className="text-sm font-medium cursor-pointer">
+              Группировать станции
+            </Label>
+          </div>
+        </div>
       </div>
 
       {/* Легенда под картой */}
