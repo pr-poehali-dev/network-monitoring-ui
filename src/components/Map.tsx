@@ -346,7 +346,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
   }, [stations, onStationClick]);
 
   return (
-    <div className="relative w-full">
+    <div className="space-y-4">
       {/* Основная карта */}
       <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
         <iframe
@@ -354,41 +354,47 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           style={{ width: '100%', height: '100%', border: 'none' }}
           title="Карта зарядных станций"
         />
-        
-        {/* Легенда */}
-        <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg z-[1001]">
-          <div className="text-sm font-medium mb-3">Статус станций:</div>
-          <div className="space-y-1 text-xs mb-4">
-            {[
-              { status: 'online', label: 'Онлайн' },
-              { status: 'offline', label: 'Офлайн' },
-              { status: 'maintenance', label: 'Обслуживание' }
-            ].map(({ status, label }) => (
-              <div key={status} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full border border-white shadow-sm"
-                  style={{ backgroundColor: getStatusColor(status) }}
-                />
-                <span>{label}</span>
-              </div>
-            ))}
+      </div>
+
+      {/* Легенда под картой */}
+      <div className="bg-white p-4 rounded-lg border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div className="text-sm font-semibold mb-3 text-gray-700">Статус станций:</div>
+            <div className="space-y-2">
+              {[
+                { status: 'online', label: 'Онлайн' },
+                { status: 'offline', label: 'Офлайн' },
+                { status: 'maintenance', label: 'Обслуживание' }
+              ].map(({ status, label }) => (
+                <div key={status} className="flex items-center gap-2">
+                  <div
+                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                    style={{ backgroundColor: getStatusColor(status) }}
+                  />
+                  <span className="text-sm">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-sm font-medium mb-2 pt-3 border-t">Статус коннекторов:</div>
-          <div className="space-y-1 text-xs">
-            {[
-              { status: 'available', label: 'Свободен', color: '#22C55E' },
-              { status: 'charging', label: 'Зарядка', color: '#F97316' },
-              { status: 'error', label: 'Ошибка', color: '#EF4444' },
-              { status: 'offline', label: 'Офлайн', color: '#9CA3AF' }
-            ].map(({ status, label, color }) => (
-              <div key={status} className="flex items-center gap-2">
-                <div
-                  className="w-3 h-3 rounded-full border border-white shadow-sm"
-                  style={{ backgroundColor: color }}
-                />
-                <span>{label}</span>
-              </div>
-            ))}
+          <div>
+            <div className="text-sm font-semibold mb-3 text-gray-700">Статус коннекторов:</div>
+            <div className="space-y-2">
+              {[
+                { status: 'available', label: 'Свободен', color: '#22C55E' },
+                { status: 'charging', label: 'Зарядка', color: '#F97316' },
+                { status: 'error', label: 'Ошибка', color: '#EF4444' },
+                { status: 'offline', label: 'Офлайн', color: '#9CA3AF' }
+              ].map(({ status, label, color }) => (
+                <div key={status} className="flex items-center gap-2">
+                  <div
+                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="text-sm">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

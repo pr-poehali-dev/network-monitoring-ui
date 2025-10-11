@@ -135,43 +135,10 @@ export default function Index() {
 
         {/* Map view */}
         {currentTab === 'map' && (
-          <div className="space-y-4">
-            <Card className="h-[600px] relative">
-              <CardContent className="p-0 h-full">
-                <Map 
-                  stations={mockStations} 
-                  onStationClick={handleStationClick}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Legend */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Легенда</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-station-available rounded-full"></div>
-                    <span className="text-sm">Доступна</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-station-charging rounded-full"></div>
-                    <span className="text-sm">Зарядка</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-station-error rounded-full"></div>
-                    <span className="text-sm">Ошибка</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-station-offline rounded-full"></div>
-                    <span className="text-sm">Офлайн</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <Map 
+            stations={mockStations} 
+            onStationClick={handleStationClick}
+          />
         )}
 
         {/* List view */}
