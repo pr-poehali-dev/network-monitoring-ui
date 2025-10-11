@@ -1,3 +1,10 @@
+export interface Connector {
+  id: string;
+  status: 'available' | 'charging' | 'error' | 'offline';
+  type: string;
+  power: number; // кВт
+}
+
 export interface StationStats {
   id: string;
   name: string;
@@ -12,6 +19,8 @@ export interface StationStats {
   status: 'online' | 'offline' | 'maintenance';
   lastUpdate: string;
   utilization: number; // процент загруженности
+  coordinates?: [number, number]; // [latitude, longitude]
+  connectors: Connector[];
 }
 
 export interface GlobalStats {

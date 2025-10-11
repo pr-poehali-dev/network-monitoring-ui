@@ -1,11 +1,20 @@
 import { useState, useEffect } from 'react';
+import { generateMarkerSVG } from './map/StationMarker';
+
+interface Connector {
+  id: string;
+  status: 'available' | 'charging' | 'error' | 'offline';
+  type: string;
+  power: number;
+}
 
 interface ChargingStation {
   id: string;
   name: string;
   location: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
+  status: 'online' | 'offline' | 'maintenance';
   coordinates: [number, number];
+  connectors: Connector[];
 }
 
 interface MapProps {
@@ -15,20 +24,18 @@ interface MapProps {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'available': return '#22C55E';
-    case 'charging': return '#F97316';
-    case 'error': return '#EF4444';
+    case 'online': return '#22C55E';
     case 'offline': return '#9CA3AF';
+    case 'maintenance': return '#F59E0B';
     default: return '#9CA3AF';
   }
 };
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'available': return 'Доступна';
-    case 'charging': return 'Зарядка';
-    case 'error': return 'Ошибка';
+    case 'online': return 'Онлайн';
     case 'offline': return 'Офлайн';
+    case 'maintenance': return 'Обслуживание';
     default: return 'Неизвестно';
   }
 };
@@ -141,8 +148,18 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           // Данные станций
           const stations = ${JSON.stringify(stations)};
           
-          // Функция для получения цвета по статусу
-          function getStatusColor(status) {
+          // Функция для получения цвета по статусу станции
+          function getStationStatusColor(status) {
+            switch (status) {
+              case 'online': return '#22C55E';
+              case 'offline': return '#9CA3AF';
+              case 'maintenance': return '#F59E0B';
+              default: return '#9CA3AF';
+            }
+          }
+
+          // Функция для получения цвета по статусу коннектора
+          function getConnectorStatusColor(status) {
             switch (status) {
               case 'available': return '#22C55E';
               case 'charging': return '#F97316';
@@ -152,23 +169,83 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             }
           }
 
+          // Функция для генерации SVG маркера
+          function generateMarkerSVG(stationStatus, connectors, size = 48) {
+            const centerSize = size * 0.6;
+            const ringRadius = size / 2;
+            const centerRadius = centerSize / 2;
+            const gap = 4;
+            const segmentAngle = 360 / connectors.length;
+
+            let segments = '';
+            connectors.forEach((connector, index) => {
+              const startAngle = index * segmentAngle - 90;
+              const endAngle = (index + 1) * segmentAngle - 90 - (gap / ringRadius) * (180 / Math.PI);
+
+              const startRad = (startAngle * Math.PI) / 180;
+              const endRad = (endAngle * Math.PI) / 180;
+
+              const x1 = size / 2 + centerRadius * Math.cos(startRad);
+              const y1 = size / 2 + centerRadius * Math.sin(startRad);
+              const x2 = size / 2 + ringRadius * Math.cos(startRad);
+              const y2 = size / 2 + ringRadius * Math.sin(startRad);
+
+              const x3 = size / 2 + ringRadius * Math.cos(endRad);
+              const y3 = size / 2 + ringRadius * Math.sin(endRad);
+              const x4 = size / 2 + centerRadius * Math.cos(endRad);
+              const y4 = size / 2 + centerRadius * Math.sin(endRad);
+
+              const largeArcOuter = segmentAngle - (gap / ringRadius) * (180 / Math.PI) > 180 ? 1 : 0;
+              const largeArcInner = segmentAngle - (gap / ringRadius) * (180 / Math.PI) > 180 ? 1 : 0;
+
+              segments += \`
+                <path
+                  d="M \${x1} \${y1}
+                     L \${x2} \${y2}
+                     A \${ringRadius} \${ringRadius} 0 \${largeArcOuter} 1 \${x3} \${y3}
+                     L \${x4} \${y4}
+                     A \${centerRadius} \${centerRadius} 0 \${largeArcInner} 0 \${x1} \${y1}
+                     Z"
+                  fill="\${getConnectorStatusColor(connector.status)}"
+                />
+              \`;
+            });
+
+            return \`
+              <svg width="\${size}" height="\${size + 8}" viewBox="0 0 \${size} \${size + 8}" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                \${segments}
+                <circle
+                  cx="\${size / 2}"
+                  cy="\${size / 2}"
+                  r="\${centerRadius}"
+                  fill="\${getStationStatusColor(stationStatus)}"
+                  stroke="white"
+                  stroke-width="2"
+                />
+                <path
+                  d="M \${size / 2} \${size} L \${size / 2 - 4} \${size + 6} L \${size / 2 + 4} \${size + 6} Z"
+                  fill="\${getStationStatusColor(stationStatus)}"
+                  stroke="white"
+                  stroke-width="1"
+                />
+              </svg>
+            \`;
+          }
+
           // Добавляем маркеры станций
           stations.forEach(station => {
-            const color = getStatusColor(station.status);
+            const color = getStationStatusColor(station.status);
             
-            // Создаем кастомную иконку
+            // Генерируем SVG маркер с коннекторами
+            const markerSVG = generateMarkerSVG(station.status, station.connectors || [], 48);
+            
+            // Создаем кастомную иконку с сегментированным дизайном
             const customIcon = L.divIcon({
-              className: station.status === 'charging' ? 'charging-marker' : '',
-              html: \`<div style="
-                width: 16px;
-                height: 16px;
-                background-color: \${color};
-                border: 2px solid white;
-                border-radius: 50%;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-              "></div>\`,
-              iconSize: [16, 16],
-              iconAnchor: [8, 8]
+              className: '',
+              html: markerSVG,
+              iconSize: [48, 56],
+              iconAnchor: [24, 56],
+              popupAnchor: [0, -56]
             });
 
             // Добавляем маркер на карту
@@ -177,9 +254,22 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             }).addTo(map);
 
             // Получаем статус текст
-            const statusText = station.status === 'available' ? 'Доступна' : 
-              station.status === 'charging' ? 'Зарядка' :
-              station.status === 'error' ? 'Ошибка' : 'Офлайн';
+            const statusText = station.status === 'online' ? 'Онлайн' : 
+              station.status === 'offline' ? 'Офлайн' : 'Обслуживание';
+            
+            // Формируем HTML для коннекторов
+            const connectorsHTML = station.connectors ? station.connectors.map(conn => {
+              const connColor = getConnectorStatusColor(conn.status);
+              const connStatusText = conn.status === 'available' ? 'Свободен' :
+                conn.status === 'charging' ? 'Зарядка' :
+                conn.status === 'error' ? 'Ошибка' : 'Офлайн';
+              return \`
+                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0;">
+                  <div style="width: 8px; height: 8px; background-color: \${connColor}; border-radius: 50%; border: 1px solid white;"></div>
+                  <span style="color: #374151;">\${conn.type} (\${conn.power} кВт) - \${connStatusText}</span>
+                </div>
+              \`;
+            }).join('') : '';
             
             // Единая кнопка для всех станций
             const buttonHtml = \`<button onclick="openStationDetails('\${station.id}')" style="
@@ -199,7 +289,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
 
             // Добавляем popup с кнопкой
             marker.bindPopup(\`
-              <div style="min-width: 200px;">
+              <div style="min-width: 250px;">
                 <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">\${station.name}</h3>
                 <p style="margin: 0 0 8px 0; font-size: 13px; color: #6B7280;">\${station.location}</p>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
@@ -212,6 +302,10 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
                   "></div>
                   <span style="font-size: 13px; font-weight: 500; color: #374151;">\${statusText}</span>
+                </div>
+                <div style="margin: 8px 0; padding: 8px 0; border-top: 1px solid #E5E7EB;">
+                  <div style="font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 6px;">Коннекторы:</div>
+                  \${connectorsHTML}
                 </div>
                 \${buttonHtml}
               </div>
@@ -262,18 +356,34 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
         
         {/* Легенда */}
         <div className="absolute bottom-4 left-4 bg-white p-3 rounded-lg shadow-lg z-[1001]">
-          <div className="text-sm font-medium mb-2">Статус станций:</div>
-          <div className="space-y-1 text-xs">
+          <div className="text-sm font-medium mb-3">Статус станций:</div>
+          <div className="space-y-1 text-xs mb-4">
             {[
-              { status: 'available', label: 'Доступна' },
-              { status: 'charging', label: 'Зарядка' },
-              { status: 'error', label: 'Ошибка' },
-              { status: 'offline', label: 'Офлайн' }
+              { status: 'online', label: 'Онлайн' },
+              { status: 'offline', label: 'Офлайн' },
+              { status: 'maintenance', label: 'Обслуживание' }
             ].map(({ status, label }) => (
               <div key={status} className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full border border-white shadow-sm"
                   style={{ backgroundColor: getStatusColor(status) }}
+                />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+          <div className="text-sm font-medium mb-2 pt-3 border-t">Статус коннекторов:</div>
+          <div className="space-y-1 text-xs">
+            {[
+              { status: 'available', label: 'Свободен', color: '#22C55E' },
+              { status: 'charging', label: 'Зарядка', color: '#F97316' },
+              { status: 'error', label: 'Ошибка', color: '#EF4444' },
+              { status: 'offline', label: 'Офлайн', color: '#9CA3AF' }
+            ].map(({ status, label, color }) => (
+              <div key={status} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full border border-white shadow-sm"
+                  style={{ backgroundColor: color }}
                 />
                 <span>{label}</span>
               </div>
@@ -301,27 +411,46 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             <span className="text-sm">{getStatusLabel(selectedStation.status)}</span>
           </div>
           
-          {selectedStation.status === 'available' && (
-            <button className="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm transition-colors">
-              Забронировать
+          {selectedStation.connectors && selectedStation.connectors.length > 0 && (
+            <div className="border-t pt-3 mt-3">
+              <div className="text-xs font-semibold text-gray-600 mb-2">Коннекторы:</div>
+              <div className="space-y-1">
+                {selectedStation.connectors.map((conn) => (
+                  <div key={conn.id} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{
+                          backgroundColor:
+                            conn.status === 'available' ? '#22C55E' :
+                            conn.status === 'charging' ? '#F97316' :
+                            conn.status === 'error' ? '#EF4444' : '#9CA3AF'
+                        }}
+                      />
+                      <span>{conn.type}</span>
+                    </div>
+                    <span className="text-gray-600">{conn.power} кВт</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {selectedStation.status === 'online' && (
+            <button className="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm transition-colors mt-3">
+              Подробнее
             </button>
           )}
           
-          {selectedStation.status === 'charging' && (
-            <div className="text-sm text-orange-600 font-medium">
-              Станция занята
-            </div>
-          )}
-          
-          {selectedStation.status === 'error' && (
-            <div className="text-sm text-red-600 font-medium">
-              Требует обслуживания
-            </div>
-          )}
-          
           {selectedStation.status === 'offline' && (
-            <div className="text-sm text-gray-500 font-medium">
+            <div className="text-sm text-gray-500 font-medium mt-3">
               Станция недоступна
+            </div>
+          )}
+          
+          {selectedStation.status === 'maintenance' && (
+            <div className="text-sm text-orange-600 font-medium mt-3">
+              Требует обслуживания
             </div>
           )}
         </div>

@@ -13,7 +13,7 @@ interface ChargingStation {
   id: string;
   name: string;
   location: string;
-  status: 'available' | 'charging' | 'error' | 'offline';
+  status: 'online' | 'offline' | 'maintenance';
   connectors: Connector[];
   totalSessions: number;
   lastActivity: string;
@@ -23,8 +23,8 @@ interface ChargingStation {
 interface Connector {
   id: string;
   type: string;
-  status: 'available' | 'charging' | 'error';
-  power: string;
+  status: 'available' | 'charging' | 'error' | 'offline';
+  power: number;
   currentSession?: {
     startTime: string;
     energy: number;
@@ -37,49 +37,51 @@ const mockStations: ChargingStation[] = [
     id: '1',
     name: 'ЭЗС Центральная',
     location: 'ул. Ленина, 15',
-    status: 'charging',
+    status: 'online',
     coordinates: [55.7558, 37.6176],
     totalSessions: 145,
     lastActivity: '2 мин назад',
     connectors: [
-      { id: 'c1', type: 'Type 2', status: 'charging', power: '22 кВт', currentSession: { startTime: '14:30', energy: 12.5, cost: 450 } },
-      { id: 'c2', type: 'CCS', status: 'available', power: '50 кВт' }
+      { id: 'c1', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '14:30', energy: 12.5, cost: 450 } },
+      { id: 'c2', type: 'CCS', status: 'available', power: 50 },
+      { id: 'c3', type: 'CHAdeMO', status: 'available', power: 50 }
     ]
   },
   {
     id: '2',
     name: 'ЭЗС Северная',
     location: 'пр. Мира, 45',
-    status: 'available',
+    status: 'online',
     coordinates: [55.7665, 37.6177],
     totalSessions: 87,
     lastActivity: '15 мин назад',
     connectors: [
-      { id: 'c3', type: 'Type 2', status: 'available', power: '22 кВт' },
-      { id: 'c4', type: 'CHAdeMO', status: 'available', power: '50 кВт' }
+      { id: 'c3', type: 'Type 2', status: 'available', power: 22 },
+      { id: 'c4', type: 'CHAdeMO', status: 'available', power: 50 },
+      { id: 'c5', type: 'CCS', status: 'charging', power: 150 },
+      { id: 'c6', type: 'CCS', status: 'available', power: 150 }
     ]
   },
   {
     id: '3',
     name: 'ЭЗС Южная',
     location: 'ул. Победы, 12',
-    status: 'error',
+    status: 'maintenance',
     coordinates: [55.7430, 37.6156],
     totalSessions: 203,
     lastActivity: '1 час назад',
     connectors: [
-      { id: 'c5', type: 'Type 2', status: 'error', power: '22 кВт' },
-      { id: 'c6', type: 'CCS', status: 'available', power: '150 кВт' }
+      { id: 'c5', type: 'Type 2', status: 'error', power: 22 },
+      { id: 'c6', type: 'CCS', status: 'offline', power: 150 }
     ]
   }
 ];
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case 'available': return 'Доступна';
-    case 'charging': return 'Зарядка';
-    case 'error': return 'Ошибка';
+    case 'online': return 'Онлайн';
     case 'offline': return 'Офлайн';
+    case 'maintenance': return 'Обслуживание';
     default: return 'Неизвестно';
   }
 };
@@ -213,10 +215,10 @@ export default function Index() {
                         <TableCell>{station.location}</TableCell>
                         <TableCell>
                           <Badge 
-                            variant={station.status === 'error' ? 'destructive' : 'default'}
+                            variant={station.status === 'offline' ? 'destructive' : 'default'}
                             className={
-                              station.status === 'available' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                              station.status === 'charging' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
+                              station.status === 'online' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
+                              station.status === 'maintenance' ? 'bg-orange-100 text-orange-800 hover:bg-orange-200' :
                               ''
                             }
                           >
