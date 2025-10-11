@@ -174,13 +174,14 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             const centerSize = size * 0.6;
             const ringRadius = size / 2;
             const centerRadius = centerSize / 2;
-            const gap = 4;
+            const gapDegrees = 3;
             const segmentAngle = 360 / connectors.length;
+            const arcAngle = segmentAngle - gapDegrees;
 
             let segments = '';
             connectors.forEach((connector, index) => {
               const startAngle = index * segmentAngle - 90;
-              const endAngle = (index + 1) * segmentAngle - 90 - (gap / ringRadius) * (180 / Math.PI);
+              const endAngle = startAngle + arcAngle;
 
               const startRad = (startAngle * Math.PI) / 180;
               const endRad = (endAngle * Math.PI) / 180;
@@ -195,8 +196,8 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
               const x4 = size / 2 + centerRadius * Math.cos(endRad);
               const y4 = size / 2 + centerRadius * Math.sin(endRad);
 
-              const largeArcOuter = segmentAngle - (gap / ringRadius) * (180 / Math.PI) > 180 ? 1 : 0;
-              const largeArcInner = segmentAngle - (gap / ringRadius) * (180 / Math.PI) > 180 ? 1 : 0;
+              const largeArcOuter = arcAngle > 180 ? 1 : 0;
+              const largeArcInner = arcAngle > 180 ? 1 : 0;
 
               segments += \`
                 <path
