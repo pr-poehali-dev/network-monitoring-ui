@@ -43,7 +43,7 @@ const Sidebar = () => {
             <Icon name="Zap" size={20} className="text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-semibold text-gray-900">EV Control</h1>
+            <h1 className="text-lg font-semibold text-gray-900">E-PROM</h1>
             <p className="text-xs text-gray-500">Управление станциями</p>
           </div>
         </div>
