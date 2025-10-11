@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { generateMarkerSVG } from './map/StationMarker';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import Icon from '@/components/ui/icon';
 
 interface Connector {
   id: string;
@@ -46,6 +49,9 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
   const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
   const [mapHtml, setMapHtml] = useState<string>('');
   const [clusteringEnabled, setClusteringEnabled] = useState<boolean>(true);
+  const [cityFilter, setCityFilter] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [appFilter, setAppFilter] = useState('');
 
   useEffect(() => {
     // Координаты границ карты OpenStreetMap (bbox=37.2,55.3,38.4,56.2)
@@ -452,15 +458,65 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           </div>
           <div>
             <div className="text-sm font-semibold mb-3 text-gray-700">Настройки отображения:</div>
-            <div className="flex items-center gap-3 py-1">
-              <Switch
-                id="clustering-mode"
-                checked={clusteringEnabled}
-                onCheckedChange={setClusteringEnabled}
-              />
-              <Label htmlFor="clustering-mode" className="text-sm cursor-pointer">
-                Группировать станции
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="clustering-mode"
+                  checked={clusteringEnabled}
+                  onCheckedChange={setClusteringEnabled}
+                />
+                <Label htmlFor="clustering-mode" className="text-sm cursor-pointer">
+                  Группировать станции
+                </Label>
+              </div>
+              
+              <div className="space-y-2 pt-2">
+                <div className="relative">
+                  <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Фильтр по городу..."
+                    value={cityFilter}
+                    onChange={(e) => setCityFilter(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Icon name="Building" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Фильтр по собственнику..."
+                    value={ownerFilter}
+                    onChange={(e) => setOwnerFilter(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Icon name="Smartphone" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Input
+                    placeholder="Фильтр по приложению..."
+                    value={appFilter}
+                    onChange={(e) => setAppFilter(e.target.value)}
+                    className="pl-9 h-9 text-sm"
+                  />
+                </div>
+
+                {(cityFilter || ownerFilter || appFilter) && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => {
+                      setCityFilter('');
+                      setOwnerFilter('');
+                      setAppFilter('');
+                    }}
+                    className="w-full h-9 text-sm"
+                  >
+                    <Icon name="X" size={16} className="mr-1" />
+                    Сбросить фильтры
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
