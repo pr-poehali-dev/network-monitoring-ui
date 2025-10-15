@@ -74,6 +74,164 @@ const mockStations: ChargingStation[] = [
       { id: 'c5', type: 'Type 2', status: 'error', power: 22 },
       { id: 'c6', type: 'CCS', status: 'offline', power: 150 }
     ]
+  },
+  {
+    id: '4',
+    name: 'ЭЗС Арбат',
+    location: 'ул. Арбат, 28',
+    status: 'online',
+    coordinates: [55.7520, 37.5895],
+    totalSessions: 312,
+    lastActivity: '5 мин назад',
+    connectors: [
+      { id: 'c7', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '15:10', energy: 8.3, cost: 290 } },
+      { id: 'c8', type: 'CCS', status: 'available', power: 50 }
+    ]
+  },
+  {
+    id: '5',
+    name: 'ЭЗС Красная Пресня',
+    location: 'наб. Пресненская, 2',
+    status: 'offline',
+    coordinates: [55.7494, 37.5346],
+    totalSessions: 67,
+    lastActivity: '3 часа назад',
+    connectors: [
+      { id: 'c9', type: 'Type 2', status: 'offline', power: 22 },
+      { id: 'c10', type: 'CCS', status: 'offline', power: 150 }
+    ]
+  },
+  {
+    id: '6',
+    name: 'ЭЗС Сокольники',
+    location: 'ул. Сокольнический Вал, 1',
+    status: 'online',
+    coordinates: [55.7915, 37.6713],
+    totalSessions: 198,
+    lastActivity: '1 мин назад',
+    connectors: [
+      { id: 'c11', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '14:50', energy: 15.2, cost: 532 } },
+      { id: 'c12', type: 'CHAdeMO', status: 'available', power: 50 },
+      { id: 'c13', type: 'CCS', status: 'available', power: 150 }
+    ]
+  },
+  {
+    id: '7',
+    name: 'ЭЗС Таганка',
+    location: 'ул. Таганская, 17',
+    status: 'error',
+    coordinates: [55.7403, 37.6533],
+    totalSessions: 156,
+    lastActivity: '25 мин назад',
+    connectors: [
+      { id: 'c14', type: 'Type 2', status: 'error', power: 22 },
+      { id: 'c15', type: 'CCS', status: 'error', power: 50 }
+    ]
+  },
+  {
+    id: '8',
+    name: 'ЭЗС Парк Горького',
+    location: 'ул. Крымский Вал, 9',
+    status: 'online',
+    coordinates: [55.7308, 37.6014],
+    totalSessions: 278,
+    lastActivity: '10 мин назад',
+    connectors: [
+      { id: 'c16', type: 'Type 2', status: 'available', power: 22 },
+      { id: 'c17', type: 'CCS', status: 'charging', power: 50, currentSession: { startTime: '15:25', energy: 5.8, cost: 203 } }
+    ]
+  },
+  {
+    id: '9',
+    name: 'ЭЗС Лубянка',
+    location: 'пл. Лубянская, 2',
+    status: 'online',
+    coordinates: [55.7594, 37.6279],
+    totalSessions: 421,
+    lastActivity: '3 мин назад',
+    connectors: [
+      { id: 'c18', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '15:30', energy: 3.5, cost: 123 } },
+      { id: 'c19', type: 'CCS', status: 'available', power: 150 },
+      { id: 'c20', type: 'CHAdeMO', status: 'available', power: 50 }
+    ]
+  },
+  {
+    id: '10',
+    name: 'ЭЗС Кремль',
+    location: 'Манежная пл., 1',
+    status: 'offline',
+    coordinates: [55.7525, 37.6173],
+    totalSessions: 89,
+    lastActivity: '5 часов назад',
+    connectors: [
+      { id: 'c21', type: 'Type 2', status: 'offline', power: 22 }
+    ]
+  },
+  {
+    id: '11',
+    name: 'ЭЗС Тверская',
+    location: 'ул. Тверская, 12',
+    status: 'online',
+    coordinates: [55.7628, 37.6066],
+    totalSessions: 267,
+    lastActivity: '7 мин назад',
+    connectors: [
+      { id: 'c22', type: 'Type 2', status: 'available', power: 22 },
+      { id: 'c23', type: 'CCS', status: 'charging', power: 50, currentSession: { startTime: '15:20', energy: 6.7, cost: 235 } }
+    ]
+  },
+  {
+    id: '12',
+    name: 'ЭЗС Останкино',
+    location: 'ул. Академика Королёва, 15',
+    status: 'error',
+    coordinates: [55.8202, 37.6114],
+    totalSessions: 134,
+    lastActivity: '45 мин назад',
+    connectors: [
+      { id: 'c24', type: 'Type 2', status: 'error', power: 22 },
+      { id: 'c25', type: 'CCS', status: 'offline', power: 150 }
+    ]
+  },
+  {
+    id: '13',
+    name: 'ЭЗС Воробьёвы Горы',
+    location: 'Университетская пл., 1',
+    status: 'online',
+    coordinates: [55.7031, 37.5443],
+    totalSessions: 345,
+    lastActivity: '2 мин назад',
+    connectors: [
+      { id: 'c26', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '14:45', energy: 18.2, cost: 637 } },
+      { id: 'c27', type: 'CCS', status: 'available', power: 150 },
+      { id: 'c28', type: 'CHAdeMO', status: 'available', power: 50 }
+    ]
+  },
+  {
+    id: '14',
+    name: 'ЭЗС Китай-Город',
+    location: 'Солянский пр., 5',
+    status: 'online',
+    coordinates: [55.7567, 37.6345],
+    totalSessions: 189,
+    lastActivity: '12 мин назад',
+    connectors: [
+      { id: 'c29', type: 'Type 2', status: 'available', power: 22 },
+      { id: 'c30', type: 'CCS', status: 'available', power: 50 }
+    ]
+  },
+  {
+    id: '15',
+    name: 'ЭЗС Измайлово',
+    location: 'ш. Энтузиастов, 56',
+    status: 'offline',
+    coordinates: [55.7882, 37.7487],
+    totalSessions: 92,
+    lastActivity: '2 часа назад',
+    connectors: [
+      { id: 'c31', type: 'Type 2', status: 'offline', power: 22 },
+      { id: 'c32', type: 'CCS', status: 'offline', power: 150 }
+    ]
   }
 ];
 
