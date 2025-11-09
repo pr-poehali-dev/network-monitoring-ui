@@ -56,13 +56,16 @@ export function useStations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStations = useCallback(async (filters?: any, pagination?: { page: number; limit: number }) => {
+  const loadStations = useCallback(async (filters?: { region?: string; is_active?: number }) => {
     setLoading(true);
     setError(null);
 
     try {
-      const data = await wsService.getStations(filters, pagination);
+      const data = await wsService.getAllStations(filters);
       setStations(data);
+      
+      // Подписываемся на обновления после первой загрузки
+      await wsService.subscribeToUpdates();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load stations');
     } finally {
@@ -70,7 +73,7 @@ export function useStations() {
     }
   }, []);
 
-  const getStationById = useCallback(async (stationId: string): Promise<StationData | null> => {
+  const getStationById = useCallback(async (stationId: number): Promise<StationData | null> => {
     try {
       return await wsService.getStationById(stationId);
     } catch (err) {
@@ -83,18 +86,35 @@ export function useStations() {
   useEffect(() => {
     const handleStationUpdate = (event: CustomEvent) => {
       const update = event.detail;
-      setStations(current => 
-        current.map(station => 
+      console.log('🔄 Station update received:', update);
+      
+      setStations(current => {
+        const updated = current.map(station => 
           station.id === update.stationId 
             ? { ...station, ...update.updates }
             : station
-        )
-      );
+        );
+        
+        // Если станции нет в списке, добавим
+        if (!current.some(s => s.id === update.stationId) && update.station) {
+          return [...current, update.station];
+        }
+        
+        return updated;
+      });
     };
 
     window.addEventListener('stationUpdate', handleStationUpdate as EventListener);
+    
     return () => {
       window.removeEventListener('stationUpdate', handleStationUpdate as EventListener);
+    };
+  }, []);
+  
+  // Отписка при размонтировании
+  useEffect(() => {
+    return () => {
+      wsService.unsubscribeFromUpdates().catch(console.error);
     };
   }, []);
 
@@ -103,6 +123,7 @@ export function useStations() {
     loading,
     error,
     loadStations,
-    getStationById
+    getStationById,
+    setStations
   };
 }

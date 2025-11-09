@@ -1,36 +1,28 @@
 // WebSocket типы и структуры данных
 
 export interface StationData {
-  id: string;
-  name: string;
-  city: string;
-  owner: string;
-  connectedApp: string;
-  status: 'active' | 'inactive' | 'maintenance';
-  totalEnergy: number;
-  currentPower: number;
-  lastUpdate: string; // ISO timestamp
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
+  id: number;
+  station_id: string;
+  name: string | null;
+  ip_address: string | null;
+  ssh_port: number | null;
+  address: string | null;
+  region: string | null;
+  is_active: number;
+  created_at: string;
+  lat: number | null;
+  lon: number | null;
 }
 
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getStations' | 'getStationById' | 'getStationStats';
+  action: 'getAllStations' | 'getStationById' | 'subscribeUpdates' | 'unsubscribeUpdates';
   data?: {
-    stationId?: string;
+    stationId?: number;
     filters?: {
-      city?: string;
-      owner?: string;
-      status?: string;
-      connectedApp?: string;
-    };
-    pagination?: {
-      page: number;
-      limit: number;
+      region?: string;
+      is_active?: number;
     };
   };
   requestId: string; // Уникальный ID для сопоставления запроса и ответа
@@ -52,8 +44,6 @@ export interface WSServerMessage {
 export interface StationsResponse {
   stations: StationData[];
   total: number;
-  page: number;
-  limit: number;
 }
 
 // Ответ с данными конкретной станции
@@ -63,7 +53,14 @@ export interface StationResponse {
 
 // Real-time обновления
 export interface StationUpdate {
-  stationId: string;
+  stationId: number;
   updates: Partial<StationData>;
   timestamp: string;
+}
+
+// Статус WebSocket соединения
+export interface WSConnectionStatus {
+  connected: boolean;
+  reconnecting: boolean;
+  error: string | null;
 }

@@ -4,10 +4,11 @@ export class WebSocketService {
   private ws: WebSocket | null = null;
   private url: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectDelay = 1000;
+  private maxReconnectAttempts = 10;
+  private reconnectDelay = 2000;
   private messageHandlers = new Map<string, (data: any) => void>();
   private requestCounter = 0;
+  private subscribed = false;
 
   constructor(url: string) {
     this.url = url;
@@ -23,6 +24,7 @@ export class WebSocketService {
         this.ws.onopen = () => {
           console.log('✅ WebSocket connected to:', this.url);
           this.reconnectAttempts = 0;
+          this.subscribed = false;
           resolve();
         };
 
@@ -122,21 +124,18 @@ export class WebSocketService {
   }
 
   // API методы
-  async getStations(filters?: any, pagination?: { page: number; limit: number }): Promise<StationData[]> {
+  async getAllStations(filters?: { region?: string; is_active?: number }): Promise<StationData[]> {
     const response = await this.sendMessage({
       type: 'request',
-      action: 'getStations',
-      data: {
-        filters,
-        pagination
-      },
+      action: 'getAllStations',
+      data: filters ? { filters } : undefined,
       requestId: ''
     });
 
     return response.data?.stations || [];
   }
 
-  async getStationById(stationId: string): Promise<StationData | null> {
+  async getStationById(stationId: number): Promise<StationData | null> {
     const response = await this.sendMessage({
       type: 'request',
       action: 'getStationById',
@@ -147,6 +146,32 @@ export class WebSocketService {
     });
 
     return response.data?.station || null;
+  }
+
+  async subscribeToUpdates(): Promise<void> {
+    if (this.subscribed) return;
+
+    await this.sendMessage({
+      type: 'request',
+      action: 'subscribeUpdates',
+      requestId: ''
+    });
+
+    this.subscribed = true;
+    console.log('🔔 Subscribed to station updates');
+  }
+
+  async unsubscribeFromUpdates(): Promise<void> {
+    if (!this.subscribed) return;
+
+    await this.sendMessage({
+      type: 'request',
+      action: 'unsubscribeUpdates',
+      requestId: ''
+    });
+
+    this.subscribed = false;
+    console.log('🔕 Unsubscribed from station updates');
   }
 
   disconnect() {
@@ -162,5 +187,5 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance - используем WSS с самоподписанным сертификатом
-export const wsService = new WebSocketService('wss://78.138.143.58:10009/ws');
+// Singleton instance
+export const wsService = new WebSocketService('wss://eprom.online:10008/');

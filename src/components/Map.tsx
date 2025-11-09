@@ -1,109 +1,40 @@
 import { useState, useEffect } from 'react';
-import { generateMarkerSVG } from './map/StationMarker';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { StationData } from '@/types/websocket';
 import Icon from '@/components/ui/icon';
 
-interface Connector {
-  id: string;
-  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
-  type: string;
-  power: number;
-}
-
-interface ChargingStation {
-  id: string;
-  name: string;
-  location: string;
-  status: 'online' | 'offline' | 'error';
-  coordinates: [number, number];
-  connectors: Connector[];
-}
-
 interface MapProps {
-  stations: ChargingStation[];
-  onStationClick?: (stationId: string) => void;
+  stations: StationData[];
+  onStationClick?: (stationId: number) => void;
 }
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'online': return '#22C55E';
-    case 'offline': return '#9CA3AF';
-    case 'error': return '#EF4444';
-    default: return '#9CA3AF';
-  }
+const getStatusColor = (is_active: number) => {
+  return is_active === 1 ? '#22C55E' : '#9CA3AF';
 };
 
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'online': return 'Онлайн';
-    case 'offline': return 'Офлайн';
-    case 'error': return 'Ошибка';
-    default: return 'Неизвестно';
-  }
+const getStatusLabel = (is_active: number) => {
+  return is_active === 1 ? 'Активна' : 'Неактивна';
 };
 
 export default function MapComponent({ stations, onStationClick }: MapProps) {
-  const [selectedStation, setSelectedStation] = useState<ChargingStation | null>(null);
+  const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [mapHtml, setMapHtml] = useState<string>('');
-  const [clusteringEnabled, setClusteringEnabled] = useState<boolean>(true);
-  const [cityFilter, setCityFilter] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [appFilter, setAppFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   useEffect(() => {
-    // Координаты границ карты OpenStreetMap (bbox=37.2,55.3,38.4,56.2)
-    const mapBounds = {
-      west: 37.2,   // левая граница (минимальная долгота)
-      east: 38.4,   // правая граница (максимальная долгота) 
-      south: 55.3,  // нижняя граница (минимальная широта)
-      north: 56.2   // верхняя граница (максимальная широта)
-    };
+    const validStations = stations.filter(s => s.lat && s.lon);
 
-    // Генерируем HTML для встроенной карты с маркерами
-    const markers = stations.map(station => {
-      const color = getStatusColor(station.status);
-      const lat = station.coordinates[0]; // широта
-      const lng = station.coordinates[1]; // долгота
-      
-      // Правильный расчет позиции маркера на карте
-      // Долгота (X): чем больше долгота, тем правее на карте
-      const xPercent = ((lng - mapBounds.west) / (mapBounds.east - mapBounds.west)) * 100;
-      // Широта (Y): чем больше широта, тем выше на карте (инвертируем)
-      const yPercent = ((mapBounds.north - lat) / (mapBounds.north - mapBounds.south)) * 100;
-      
-      return `
-        <div style="
-          position: absolute;
-          left: ${Math.max(0, Math.min(100, xPercent))}%;
-          top: ${Math.max(0, Math.min(100, yPercent))}%;
-          transform: translate(-50%, -50%);
-          z-index: 1000;
-          cursor: pointer;
-        " onclick="handleStationClick('${station.id}')">
-          <div style="
-            width: 16px;
-            height: 16px;
-            background-color: ${color};
-            border: 2px solid white;
-            border-radius: 50%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            ${station.status === 'charging' ? 'animation: pulse 2s infinite;' : ''}
-          "></div>
-        </div>
-      `;
-    }).join('');
-
-    // Генерируем URL с маркерами для OpenStreetMap
-    const markersParam = stations.map(station => {
-      const lat = station.coordinates[0];
-      const lng = station.coordinates[1];
-      return `${lng},${lat}`;
-    }).join(';');
+    if (validStations.length === 0) {
+      setMapHtml(`
+        <!DOCTYPE html>
+        <html style="height: 100%; margin: 0; padding: 0;">
+        <body style="display: flex; align-items: center; justify-content: center; height: 100%; background: #f3f4f6;">
+          <div style="text-align: center; color: #6b7280;">
+            <p style="font-size: 18px; margin: 0;">Нет станций с координатами для отображения</p>
+          </div>
+        </body>
+        </html>
+      `);
+      return;
+    }
 
     const html = `
       <!DOCTYPE html>
@@ -119,16 +50,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html, body { height: 100%; overflow: hidden; }
           #map { height: 100vh; width: 100%; }
-          @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.6; }
-          }
-          .charging-marker {
-            animation: pulse 2s infinite;
-          }
-          .leaflet-attribution-flag {
-            display: none !important;
-          }
+          .leaflet-attribution-flag { display: none !important; }
           .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
             background-color: rgba(59, 130, 246, 0.6);
           }
@@ -142,463 +64,159 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
       <body>
         <div id="map"></div>
         <script>
-          // Инициализируем карту
-          const map = L.map('map').setView([55.7558, 37.6176], 11);
+          const map = L.map('map').setView([${validStations[0].lat}, ${validStations[0].lon}], 6);
           
-          // Добавляем тайлы OpenStreetMap
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
+            attribution: '© OpenStreetMap'
           }).addTo(map);
 
-          // Убираем ссылки из attribution, оставляем только текст
           setTimeout(() => {
             const attributionControl = document.querySelector('.leaflet-control-attribution');
             if (attributionControl) {
-              // Заменяем содержимое на простой текст без ссылок
-              attributionControl.innerHTML = '© OpenStreetMap contributors';
+              attributionControl.innerHTML = '© OpenStreetMap';
             }
           }, 100);
 
-          // Скрываем флаг в attribution после загрузки карты
-          setTimeout(() => {
-            const flagElement = document.querySelector('.leaflet-attribution-flag');
-            if (flagElement) {
-              flagElement.style.display = 'none';
-            }
-          }, 100);
-
-          // Данные станций
-          const stations = ${JSON.stringify(stations)};
+          const stations = ${JSON.stringify(validStations)};
           
-          // Функция для получения цвета по статусу станции
-          function getStationStatusColor(status) {
-            switch (status) {
-              case 'online': return '#22C55E';
-              case 'offline': return '#9CA3AF';
-              case 'error': return '#EF4444';
-              default: return '#9CA3AF';
-            }
+          function getStatusColor(is_active) {
+            return is_active === 1 ? '#22C55E' : '#9CA3AF';
           }
 
-          // Функция для получения цвета по статусу коннектора
-          function getConnectorStatusColor(status) {
-            switch (status) {
-              case 'available': return '#22C55E';
-              case 'charging': return '#F97316';
-              case 'occupied': return '#3B82F6';
-              case 'error': return '#EF4444';
-              case 'offline': return '#9CA3AF';
-              default: return '#9CA3AF';
-            }
-          }
+          const markers = L.markerClusterGroup();
 
-          // Функция для генерации SVG маркера
-          function generateMarkerSVG(stationStatus, connectors, size = 48) {
-            const centerSize = size * 0.6;
-            const ringRadius = size / 2;
-            const centerRadius = centerSize / 2;
-            const gapDegrees = 3;
-            const segmentAngle = 360 / connectors.length;
-            const arcAngle = segmentAngle - gapDegrees;
-
-            let segments = '';
-            connectors.forEach((connector, index) => {
-              const startAngle = index * segmentAngle - 90;
-              const endAngle = startAngle + arcAngle;
-
-              const startRad = (startAngle * Math.PI) / 180;
-              const endRad = (endAngle * Math.PI) / 180;
-
-              const x1 = size / 2 + centerRadius * Math.cos(startRad);
-              const y1 = size / 2 + centerRadius * Math.sin(startRad);
-              const x2 = size / 2 + ringRadius * Math.cos(startRad);
-              const y2 = size / 2 + ringRadius * Math.sin(startRad);
-
-              const x3 = size / 2 + ringRadius * Math.cos(endRad);
-              const y3 = size / 2 + ringRadius * Math.sin(endRad);
-              const x4 = size / 2 + centerRadius * Math.cos(endRad);
-              const y4 = size / 2 + centerRadius * Math.sin(endRad);
-
-              const largeArcOuter = arcAngle > 180 ? 1 : 0;
-              const largeArcInner = arcAngle > 180 ? 1 : 0;
-
-              segments += \`
-                <path
-                  d="M \${x1} \${y1}
-                     L \${x2} \${y2}
-                     A \${ringRadius} \${ringRadius} 0 \${largeArcOuter} 1 \${x3} \${y3}
-                     L \${x4} \${y4}
-                     A \${centerRadius} \${centerRadius} 0 \${largeArcInner} 0 \${x1} \${y1}
-                     Z"
-                  fill="\${getConnectorStatusColor(connector.status)}"
-                />
-              \`;
-            });
-
-            return \`
-              <svg width="\${size}" height="\${size + 8}" viewBox="0 0 \${size} \${size + 8}" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
-                \${segments}
-                <circle
-                  cx="\${size / 2}"
-                  cy="\${size / 2}"
-                  r="\${centerRadius}"
-                  fill="\${getStationStatusColor(stationStatus)}"
-                  stroke="white"
-                  stroke-width="2"
-                />
-                <path
-                  d="M \${size / 2} \${size} L \${size / 2 - 4} \${size + 6} L \${size / 2 + 4} \${size + 6} Z"
-                  fill="\${getStationStatusColor(stationStatus)}"
-                  stroke="white"
-                  stroke-width="1"
-                />
-              </svg>
-            \`;
-          }
-
-          // Проверяем включена ли кластеризация
-          const clusteringEnabled = ${clusteringEnabled};
-          
-          // Создаем группу маркеров с кластеризацией или без
-          const markerGroup = clusteringEnabled ? L.markerClusterGroup({
-            maxClusterRadius: 80,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            zoomToBoundsOnClick: true,
-            iconCreateFunction: function(cluster) {
-              const count = cluster.getChildCount();
-              return L.divIcon({
-                html: \`<div style="
-                  width: 48px;
-                  height: 48px;
-                  border-radius: 50%;
-                  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  color: white;
-                  font-weight: bold;
-                  font-size: 16px;
-                  border: 3px solid white;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-                ">\${count}</div>\`,
-                className: 'custom-cluster-icon',
-                iconSize: [48, 48]
-              });
-            }
-          }) : L.layerGroup();
-
-          // Добавляем маркеры станций
           stations.forEach(station => {
-            const color = getStationStatusColor(station.status);
+            const color = getStatusColor(station.is_active);
             
-            // Генерируем SVG маркер с коннекторами
-            const markerSVG = generateMarkerSVG(station.status, station.connectors || [], 48);
-            
-            // Создаем кастомную иконку с сегментированным дизайном
-            const customIcon = L.divIcon({
+            const icon = L.divIcon({
+              html: \`
+                <div style="
+                  width: 20px;
+                  height: 20px;
+                  background-color: \${color};
+                  border: 3px solid white;
+                  border-radius: 50%;
+                  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                  cursor: pointer;
+                  transition: transform 0.2s;
+                "></div>
+              \`,
               className: '',
-              html: markerSVG,
-              iconSize: [48, 56],
-              iconAnchor: [24, 56],
-              popupAnchor: [0, -56]
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
             });
 
-            // Добавляем маркер в группу
-            const marker = L.marker([station.coordinates[0], station.coordinates[1]], {
-              icon: customIcon
-            });
-            
-            markerGroup.addLayer(marker);
+            const marker = L.marker([station.lat, station.lon], { icon })
+              .bindPopup(\`
+                <div style="padding: 8px; min-width: 200px;">
+                  <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">
+                    \${station.name || station.station_id}
+                  </h3>
+                  <div style="font-size: 14px; color: #6b7280; line-height: 1.6;">
+                    <div><strong>ID:</strong> \${station.station_id}</div>
+                    \${station.address ? \`<div><strong>Адрес:</strong> \${station.address}</div>\` : ''}
+                    \${station.region ? \`<div><strong>Регион:</strong> \${station.region}</div>\` : ''}
+                    \${station.ip_address ? \`<div><strong>IP:</strong> \${station.ip_address}</div>\` : ''}
+                    <div style="margin-top: 8px;">
+                      <span style="
+                        display: inline-block;
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        font-weight: 600;
+                        background-color: \${station.is_active === 1 ? '#dcfce7' : '#f3f4f6'};
+                        color: \${station.is_active === 1 ? '#16a34a' : '#6b7280'};
+                      ">
+                        \${station.is_active === 1 ? 'Активна' : 'Неактивна'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              \`)
+              .on('click', () => {
+                window.parent.postMessage({ 
+                  type: 'stationClick', 
+                  stationId: station.id 
+                }, '*');
+              });
 
-            // Получаем статус текст
-            const statusText = station.status === 'online' ? 'Онлайн' : 
-              station.status === 'offline' ? 'Офлайн' : 'Ошибка';
-            
-            // Формируем HTML для коннекторов
-            const connectorsHTML = station.connectors ? station.connectors.map(conn => {
-              const connColor = getConnectorStatusColor(conn.status);
-              const connStatusText = conn.status === 'available' ? 'Свободен' :
-                conn.status === 'charging' ? 'Зарядка' :
-                conn.status === 'occupied' ? 'Занят' :
-                conn.status === 'error' ? 'Ошибка' : 'Офлайн';
-              return \`
-                <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 0;">
-                  <div style="width: 8px; height: 8px; background-color: \${connColor}; border-radius: 50%; border: 1px solid white;"></div>
-                  <span style="color: #374151;">\${conn.type} (\${conn.power} кВт) - \${connStatusText}</span>
-                </div>
-              \`;
-            }).join('') : '';
-            
-            // Единая кнопка для всех станций
-            const buttonHtml = \`<button onclick="openStationDetails('\${station.id}')" style="
-              width: 100%;
-              background-color: #3B82F6;
-              color: white;
-              border: none;
-              padding: 8px 12px;
-              border-radius: 6px;
-              font-size: 12px;
-              cursor: pointer;
-              margin-top: 8px;
-              font-weight: 500;
-            " onmouseover="this.style.backgroundColor='#2563EB'" onmouseout="this.style.backgroundColor='#3B82F6'">
-              Перейти
-            </button>\`;
-
-            // Добавляем popup с кнопкой
-            marker.bindPopup(\`
-              <div style="min-width: 250px;">
-                <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1F2937;">\${station.name}</h3>
-                <p style="margin: 0 0 8px 0; font-size: 13px; color: #6B7280;">\${station.location}</p>
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                  <div style="
-                    width: 10px;
-                    height: 10px;
-                    background-color: \${color};
-                    border-radius: 50%;
-                    border: 1px solid white;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-                  "></div>
-                  <span style="font-size: 13px; font-weight: 500; color: #374151;">\${statusText}</span>
-                </div>
-                <div style="margin: 8px 0; padding: 8px 0; border-top: 1px solid #E5E7EB;">
-                  <div style="font-size: 12px; font-weight: 600; color: #6B7280; margin-bottom: 6px;">Коннекторы:</div>
-                  \${connectorsHTML}
-                </div>
-                \${buttonHtml}
-              </div>
-            \`, {
-              closeButton: true,
-              autoClose: false,
-              closeOnClick: false,
-              className: 'custom-popup'
-            });
+            markers.addLayer(marker);
           });
 
-          // Добавляем группу маркеров на карту
-          map.addLayer(markerGroup);
+          map.addLayer(markers);
 
-          // Функция для открытия детальной информации о станции
-          function openStationDetails(stationId) {
-            window.parent.postMessage({type: 'stationClick', stationId: stationId}, '*');
+          if (stations.length > 0) {
+            const group = new L.featureGroup(markers.getLayers());
+            map.fitBounds(group.getBounds().pad(0.1));
           }
         </script>
       </body>
       </html>
     `;
-    
+
     setMapHtml(html);
-  }, [stations, clusteringEnabled]);
+  }, [stations]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'stationClick') {
-        const station = stations.find(s => s.id === event.data.stationId);
-        if (station) {
-          setSelectedStation(station);
-          onStationClick?.(station.id);
-        }
+      if (event.data.type === 'stationClick' && onStationClick) {
+        onStationClick(event.data.stationId);
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [stations, onStationClick]);
+  }, [onStationClick]);
+
+  if (!mapHtml) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+        <Icon name="Loader2" className="animate-spin text-gray-400" size={32} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Основная карта */}
-      <div className="relative w-full h-[600px] rounded-lg overflow-hidden border">
-        <iframe
-          srcDoc={mapHtml}
-          style={{ width: '100%', height: '100%', border: 'none' }}
-          title="Карта зарядных станций"
-        />
-      </div>
-
-      {/* Легенда и настройки под картой */}
-      <div className="bg-white p-4 rounded-lg border">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div>
-            <div className="text-sm font-semibold mb-3 text-gray-700">Статус станций:</div>
-            <div className="space-y-2">
-              {[
-                { status: 'online', label: 'Онлайн' },
-                { status: 'offline', label: 'Офлайн' },
-                { status: 'error', label: 'Ошибка' }
-              ].map(({ status, label }) => (
-                <div key={status} className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                    style={{ backgroundColor: getStatusColor(status) }}
-                  />
-                  <span className="text-sm">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm font-semibold mb-3 text-gray-700">Статус коннекторов:</div>
-            <div className="space-y-2">
-              {[
-                { status: 'available', label: 'Свободен', color: '#22C55E' },
-                { status: 'charging', label: 'Зарядка', color: '#F97316' },
-                { status: 'occupied', label: 'Занят', color: '#3B82F6' },
-                { status: 'error', label: 'Ошибка', color: '#EF4444' },
-                { status: 'offline', label: 'Офлайн', color: '#9CA3AF' }
-              ].map(({ status, label, color }) => (
-                <div key={status} className="flex items-center gap-2">
-                  <div
-                    className="w-4 h-4 rounded-full border-2 border-white shadow-sm"
-                    style={{ backgroundColor: color }}
-                  />
-                  <span className="text-sm">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm font-semibold mb-3 text-gray-700">Настройки отображения:</div>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Switch
-                  id="clustering-mode"
-                  checked={clusteringEnabled}
-                  onCheckedChange={setClusteringEnabled}
-                />
-                <Label htmlFor="clustering-mode" className="text-sm cursor-pointer">
-                  Группировать станции
-                </Label>
-              </div>
-              
-              <div className="space-y-2 pt-2">
-                <div className="relative">
-                  <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input
-                    placeholder="Фильтр по городу..."
-                    value={cityFilter}
-                    onChange={(e) => setCityFilter(e.target.value)}
-                    className="pl-9 h-9 text-sm"
-                  />
-                </div>
-
-                <div className="relative">
-                  <Icon name="Building" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input
-                    placeholder="Фильтр по собственнику..."
-                    value={ownerFilter}
-                    onChange={(e) => setOwnerFilter(e.target.value)}
-                    className="pl-9 h-9 text-sm"
-                  />
-                </div>
-
-                <div className="relative">
-                  <Icon name="Smartphone" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                  <Input
-                    placeholder="Фильтр по приложению..."
-                    value={appFilter}
-                    onChange={(e) => setAppFilter(e.target.value)}
-                    className="pl-9 h-9 text-sm"
-                  />
-                </div>
-
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Статус станций" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все статусы</SelectItem>
-                    <SelectItem value="online">Онлайн</SelectItem>
-                    <SelectItem value="offline">Офлайн</SelectItem>
-                    <SelectItem value="error">Ошибка</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {(cityFilter || ownerFilter || appFilter || statusFilter !== 'all') && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      setCityFilter('');
-                      setOwnerFilter('');
-                      setAppFilter('');
-                      setStatusFilter('all');
-                    }}
-                    className="w-full h-9 text-sm"
-                  >
-                    <Icon name="X" size={16} className="mr-1" />
-                    Сбросить фильтры
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Боковая панель с информацией о выбранной станции */}
+    <div className="w-full h-full relative">
+      <iframe
+        srcDoc={mapHtml}
+        className="w-full h-full border-0"
+        title="Карта станций"
+      />
       {selectedStation && (
-        <div className="absolute top-4 right-4 bg-white p-4 rounded-lg shadow-lg border max-w-xs z-[1002]">
-          <button 
-            onClick={() => setSelectedStation(null)}
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl leading-none"
-          >
-            ×
-          </button>
-          <h3 className="font-semibold mb-2 pr-6">{selectedStation.name}</h3>
-          <p className="text-sm text-gray-600 mb-3">{selectedStation.location}</p>
-          <div className="flex items-center gap-2 mb-3">
-            <div 
-              className="w-3 h-3 rounded-full" 
-              style={{ backgroundColor: getStatusColor(selectedStation.status) }}
-            />
-            <span className="text-sm">{getStatusLabel(selectedStation.status)}</span>
-          </div>
-          
-          {selectedStation.connectors && selectedStation.connectors.length > 0 && (
-            <div className="border-t pt-3 mt-3">
-              <div className="text-xs font-semibold text-gray-600 mb-2">Коннекторы:</div>
-              <div className="space-y-1">
-                {selectedStation.connectors.map((conn) => (
-                  <div key={conn.id} className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-2 h-2 rounded-full"
-                        style={{
-                          backgroundColor:
-                            conn.status === 'available' ? '#22C55E' :
-                            conn.status === 'charging' ? '#F97316' :
-                            conn.status === 'occupied' ? '#3B82F6' :
-                            conn.status === 'error' ? '#EF4444' : '#9CA3AF'
-                        }}
-                      />
-                      <span>{conn.type}</span>
-                    </div>
-                    <span className="text-gray-600">{conn.power} кВт</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {selectedStation.status === 'online' && (
-            <button className="w-full bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm transition-colors mt-3">
-              Подробнее
+        <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-sm z-10">
+          <div className="flex items-start justify-between mb-2">
+            <h3 className="font-semibold text-lg">
+              {selectedStation.name || selectedStation.station_id}
+            </h3>
+            <button
+              onClick={() => setSelectedStation(null)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <Icon name="X" size={20} />
             </button>
-          )}
-          
-          {selectedStation.status === 'offline' && (
-            <div className="text-sm text-gray-500 font-medium mt-3">
-              Станция недоступна
+          </div>
+          <div className="space-y-2 text-sm text-gray-600">
+            <div><strong>ID:</strong> {selectedStation.station_id}</div>
+            {selectedStation.address && (
+              <div><strong>Адрес:</strong> {selectedStation.address}</div>
+            )}
+            {selectedStation.region && (
+              <div><strong>Регион:</strong> {selectedStation.region}</div>
+            )}
+            {selectedStation.ip_address && (
+              <div><strong>IP:</strong> {selectedStation.ip_address}</div>
+            )}
+            <div className="pt-2">
+              <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                selectedStation.is_active === 1 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {getStatusLabel(selectedStation.is_active)}
+              </span>
             </div>
-          )}
-          
-          {selectedStation.status === 'error' && (
-            <div className="text-sm text-red-600 font-medium mt-3">
-              Требует обслуживания
-            </div>
-          )}
+          </div>
         </div>
       )}
     </div>

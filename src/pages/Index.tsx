@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,240 +8,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Icon from '@/components/ui/icon';
 import Map from '@/components/Map';
 import Layout from '@/components/Layout';
+import { useWebSocket, useStations } from '@/hooks/useWebSocket';
+import { StationData } from '@/types/websocket';
 
-interface ChargingStation {
-  id: string;
-  name: string;
-  location: string;
-  status: 'online' | 'offline' | 'error';
-  connectors: Connector[];
-  totalSessions: number;
-  lastActivity: string;
-  coordinates: [number, number];
-}
-
-interface Connector {
-  id: string;
-  type: string;
-  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
-  power: number;
-  currentSession?: {
-    startTime: string;
-    energy: number;
-    cost: number;
-  };
-}
-
-const mockStations: ChargingStation[] = [
-  {
-    id: '1',
-    name: 'ЭЗС Центральная',
-    location: 'ул. Ленина, 15',
-    status: 'online',
-    coordinates: [55.7558, 37.6176],
-    totalSessions: 145,
-    lastActivity: '2 мин назад',
-    connectors: [
-      { id: 'c1', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '14:30', energy: 12.5, cost: 450 } },
-      { id: 'c2', type: 'CCS', status: 'available', power: 50 },
-      { id: 'c3', type: 'CHAdeMO', status: 'available', power: 50 }
-    ]
-  },
-  {
-    id: '2',
-    name: 'ЭЗС Северная',
-    location: 'пр. Мира, 45',
-    status: 'online',
-    coordinates: [55.7665, 37.6177],
-    totalSessions: 87,
-    lastActivity: '15 мин назад',
-    connectors: [
-      { id: 'c3', type: 'Type 2', status: 'available', power: 22 },
-      { id: 'c4', type: 'CHAdeMO', status: 'available', power: 50 },
-      { id: 'c5', type: 'CCS', status: 'charging', power: 150 },
-      { id: 'c6', type: 'CCS', status: 'available', power: 150 }
-    ]
-  },
-  {
-    id: '3',
-    name: 'ЭЗС Южная',
-    location: 'ул. Победы, 12',
-    status: 'error',
-    coordinates: [55.7430, 37.6156],
-    totalSessions: 203,
-    lastActivity: '1 час назад',
-    connectors: [
-      { id: 'c5', type: 'Type 2', status: 'error', power: 22 },
-      { id: 'c6', type: 'CCS', status: 'offline', power: 150 }
-    ]
-  },
-  {
-    id: '4',
-    name: 'ЭЗС Арбат',
-    location: 'ул. Арбат, 28',
-    status: 'online',
-    coordinates: [55.7520, 37.5895],
-    totalSessions: 312,
-    lastActivity: '5 мин назад',
-    connectors: [
-      { id: 'c7', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '15:10', energy: 8.3, cost: 290 } },
-      { id: 'c8', type: 'CCS', status: 'available', power: 50 }
-    ]
-  },
-  {
-    id: '5',
-    name: 'ЭЗС Красная Пресня',
-    location: 'наб. Пресненская, 2',
-    status: 'offline',
-    coordinates: [55.7494, 37.5346],
-    totalSessions: 67,
-    lastActivity: '3 часа назад',
-    connectors: [
-      { id: 'c9', type: 'Type 2', status: 'offline', power: 22 },
-      { id: 'c10', type: 'CCS', status: 'offline', power: 150 }
-    ]
-  },
-  {
-    id: '6',
-    name: 'ЭЗС Сокольники',
-    location: 'ул. Сокольнический Вал, 1',
-    status: 'online',
-    coordinates: [55.7915, 37.6713],
-    totalSessions: 198,
-    lastActivity: '1 мин назад',
-    connectors: [
-      { id: 'c11', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '14:50', energy: 15.2, cost: 532 } },
-      { id: 'c12', type: 'CHAdeMO', status: 'available', power: 50 },
-      { id: 'c13', type: 'CCS', status: 'available', power: 150 }
-    ]
-  },
-  {
-    id: '7',
-    name: 'ЭЗС Таганка',
-    location: 'ул. Таганская, 17',
-    status: 'error',
-    coordinates: [55.7403, 37.6533],
-    totalSessions: 156,
-    lastActivity: '25 мин назад',
-    connectors: [
-      { id: 'c14', type: 'Type 2', status: 'error', power: 22 },
-      { id: 'c15', type: 'CCS', status: 'error', power: 50 }
-    ]
-  },
-  {
-    id: '8',
-    name: 'ЭЗС Парк Горького',
-    location: 'ул. Крымский Вал, 9',
-    status: 'online',
-    coordinates: [55.7308, 37.6014],
-    totalSessions: 278,
-    lastActivity: '10 мин назад',
-    connectors: [
-      { id: 'c16', type: 'Type 2', status: 'available', power: 22 },
-      { id: 'c17', type: 'CCS', status: 'charging', power: 50, currentSession: { startTime: '15:25', energy: 5.8, cost: 203 } }
-    ]
-  },
-  {
-    id: '9',
-    name: 'ЭЗС Лубянка',
-    location: 'пл. Лубянская, 2',
-    status: 'online',
-    coordinates: [55.7594, 37.6279],
-    totalSessions: 421,
-    lastActivity: '3 мин назад',
-    connectors: [
-      { id: 'c18', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '15:30', energy: 3.5, cost: 123 } },
-      { id: 'c19', type: 'CCS', status: 'available', power: 150 },
-      { id: 'c20', type: 'CHAdeMO', status: 'available', power: 50 }
-    ]
-  },
-  {
-    id: '10',
-    name: 'ЭЗС Кремль',
-    location: 'Манежная пл., 1',
-    status: 'offline',
-    coordinates: [55.7525, 37.6173],
-    totalSessions: 89,
-    lastActivity: '5 часов назад',
-    connectors: [
-      { id: 'c21', type: 'Type 2', status: 'offline', power: 22 }
-    ]
-  },
-  {
-    id: '11',
-    name: 'ЭЗС Тверская',
-    location: 'ул. Тверская, 12',
-    status: 'online',
-    coordinates: [55.7628, 37.6066],
-    totalSessions: 267,
-    lastActivity: '7 мин назад',
-    connectors: [
-      { id: 'c22', type: 'Type 2', status: 'available', power: 22 },
-      { id: 'c23', type: 'CCS', status: 'charging', power: 50, currentSession: { startTime: '15:20', energy: 6.7, cost: 235 } }
-    ]
-  },
-  {
-    id: '12',
-    name: 'ЭЗС Останкино',
-    location: 'ул. Академика Королёва, 15',
-    status: 'error',
-    coordinates: [55.8202, 37.6114],
-    totalSessions: 134,
-    lastActivity: '45 мин назад',
-    connectors: [
-      { id: 'c24', type: 'Type 2', status: 'error', power: 22 },
-      { id: 'c25', type: 'CCS', status: 'offline', power: 150 }
-    ]
-  },
-  {
-    id: '13',
-    name: 'ЭЗС Воробьёвы Горы',
-    location: 'Университетская пл., 1',
-    status: 'online',
-    coordinates: [55.7031, 37.5443],
-    totalSessions: 345,
-    lastActivity: '2 мин назад',
-    connectors: [
-      { id: 'c26', type: 'Type 2', status: 'charging', power: 22, currentSession: { startTime: '14:45', energy: 18.2, cost: 637 } },
-      { id: 'c27', type: 'CCS', status: 'available', power: 150 },
-      { id: 'c28', type: 'CHAdeMO', status: 'available', power: 50 }
-    ]
-  },
-  {
-    id: '14',
-    name: 'ЭЗС Китай-Город',
-    location: 'Солянский пр., 5',
-    status: 'online',
-    coordinates: [55.7567, 37.6345],
-    totalSessions: 189,
-    lastActivity: '12 мин назад',
-    connectors: [
-      { id: 'c29', type: 'Type 2', status: 'available', power: 22 },
-      { id: 'c30', type: 'CCS', status: 'available', power: 50 }
-    ]
-  },
-  {
-    id: '15',
-    name: 'ЭЗС Измайлово',
-    location: 'ш. Энтузиастов, 56',
-    status: 'offline',
-    coordinates: [55.7882, 37.7487],
-    totalSessions: 92,
-    lastActivity: '2 часа назад',
-    connectors: [
-      { id: 'c31', type: 'Type 2', status: 'offline', power: 22 },
-      { id: 'c32', type: 'CCS', status: 'offline', power: 150 }
-    ]
-  }
-];
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'online': return 'Онлайн';
-    case 'offline': return 'Офлайн';
-    case 'error': return 'Ошибка';
-    default: return 'Неизвестно';
-  }
+const getStatusLabel = (is_active: number) => {
+  return is_active === 1 ? 'Активна' : 'Неактивна';
 };
 
 export default function Index() {
@@ -250,126 +21,184 @@ export default function Index() {
   const navigate = useNavigate();
 
   const currentTab = searchParams.get('tab') || 'map';
+  
+  const { isConnected, isConnecting, error: wsError } = useWebSocket();
+  const { stations, loading, error, loadStations } = useStations();
 
-  const filteredStations = mockStations.filter(station =>
-    station.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    station.location.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    if (isConnected) {
+      loadStations();
+    }
+  }, [isConnected, loadStations]);
+
+  const filteredStations = stations.filter(station =>
+    (station.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+    station.station_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (station.address?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   );
 
-  const handleStationClick = (stationId: string) => {
+  const handleStationClick = (stationId: number) => {
     navigate(`/station/${stationId}`);
   };
 
+  const activeStationsCount = stations.filter(s => s.is_active === 1).length;
+  const inactiveStationsCount = stations.filter(s => s.is_active === 0).length;
+
   return (
     <Layout>
-      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex items-center justify-between py-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {currentTab === 'map' ? 'Карта станций' : 'Список станций'}
-              </h1>
-              <p className="text-sm text-gray-500">
-                Мониторинг и управление зарядными станциями
+              <h1 className="text-2xl font-bold text-gray-900">Мониторинг ЭЗС</h1>
+              <p className="text-sm text-gray-500 mt-1">
+                Всего станций: {stations.length} | Активных: {activeStationsCount} | Неактивных: {inactiveStationsCount}
               </p>
             </div>
             <div className="flex items-center gap-4">
-              <Badge variant="outline" className="gap-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                Онлайн: 18
-              </Badge>
-              <Badge variant="outline" className="gap-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                Ошибки: 3
-              </Badge>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${
+                  isConnected ? 'bg-green-500' : isConnecting ? 'bg-yellow-500' : 'bg-red-500'
+                }`} />
+                <span className="text-sm text-gray-600">
+                  {isConnected ? 'Подключено' : isConnecting ? 'Подключение...' : 'Отключено'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
-        <div className="space-y-6">
-
-        {/* Map view */}
-        {currentTab === 'map' && (
-          <Map 
-            stations={mockStations} 
-            onStationClick={handleStationClick}
-          />
-        )}
-
-        {/* List view */}
-        {currentTab === 'list' && (
-          <div className="space-y-4">
-            {/* Search */}
-            <div className="flex gap-4">
-              <div className="relative flex-1">
-                <Icon name="Search" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Поиск станций..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+      {(wsError || error) && (
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
+            <Icon name="AlertCircle" className="text-red-600 flex-shrink-0" size={20} />
+            <div>
+              <p className="text-sm font-medium text-red-800">Ошибка подключения</p>
+              <p className="text-sm text-red-600 mt-1">{wsError || error}</p>
             </div>
+          </div>
+        </div>
+      )}
 
-            {/* Stations Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Зарядные станции</CardTitle>
-              </CardHeader>
-              <CardContent>
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant={currentTab === 'map' ? 'default' : 'outline'}
+            onClick={() => navigate('/?tab=map')}
+            className="flex items-center gap-2"
+          >
+            <Icon name="Map" size={18} />
+            Карта
+          </Button>
+          <Button
+            variant={currentTab === 'list' ? 'default' : 'outline'}
+            onClick={() => navigate('/?tab=list')}
+            className="flex items-center gap-2"
+          >
+            <Icon name="List" size={18} />
+            Список
+          </Button>
+          <div className="ml-auto w-80">
+            <Input
+              placeholder="Поиск по названию, ID, адресу..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full"
+            />
+          </div>
+        </div>
+
+        {currentTab === 'map' ? (
+          <Card>
+            <CardContent className="p-0">
+              <div className="h-[calc(100vh-280px)] min-h-[500px]">
+                {loading ? (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <Icon name="Loader2" className="animate-spin text-gray-400" size={32} />
+                    <span className="ml-3 text-gray-600">Загрузка станций...</span>
+                  </div>
+                ) : (
+                  <Map 
+                    stations={filteredStations} 
+                    onStationClick={handleStationClick}
+                  />
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Список станций ({filteredStations.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Icon name="Loader2" className="animate-spin text-gray-400" size={32} />
+                  <span className="ml-3 text-gray-600">Загрузка станций...</span>
+                </div>
+              ) : filteredStations.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Icon name="Search" size={48} className="mx-auto mb-3 text-gray-300" />
+                  <p>Станции не найдены</p>
+                </div>
+              ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>ID</TableHead>
                       <TableHead>Название</TableHead>
-                      <TableHead>Местоположение</TableHead>
+                      <TableHead>Адрес</TableHead>
+                      <TableHead>Регион</TableHead>
+                      <TableHead>IP адрес</TableHead>
                       <TableHead>Статус</TableHead>
-                      <TableHead>Коннекторы</TableHead>
-                      <TableHead>Сессии</TableHead>
-                      <TableHead>Активность</TableHead>
                       <TableHead>Действия</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredStations.map((station) => (
                       <TableRow key={station.id}>
-                        <TableCell className="font-medium">{station.name}</TableCell>
-                        <TableCell>{station.location}</TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {station.station_id}
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {station.name || '—'}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {station.address || '—'}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {station.region || '—'}
+                        </TableCell>
+                        <TableCell className="font-mono text-sm">
+                          {station.ip_address || '—'}
+                        </TableCell>
                         <TableCell>
                           <Badge 
-                            variant={station.status === 'offline' ? 'destructive' : 'default'}
-                            className={
-                              station.status === 'online' ? 'bg-green-100 text-green-800 hover:bg-green-200' :
-                              station.status === 'error' ? 'bg-red-100 text-red-800 hover:bg-red-200' :
-                              ''
-                            }
+                            variant={station.is_active === 1 ? 'default' : 'secondary'}
+                            className={station.is_active === 1 ? 'bg-green-500' : ''}
                           >
-                            {getStatusLabel(station.status)}
+                            {getStatusLabel(station.is_active)}
                           </Badge>
                         </TableCell>
-                        <TableCell>{station.connectors.length}</TableCell>
-                        <TableCell>{station.totalSessions}</TableCell>
-                        <TableCell className="text-gray-500">{station.lastActivity}</TableCell>
                         <TableCell>
-                          <Link to={`/station/${station.id}`}>
-                            <Button variant="outline" size="sm">
-                              Подробнее
-                            </Button>
-                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleStationClick(station.id)}
+                          >
+                            <Icon name="ArrowRight" size={16} />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         )}
-
-        </div>
       </div>
     </Layout>
   );
