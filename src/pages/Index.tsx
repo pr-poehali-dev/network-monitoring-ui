@@ -55,49 +55,6 @@ export default function Index() {
   const activeStationsCount = stations.filter(s => s.is_active === 1).length;
   const inactiveStationsCount = stations.filter(s => s.is_active === 0).length;
 
-  if (isConnecting) {
-    return (
-      <Layout showSidebar={false}>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center px-4">
-            <div className="mb-6">
-              <Icon name="Loader2" size={64} className="mx-auto text-blue-500 animate-spin" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Подключение к серверу</h1>
-            <p className="text-gray-600">
-              Устанавливаем соединение с системой мониторинга...
-            </p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (!isConnected) {
-    return (
-      <Layout showSidebar={false}>
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center px-4">
-            <div className="mb-6">
-              <Icon name="WifiOff" size={64} className="mx-auto text-red-500" />
-            </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Нет подключения к серверу</h1>
-            <p className="text-gray-600 mb-6">
-              {wsError || 'Не удалось установить соединение с WebSocket сервером'}
-            </p>
-            <Button
-              onClick={() => window.location.reload()}
-              className="inline-flex items-center gap-2"
-            >
-              <Icon name="RotateCw" size={18} />
-              Обновить страницу
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
   return (
     <Layout>
       <header className="bg-white shadow-sm border-b">
