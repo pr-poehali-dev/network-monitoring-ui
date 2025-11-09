@@ -17,6 +17,9 @@ const getStatusLabel = (is_active: number) => {
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [clustering, setClustering] = useState(true);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -31,11 +34,19 @@ export default function Index() {
     }
   }, [isConnected, loadStations]);
 
-  const filteredStations = stations.filter(station =>
-    (station.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
-    station.station_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (station.address?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
-  );
+  const filteredStations = stations.filter(station => {
+    const matchesSearch = (station.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      station.station_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (station.address?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    
+    const matchesRegion = !regionFilter || (station.region?.toLowerCase().includes(regionFilter.toLowerCase()) ?? false);
+    
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'active' && station.is_active === 1) ||
+      (statusFilter === 'inactive' && station.is_active === 0);
+    
+    return matchesSearch && matchesRegion && matchesStatus;
+  });
 
   const handleStationClick = (stationId: number) => {
     navigate(`/station/${stationId}`);
@@ -82,23 +93,74 @@ export default function Index() {
       )}
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          {currentTab === 'list' && (
-            <div className="w-80">
+        <div className="space-y-4 mb-6">
+          {/* Поиск и фильтры */}
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Icon name="Search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <Input
                 placeholder="Поиск по названию, ID, адресу..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
+                className="pl-10"
               />
             </div>
-          )}
+            
+            <div className="relative">
+              <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Фильтр по региону..."
+                value={regionFilter}
+                onChange={(e) => setRegionFilter(e.target.value)}
+                className="pl-9 w-48"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('all')}
+              >
+                Все
+              </Button>
+              <Button
+                variant={statusFilter === 'active' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('active')}
+              >
+                Активные
+              </Button>
+              <Button
+                variant={statusFilter === 'inactive' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('inactive')}
+              >
+                Неактивные
+              </Button>
+            </div>
+
+            {(searchQuery || regionFilter || statusFilter !== 'all') && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => {
+                  setSearchQuery('');
+                  setRegionFilter('');
+                  setStatusFilter('all');
+                }}
+              >
+                <Icon name="X" size={16} className="mr-1" />
+                Сбросить
+              </Button>
+            )}
+          </div>
         </div>
 
         {currentTab === 'map' ? (
           <Card>
-            <CardContent className="p-0">
-              <div className="h-[calc(100vh-280px)] min-h-[500px]">
+            <CardContent className="p-0 relative">
+              <div className="h-[calc(100vh-340px)] min-h-[500px]">
                 {loading ? (
                   <div className="w-full h-full flex items-center justify-center bg-gray-100">
                     <Icon name="Loader2" className="animate-spin text-gray-400" size={32} />
@@ -108,8 +170,39 @@ export default function Index() {
                   <Map 
                     stations={filteredStations} 
                     onStationClick={handleStationClick}
+                    clustering={clustering}
+                    onClusteringChange={setClustering}
                   />
                 )}
+              </div>
+              
+              {/* Панель управления картой */}
+              <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
+                <div className="bg-white rounded-lg shadow-lg border px-4 py-2 flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-700">Кластеризация:</span>
+                    <Button
+                      variant={clustering ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setClustering(true)}
+                    >
+                      Вкл
+                    </Button>
+                    <Button
+                      variant={!clustering ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setClustering(false)}
+                    >
+                      Выкл
+                    </Button>
+                  </div>
+                  
+                  <div className="h-4 w-px bg-gray-300" />
+                  
+                  <div className="text-sm text-gray-600">
+                    Станций на карте: <span className="font-semibold">{filteredStations.filter(s => s.lat && s.lon).length}</span>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

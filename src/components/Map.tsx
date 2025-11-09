@@ -5,6 +5,8 @@ import Icon from '@/components/ui/icon';
 interface MapProps {
   stations: StationData[];
   onStationClick?: (stationId: number) => void;
+  clustering?: boolean;
+  onClusteringChange?: (enabled: boolean) => void;
 }
 
 const getStatusColor = (is_active: number) => {
@@ -15,12 +17,13 @@ const getStatusLabel = (is_active: number) => {
   return is_active === 1 ? 'Активна' : 'Неактивна';
 };
 
-export default function MapComponent({ stations, onStationClick }: MapProps) {
+export default function MapComponent({ stations, onStationClick, clustering = true, onClusteringChange }: MapProps) {
   const [selectedStation, setSelectedStation] = useState<StationData | null>(null);
   const [mapHtml, setMapHtml] = useState<string>('');
 
   useEffect(() => {
     const validStations = stations.filter(s => s.lat && s.lon);
+    const useClustering = clustering;
 
     if (validStations.length === 0) {
       setMapHtml(`
@@ -92,7 +95,8 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
             return is_active === 1 ? '#22C55E' : '#9CA3AF';
           }
 
-          const markers = L.markerClusterGroup();
+          const useClustering = ${useClustering};
+          const markers = useClustering ? L.markerClusterGroup() : L.layerGroup();
 
           stations.forEach(station => {
             const color = getStatusColor(station.is_active);
@@ -149,7 +153,11 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
                 }, '*');
               });
 
-            markers.addLayer(marker);
+            if (useClustering) {
+              markers.addLayer(marker);
+            } else {
+              marker.addTo(markers);
+            }
           });
 
           map.addLayer(markers);
