@@ -51,6 +51,7 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
           html, body { height: 100%; overflow: hidden; }
           #map { height: 100vh; width: 100%; }
           .leaflet-attribution-flag { display: none !important; }
+          .leaflet-zoom-animated { transition-duration: 0.15s !important; }
           .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large {
             background-color: rgba(59, 130, 246, 0.6);
           }
@@ -65,14 +66,13 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
         <div id="map"></div>
         <script>
           const map = L.map('map', {
-            zoomSnap: 0.5,
-            zoomDelta: 0.5,
+            zoomSnap: 1,
+            zoomDelta: 1,
             wheelPxPerZoomLevel: 60,
-            wheelDebounceTime: 40,
+            wheelDebounceTime: 0,
             zoomAnimation: true,
             zoomAnimationThreshold: 10,
-            fadeAnimation: true,
-            markerZoomAnimation: true
+            fadeAnimation: true
           }).setView([${validStations[0].lat}, ${validStations[0].lon}], 6);
           
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
