@@ -83,30 +83,16 @@ export default function Index() {
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant={currentTab === 'map' ? 'default' : 'outline'}
-            onClick={() => navigate('/?tab=map')}
-            className="flex items-center gap-2"
-          >
-            <Icon name="Map" size={18} />
-            Карта
-          </Button>
-          <Button
-            variant={currentTab === 'list' ? 'default' : 'outline'}
-            onClick={() => navigate('/?tab=list')}
-            className="flex items-center gap-2"
-          >
-            <Icon name="List" size={18} />
-            Список
-          </Button>
-          <div className="ml-auto w-80">
-            <Input
-              placeholder="Поиск по названию, ID, адресу..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full"
-            />
-          </div>
+          {currentTab === 'list' && (
+            <div className="w-80">
+              <Input
+                placeholder="Поиск по названию, ID, адресу..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          )}
         </div>
 
         {currentTab === 'map' ? (

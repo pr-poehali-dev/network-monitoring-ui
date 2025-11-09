@@ -64,7 +64,11 @@ export default function MapComponent({ stations, onStationClick }: MapProps) {
       <body>
         <div id="map"></div>
         <script>
-          const map = L.map('map').setView([${validStations[0].lat}, ${validStations[0].lon}], 6);
+          const map = L.map('map', {
+            zoomSnap: 0.5,
+            zoomDelta: 0.5,
+            wheelPxPerZoomLevel: 120
+          }).setView([${validStations[0].lat}, ${validStations[0].lon}], 6);
           
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap'
