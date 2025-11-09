@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,42 +20,44 @@ import {
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { Station } from '@/types/station';
+import { useStations } from '@/hooks/useWebSocket';
+import { StationData } from '@/types/websocket';
 
 export default function StationsManager() {
-  const { stations } = useWebSocket();
+  const { stations, loadStations } = useStations();
   const [searchTerm, setSearchTerm] = useState('');
-  const [editingStation, setEditingStation] = useState<Station | null>(null);
+  const [editingStation, setEditingStation] = useState<StationData | null>(null);
+
+  useEffect(() => {
+    loadStations();
+  }, [loadStations]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
-    code: '',
-    latitude: '',
-    longitude: '',
-    elevation: '',
+    station_id: '',
+    lat: '',
+    lon: '',
     region: '',
-    city: '',
-    owner: '',
+    address: '',
+    ip_address: '',
   });
 
   const filteredStations = stations.filter(station =>
-    station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    station.code.toLowerCase().includes(searchTerm.toLowerCase())
+    (station.name?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
+    station.station_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleEdit = (station: Station) => {
+  const handleEdit = (station: StationData) => {
     setEditingStation(station);
     setFormData({
-      name: station.name,
-      code: station.code,
-      latitude: station.latitude?.toString() || '',
-      longitude: station.longitude?.toString() || '',
-      elevation: station.elevation?.toString() || '',
+      name: station.name || '',
+      station_id: station.station_id,
+      lat: station.lat?.toString() || '',
+      lon: station.lon?.toString() || '',
       region: station.region || '',
-      city: station.city || '',
-      owner: station.owner || '',
+      address: station.address || '',
+      ip_address: station.ip_address || '',
     });
     setIsDialogOpen(true);
   };
@@ -114,10 +116,9 @@ export default function StationsManager() {
                 <TableHead>Код</TableHead>
                 <TableHead>Название</TableHead>
                 <TableHead>Координаты</TableHead>
-                <TableHead>Высота</TableHead>
+                <TableHead>IP-адрес</TableHead>
                 <TableHead>Регион</TableHead>
-                <TableHead>Город</TableHead>
-                <TableHead>Владелец</TableHead>
+                <TableHead>Адрес</TableHead>
                 <TableHead>Статус</TableHead>
                 <TableHead className="text-right">Действия</TableHead>
               </TableRow>
@@ -125,15 +126,14 @@ export default function StationsManager() {
             <TableBody>
               {filteredStations.map((station) => (
                 <TableRow key={station.id}>
-                  <TableCell className="font-mono text-sm">{station.code}</TableCell>
-                  <TableCell className="font-medium">{station.name}</TableCell>
+                  <TableCell className="font-mono text-sm">{station.station_id}</TableCell>
+                  <TableCell className="font-medium">{station.name || '—'}</TableCell>
                   <TableCell className="text-sm text-gray-600">
-                    {station.latitude?.toFixed(4)}, {station.longitude?.toFixed(4)}
+                    {station.lat?.toFixed(4)}, {station.lon?.toFixed(4)}
                   </TableCell>
-                  <TableCell className="text-sm">{station.elevation} м</TableCell>
+                  <TableCell className="text-sm font-mono">{station.ip_address || '—'}</TableCell>
                   <TableCell className="text-sm">{station.region || '—'}</TableCell>
-                  <TableCell className="text-sm">{station.city || '—'}</TableCell>
-                  <TableCell className="text-sm">{station.owner || '—'}</TableCell>
+                  <TableCell className="text-sm">{station.address || '—'}</TableCell>
                   <TableCell>
                     {station.is_active === 1 ? (
                       <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
@@ -178,11 +178,11 @@ export default function StationsManager() {
 
           <div className="grid grid-cols-2 gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="code">Код станции</Label>
+              <Label htmlFor="station_id">Код станции</Label>
               <Input
-                id="code"
-                value={formData.code}
-                onChange={(e) => handleInputChange('code', e.target.value)}
+                id="station_id"
+                value={formData.station_id}
+                onChange={(e) => handleInputChange('station_id', e.target.value)}
                 placeholder="ARCE"
               />
             </div>
@@ -198,37 +198,36 @@ export default function StationsManager() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="latitude">Широта</Label>
+              <Label htmlFor="lat">Широта</Label>
               <Input
-                id="latitude"
+                id="lat"
                 type="number"
                 step="0.000001"
-                value={formData.latitude}
-                onChange={(e) => handleInputChange('latitude', e.target.value)}
+                value={formData.lat}
+                onChange={(e) => handleInputChange('lat', e.target.value)}
                 placeholder="43.1234"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="longitude">Долгота</Label>
+              <Label htmlFor="lon">Долгота</Label>
               <Input
-                id="longitude"
+                id="lon"
                 type="number"
                 step="0.000001"
-                value={formData.longitude}
-                onChange={(e) => handleInputChange('longitude', e.target.value)}
+                value={formData.lon}
+                onChange={(e) => handleInputChange('lon', e.target.value)}
                 placeholder="44.5678"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="elevation">Высота (м)</Label>
+              <Label htmlFor="ip_address">IP-адрес</Label>
               <Input
-                id="elevation"
-                type="number"
-                value={formData.elevation}
-                onChange={(e) => handleInputChange('elevation', e.target.value)}
-                placeholder="850"
+                id="ip_address"
+                value={formData.ip_address}
+                onChange={(e) => handleInputChange('ip_address', e.target.value)}
+                placeholder="192.168.1.100"
               />
             </div>
 
@@ -242,23 +241,13 @@ export default function StationsManager() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="city">Город</Label>
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="address">Адрес</Label>
               <Input
-                id="city"
-                value={formData.city}
-                onChange={(e) => handleInputChange('city', e.target.value)}
-                placeholder="Владикавказ"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="owner">Владелец</Label>
-              <Input
-                id="owner"
-                value={formData.owner}
-                onChange={(e) => handleInputChange('owner', e.target.value)}
-                placeholder="ФГБУН ФНЦ СКФНЦ РАН"
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="г. Владикавказ, ул. Ленина, д. 1"
               />
             </div>
           </div>
