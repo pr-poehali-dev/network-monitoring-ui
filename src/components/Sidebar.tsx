@@ -29,6 +29,12 @@ const Sidebar = () => {
       href: '/monitoring',
       icon: 'AlertTriangle',
       active: location.pathname === '/monitoring'
+    },
+    {
+      name: 'Администрирование',
+      href: '/admin',
+      icon: 'Shield',
+      active: location.pathname === '/admin'
     }
   ];
 
