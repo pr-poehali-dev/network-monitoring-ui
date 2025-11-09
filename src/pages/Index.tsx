@@ -55,6 +55,31 @@ export default function Index() {
   const activeStationsCount = stations.filter(s => s.is_active === 1).length;
   const inactiveStationsCount = stations.filter(s => s.is_active === 0).length;
 
+  if (!isConnected && !isConnecting) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center px-4">
+            <div className="mb-6">
+              <Icon name="WifiOff" size={64} className="mx-auto text-red-500" />
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Нет подключения к серверу</h1>
+            <p className="text-gray-600 mb-6">
+              {wsError || 'Не удалось установить соединение с WebSocket сервером'}
+            </p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2"
+            >
+              <Icon name="RotateCw" size={18} />
+              Обновить страницу
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <header className="bg-white shadow-sm border-b">
@@ -79,18 +104,6 @@ export default function Index() {
           </div>
         </div>
       </header>
-
-      {(wsError || error) && (
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 mt-4">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3">
-            <Icon name="AlertCircle" className="text-red-600 flex-shrink-0" size={20} />
-            <div>
-              <p className="text-sm font-medium text-red-800">Ошибка подключения</p>
-              <p className="text-sm text-red-600 mt-1">{wsError || error}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
         <div className="space-y-4 mb-6">
