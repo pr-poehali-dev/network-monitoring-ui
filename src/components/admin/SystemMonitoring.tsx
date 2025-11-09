@@ -182,55 +182,6 @@ export default function SystemMonitoring() {
         </Card>
       </div>
 
-      <Card className="p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Icon name="TrendingUp" size={24} className="text-gray-700" />
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">История нагрузки</h3>
-            <p className="text-sm text-gray-600">Последние 20 измерений</p>
-          </div>
-        </div>
-
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={history}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis 
-              dataKey="time" 
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
-            />
-            <YAxis 
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
-              label={{ value: '%', angle: -90, position: 'insideLeft' }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#fff', 
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px'
-              }}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="cpu" 
-              stroke="#3b82f6" 
-              strokeWidth={2}
-              dot={false}
-              name="CPU"
-            />
-            <Line 
-              type="monotone" 
-              dataKey="ram" 
-              stroke="#a855f7" 
-              strokeWidth={2}
-              dot={false}
-              name="RAM"
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">
           <div className="flex items-center gap-3 mb-4">
