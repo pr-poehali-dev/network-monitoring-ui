@@ -80,17 +80,8 @@ export default function StationsManager() {
   return (
     <div className="space-y-6">
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">Управление станциями</h3>
-            <p className="text-sm text-gray-600 mt-1">
-              Всего станций: {stations.length} • Активных: {stations.filter(s => s.is_active === 1).length}
-            </p>
-          </div>
-          <Button className="flex items-center gap-2">
-            <Icon name="Plus" size={18} />
-            Добавить станцию
-          </Button>
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Управление станциями</h3>
         </div>
 
         <div className="mb-4">
@@ -237,7 +228,7 @@ export default function StationsManager() {
                 id="region"
                 value={formData.region}
                 onChange={(e) => handleInputChange('region', e.target.value)}
-                placeholder="Северная Осетия"
+                placeholder="Татарстан"
               />
             </div>
 
