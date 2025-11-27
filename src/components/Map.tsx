@@ -95,6 +95,16 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
           function getStatusColor(is_active) {
             return is_active === 1 ? '#22C55E' : '#9CA3AF';
           }
+          
+          function getConnectorStatusColor(statusId) {
+            if (statusId === 0) return '#22C55E';
+            if (statusId === 3) return '#3B82F6';
+            if (statusId === 1 || statusId === 2 || statusId === 6 || statusId === 7 || statusId === 8) return '#F59E0B';
+            if (statusId === 4 || statusId === 5) return '#F97316';
+            if (statusId === 254) return '#9CA3AF';
+            if (statusId >= 243 && statusId <= 255) return '#EF4444';
+            return '#A855F7';
+          }
 
           const useClustering = ${useClustering};
           const markers = useClustering ? L.markerClusterGroup() : L.layerGroup();
@@ -105,7 +115,7 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
             
             const connectors = hasConnectors 
               ? station.connectors 
-              : [{ id: \`\${station.id}-offline\`, status: 'offline', type: 'Unknown' }];
+              : [{ id: \`\${station.id}-offline\`, status: 254, type: 0 }];
             
             const markerSVG = \`
               <svg width="48" height="56" viewBox="0 0 48 56" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
@@ -136,13 +146,7 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
                   const largeArcOuter = arcAngle > 180 ? 1 : 0;
                   const largeArcInner = arcAngle > 180 ? 1 : 0;
                   
-                  const connectorColors = {
-                    'available': '#22C55E',
-                    'charging': '#F97316',
-                    'occupied': '#3B82F6',
-                    'error': '#EF4444',
-                    'offline': '#9CA3AF'
-                  };
+                  const connectorColor = getConnectorStatusColor(connector.status);
                   
                   return \`
                     <path
@@ -152,7 +156,7 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
                          L \${x4} \${y4}
                          A \${centerRadius} \${centerRadius} 0 \${largeArcInner} 0 \${x1} \${y1}
                          Z"
-                      fill="\${connectorColors[connector.status]}"
+                      fill="\${connectorColor}"
                     />
                   \`;
                 }).join('')}
@@ -180,21 +184,17 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
               iconAnchor: [24, 56]
             });
 
-            const connectorStatusLabels = {
-              'available': 'Доступен',
-              'charging': 'Заряжается',
-              'occupied': 'Занят',
-              'offline': 'Не в сети',
-              'error': 'Ошибка'
-            };
-            
-            const connectorStatusColors = {
-              'available': { bg: '#dcfce7', text: '#16a34a' },
-              'charging': { bg: '#fed7aa', text: '#c2410c' },
-              'occupied': { bg: '#dbeafe', text: '#1e40af' },
-              'offline': { bg: '#f3f4f6', text: '#6b7280' },
-              'error': { bg: '#fee2e2', text: '#dc2626' }
-            };
+            function getConnectorStatusInfo(statusId) {
+              if (statusId === 0) return { label: 'Доступен', bg: '#dcfce7', text: '#16a34a' };
+              if (statusId === 3) return { label: 'Зарядка', bg: '#dbeafe', text: '#1e40af' };
+              if (statusId === 1 || statusId === 2 || statusId === 6 || statusId === 7 || statusId === 8) {
+                return { label: 'Подготовка', bg: '#fef3c7', text: '#b45309' };
+              }
+              if (statusId === 4 || statusId === 5) return { label: 'Завершение', bg: '#fed7aa', text: '#c2410c' };
+              if (statusId === 254) return { label: 'Отключен', bg: '#f3f4f6', text: '#6b7280' };
+              if (statusId >= 243 && statusId <= 255) return { label: 'Ошибка', bg: '#fee2e2', text: '#dc2626' };
+              return { label: \`Неизвестно (\${statusId})\`, bg: '#f3e8ff', text: '#7e22ce' };
+            }
 
             const marker = L.marker([station.lat, station.lon], { icon })
               .bindPopup(\`
@@ -228,22 +228,25 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
                     \${hasConnectors ? \`
                       <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
                         <div style="font-weight: 600; margin-bottom: 6px;">Коннекторы (\${connectors.length}):</div>
-                        \${connectors.map((conn, idx) => \`
-                          <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
-                            <span style="font-size: 12px; color: #9ca3af;">#\${idx + 1}</span>
-                            <span style="
-                              display: inline-block;
-                              padding: 2px 6px;
-                              border-radius: 3px;
-                              font-size: 11px;
-                              font-weight: 600;
-                              background-color: \${connectorStatusColors[conn.status].bg};
-                              color: \${connectorStatusColors[conn.status].text};
-                            ">
-                              \${connectorStatusLabels[conn.status]}
-                            </span>
-                          </div>
-                        \`).join('')}
+                        \${connectors.map((conn, idx) => {
+                          const statusInfo = getConnectorStatusInfo(conn.status);
+                          return \`
+                            <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                              <span style="font-size: 12px; color: #9ca3af;">#\${conn.id}</span>
+                              <span style="
+                                display: inline-block;
+                                padding: 2px 6px;
+                                border-radius: 3px;
+                                font-size: 11px;
+                                font-weight: 600;
+                                background-color: \${statusInfo.bg};
+                                color: \${statusInfo.text};
+                              ">
+                                \${statusInfo.label}
+                              </span>
+                            </div>
+                          \`;
+                        }).join('')}
                       </div>
                     \` : ''}
                   </div>
