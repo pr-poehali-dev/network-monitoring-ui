@@ -2,8 +2,9 @@
 
 export interface ConnectorData {
   id: string;
-  status: 'available' | 'charging' | 'occupied' | 'offline' | 'error';
-  type: string;
+  status: number;
+  type: number;
+  max_power?: number;
 }
 
 export interface StationData {

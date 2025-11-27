@@ -7,7 +7,11 @@ import Icon from '@/components/ui/icon';
 interface Connector {
   id: string;
   type: string;
-  status: 'available' | 'charging' | 'error';
+  status: string;
+  statusLabel: string;
+  statusColor: string;
+  statusBg: string;
+  statusBorder: string;
   power: string;
   currentSession?: {
     startTime: string;
@@ -96,22 +100,22 @@ export default function StationStatus({ station }: StationStatusProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           {station.connectors.map((connector, index) => (
-            <div key={connector.id} className="flex items-center justify-between p-4 border rounded-lg">
+            <div key={connector.id} className={`flex items-center justify-between p-4 border rounded-lg ${connector.statusBorder}`}>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <span className="text-sm font-medium text-green-800">{index + 1}</span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${connector.statusBg}`}>
+                    <span className={`text-sm font-medium ${connector.statusColor}`}>{connector.id}</span>
                   </div>
-                  <Icon name="Plug" size={24} className="text-green-600" />
+                  <Icon name="Plug" size={24} className={connector.statusColor.replace('text-', 'text-').replace('-700', '-600')} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium">Available</span>
-                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                      Available
+                    <span className="font-medium">{connector.type}</span>
+                    <Badge variant="outline" className={`${connector.statusBg} ${connector.statusColor} ${connector.statusBorder}`}>
+                      {connector.statusLabel}
                     </Badge>
                   </div>
-                  <p className="text-sm text-gray-500">{connector.type} • {connector.power} • DC</p>
+                  <p className="text-sm text-gray-500">{connector.power} • DC</p>
                 </div>
               </div>
               <div className="flex gap-2">

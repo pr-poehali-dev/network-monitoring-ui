@@ -6,7 +6,8 @@ import Icon from '@/components/ui/icon';
 import StationHeader from '@/components/station/StationHeader';
 import StationTabs from '@/components/station/StationTabs';
 import { useWebSocket, useStations } from '@/hooks/useWebSocket';
-import { StationData } from '@/types/websocket';
+import { StationData, ConnectorData } from '@/types/websocket';
+import { getConnectorType, getConnectorStatus, getStationOverallStatus } from '@/utils/connectors';
 
 interface ChargingStation {
   id: string;
@@ -25,7 +26,11 @@ interface ChargingStation {
 interface Connector {
   id: string;
   type: string;
-  status: 'available' | 'charging' | 'error';
+  status: string;
+  statusColor: string;
+  statusBg: string;
+  statusBorder: string;
+  statusLabel: string;
   power: string;
   currentSession?: {
     startTime: string;
@@ -51,35 +56,34 @@ const mockLogs: LogEntry[] = [
 ];
 
 function convertToChargingStation(data: StationData): ChargingStation {
-  const hasActiveConnectors = data.connectors && data.connectors.length > 0;
-  const isActive = data.is_active === 1 && hasActiveConnectors;
-  
-  let status: 'available' | 'charging' | 'error' | 'offline' = 'offline';
-  if (isActive) {
-    const hasCharging = data.connectors?.some(c => c.status === 2);
-    const hasError = data.connectors?.some(c => c.status === 3 || c.status === 4);
-    if (hasError) status = 'error';
-    else if (hasCharging) status = 'charging';
-    else status = 'available';
-  }
+  const connectors: Connector[] = data.connectors?.map(c => {
+    const statusInfo = getConnectorStatus(c.status);
+    return {
+      id: String(c.id),
+      type: getConnectorType(c.type),
+      status: statusInfo.type,
+      statusLabel: statusInfo.label,
+      statusColor: statusInfo.color,
+      statusBg: statusInfo.bgColor,
+      statusBorder: statusInfo.borderColor,
+      power: c.max_power ? `${c.max_power} кВт` : 'Неизвестно'
+    };
+  }) || [];
+
+  const overallStatus = getStationOverallStatus(data.connectors || []);
 
   return {
     id: String(data.id),
     name: data.name || data.station_id,
     location: data.address || data.region || 'Адрес не указан',
-    status,
+    status: overallStatus.status,
     coordinates: [data.lat || 0, data.lon || 0],
     totalSessions: 0,
     lastActivity: 'Неизвестно',
     manufacturer: 'Неизвестно',
     serialNumber: data.station_id,
     ocppId: data.station_id,
-    connectors: data.connectors?.map(c => ({
-      id: String(c.id),
-      type: c.type || 'Type 2',
-      status: c.status === 1 ? 'available' : c.status === 2 ? 'charging' : 'error',
-      power: c.max_power ? `${c.max_power} кВт` : 'Неизвестно'
-    })) || []
+    connectors
   };
 }
 

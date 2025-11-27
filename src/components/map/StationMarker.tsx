@@ -1,7 +1,9 @@
+import { getConnectorStatus } from '@/utils/connectors';
+
 interface Connector {
   id: string;
-  status: 'available' | 'charging' | 'occupied' | 'error' | 'offline';
-  type: string;
+  status: number;
+  type: number;
 }
 
 interface StationMarkerProps {
@@ -19,13 +21,17 @@ const getStationStatusColor = (status: string) => {
   }
 };
 
-const getConnectorStatusColor = (status: string) => {
-  switch (status) {
+const getConnectorStatusColor = (statusId: number) => {
+  const info = getConnectorStatus(statusId);
+  
+  switch (info.type) {
     case 'available': return '#22C55E';
-    case 'charging': return '#F97316';
-    case 'occupied': return '#3B82F6';
-    case 'error': return '#EF4444';
-    case 'offline': return '#9CA3AF';
+    case 'charging': return '#3B82F6';
+    case 'preparing': return '#F59E0B';
+    case 'finishing': return '#F97316';
+    case 'faulted': return '#EF4444';
+    case 'unavailable': return '#9CA3AF';
+    case 'unknown': return '#A855F7';
     default: return '#9CA3AF';
   }
 };
