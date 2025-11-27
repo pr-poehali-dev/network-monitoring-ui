@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StationData } from '@/types/websocket';
 import Icon from '@/components/ui/icon';
+import { generateMarkerSVG } from '@/components/map/StationMarker';
 
 interface MapProps {
   stations: StationData[];
@@ -99,24 +100,87 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
           const markers = useClustering ? L.markerClusterGroup() : L.layerGroup();
 
           stations.forEach(station => {
-            const color = getStatusColor(station.is_active);
+            const stationStatus = station.is_active === 1 ? 'online' : 'offline';
+            const connectorCount = Math.floor(Math.random() * 3) + 2;
+            const connectorStatuses = ['available', 'charging', 'occupied', 'offline', 'error'];
+            
+            const connectors = Array.from({ length: connectorCount }, (_, i) => ({
+              id: \`\${station.id}-\${i}\`,
+              status: connectorStatuses[Math.floor(Math.random() * connectorStatuses.length)],
+              type: 'Type 2'
+            }));
+            
+            const markerSVG = \`
+              <svg width="48" height="56" viewBox="0 0 48 56" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+                \${connectors.map((connector, index) => {
+                  const centerSize = 48 * 0.6;
+                  const ringRadius = 48 / 2;
+                  const centerRadius = centerSize / 2;
+                  const gapDegrees = 3;
+                  const segmentAngle = 360 / connectors.length;
+                  const arcAngle = segmentAngle - gapDegrees;
+                  
+                  const startAngle = index * segmentAngle - 90;
+                  const endAngle = startAngle + arcAngle;
+                  
+                  const startRad = (startAngle * Math.PI) / 180;
+                  const endRad = (endAngle * Math.PI) / 180;
+                  
+                  const x1 = 48 / 2 + centerRadius * Math.cos(startRad);
+                  const y1 = 48 / 2 + centerRadius * Math.sin(startRad);
+                  const x2 = 48 / 2 + ringRadius * Math.cos(startRad);
+                  const y2 = 48 / 2 + ringRadius * Math.sin(startRad);
+                  
+                  const x3 = 48 / 2 + ringRadius * Math.cos(endRad);
+                  const y3 = 48 / 2 + ringRadius * Math.sin(endRad);
+                  const x4 = 48 / 2 + centerRadius * Math.cos(endRad);
+                  const y4 = 48 / 2 + centerRadius * Math.sin(endRad);
+                  
+                  const largeArcOuter = arcAngle > 180 ? 1 : 0;
+                  const largeArcInner = arcAngle > 180 ? 1 : 0;
+                  
+                  const connectorColors = {
+                    'available': '#22C55E',
+                    'charging': '#F97316',
+                    'occupied': '#3B82F6',
+                    'error': '#EF4444',
+                    'offline': '#9CA3AF'
+                  };
+                  
+                  return \`
+                    <path
+                      d="M \${x1} \${y1}
+                         L \${x2} \${y2}
+                         A \${ringRadius} \${ringRadius} 0 \${largeArcOuter} 1 \${x3} \${y3}
+                         L \${x4} \${y4}
+                         A \${centerRadius} \${centerRadius} 0 \${largeArcInner} 0 \${x1} \${y1}
+                         Z"
+                      fill="\${connectorColors[connector.status]}"
+                    />
+                  \`;
+                }).join('')}
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="14.4"
+                  fill="\${stationStatus === 'online' ? '#22C55E' : '#9CA3AF'}"
+                  stroke="white"
+                  stroke-width="2"
+                />
+                <path
+                  d="M 24 48 L 20 54 L 28 54 Z"
+                  fill="\${stationStatus === 'online' ? '#22C55E' : '#9CA3AF'}"
+                  stroke="white"
+                  stroke-width="1"
+                />
+              </svg>
+            \`;
             
             const icon = L.divIcon({
-              html: \`
-                <div style="
-                  width: 20px;
-                  height: 20px;
-                  background-color: \${color};
-                  border: 3px solid white;
-                  border-radius: 50%;
-                  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                  cursor: pointer;
-                  transition: transform 0.2s;
-                "></div>
-              \`,
+              html: markerSVG,
               className: '',
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
+              iconSize: [48, 56],
+              iconAnchor: [24, 56]
             });
 
             const marker = L.marker([station.lat, station.lon], { icon })
