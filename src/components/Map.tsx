@@ -101,14 +101,14 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
 
           stations.forEach(station => {
             const stationStatus = station.is_active === 1 ? 'online' : 'offline';
-            const connectorCount = Math.floor(Math.random() * 3) + 2;
-            const connectorStatuses = ['available', 'charging', 'occupied', 'offline', 'error'];
             
-            const connectors = Array.from({ length: connectorCount }, (_, i) => ({
-              id: \`\${station.id}-\${i}\`,
-              status: connectorStatuses[Math.floor(Math.random() * connectorStatuses.length)],
-              type: 'Type 2'
-            }));
+            const connectors = station.connectors && station.connectors.length > 0 
+              ? station.connectors 
+              : Array.from({ length: Math.floor(Math.random() * 3) + 2 }, (_, i) => ({
+                  id: \`\${station.id}-\${i}\`,
+                  status: ['available', 'charging', 'occupied', 'offline', 'error'][Math.floor(Math.random() * 5)],
+                  type: 'Type 2'
+                }));
             
             const markerSVG = \`
               <svg width="48" height="56" viewBox="0 0 48 56" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
@@ -183,6 +183,22 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
               iconAnchor: [24, 56]
             });
 
+            const connectorStatusLabels = {
+              'available': 'Доступен',
+              'charging': 'Заряжается',
+              'occupied': 'Занят',
+              'offline': 'Не в сети',
+              'error': 'Ошибка'
+            };
+            
+            const connectorStatusColors = {
+              'available': { bg: '#dcfce7', text: '#16a34a' },
+              'charging': { bg: '#fed7aa', text: '#c2410c' },
+              'occupied': { bg: '#dbeafe', text: '#1e40af' },
+              'offline': { bg: '#f3f4f6', text: '#6b7280' },
+              'error': { bg: '#fee2e2', text: '#dc2626' }
+            };
+
             const marker = L.marker([station.lat, station.lon], { icon })
               .bindPopup(\`
                 <div style="padding: 8px; min-width: 200px;">
@@ -207,6 +223,27 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
                         \${station.is_active === 1 ? 'Активна' : 'Неактивна'}
                       </span>
                     </div>
+                    \${connectors.length > 0 ? \`
+                      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
+                        <div style="font-weight: 600; margin-bottom: 6px;">Коннекторы (\${connectors.length}):</div>
+                        \${connectors.map((conn, idx) => \`
+                          <div style="display: flex; align-items: center; gap: 8px; margin: 4px 0;">
+                            <span style="font-size: 12px; color: #9ca3af;">#\${idx + 1}</span>
+                            <span style="
+                              display: inline-block;
+                              padding: 2px 6px;
+                              border-radius: 3px;
+                              font-size: 11px;
+                              font-weight: 600;
+                              background-color: \${connectorStatusColors[conn.status].bg};
+                              color: \${connectorStatusColors[conn.status].text};
+                            ">
+                              \${connectorStatusLabels[conn.status]}
+                            </span>
+                          </div>
+                        \`).join('')}
+                      </div>
+                    \` : ''}
                   </div>
                 </div>
               \`)

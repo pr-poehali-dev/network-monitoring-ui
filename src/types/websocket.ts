@@ -1,5 +1,11 @@
 // WebSocket типы и структуры данных
 
+export interface ConnectorData {
+  id: string;
+  status: 'available' | 'charging' | 'occupied' | 'offline' | 'error';
+  type: string;
+}
+
 export interface StationData {
   id: number;
   station_id: string;
@@ -12,6 +18,7 @@ export interface StationData {
   created_at: string;
   lat: number | null;
   lon: number | null;
+  connectors?: ConnectorData[];
 }
 
 // Структура сообщений клиент -> сервер
