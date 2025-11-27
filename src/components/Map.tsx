@@ -100,15 +100,12 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
           const markers = useClustering ? L.markerClusterGroup() : L.layerGroup();
 
           stations.forEach(station => {
-            const stationStatus = station.is_active === 1 ? 'online' : 'offline';
+            const hasConnectors = station.connectors && station.connectors.length > 0;
+            const stationStatus = (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
             
-            const connectors = station.connectors && station.connectors.length > 0 
+            const connectors = hasConnectors 
               ? station.connectors 
-              : Array.from({ length: Math.floor(Math.random() * 3) + 2 }, (_, i) => ({
-                  id: \`\${station.id}-\${i}\`,
-                  status: ['available', 'charging', 'occupied', 'offline', 'error'][Math.floor(Math.random() * 5)],
-                  type: 'Type 2'
-                }));
+              : [{ id: \`\${station.id}-offline\`, status: 'offline', type: 'Unknown' }];
             
             const markerSVG = \`
               <svg width="48" height="56" viewBox="0 0 48 56" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
@@ -217,13 +214,18 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
                         border-radius: 4px;
                         font-size: 12px;
                         font-weight: 600;
-                        background-color: \${station.is_active === 1 ? '#dcfce7' : '#f3f4f6'};
-                        color: \${station.is_active === 1 ? '#16a34a' : '#6b7280'};
+                        background-color: \${stationStatus === 'online' ? '#dcfce7' : '#f3f4f6'};
+                        color: \${stationStatus === 'online' ? '#16a34a' : '#6b7280'};
                       ">
-                        \${station.is_active === 1 ? 'Активна' : 'Неактивна'}
+                        \${stationStatus === 'online' ? 'Активна' : 'Оффлайн'}
                       </span>
+                      \${!hasConnectors && station.is_active === 1 ? \`
+                        <div style="margin-top: 4px; font-size: 11px; color: #ef4444;">
+                          ⚠️ Нет данных о коннекторах
+                        </div>
+                      \` : ''}
                     </div>
-                    \${connectors.length > 0 ? \`
+                    \${hasConnectors ? \`
                       <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb;">
                         <div style="font-weight: 600; margin-bottom: 6px;">Коннекторы (\${connectors.length}):</div>
                         \${connectors.map((conn, idx) => \`

@@ -126,13 +126,18 @@ export default function StationsManager() {
                   <TableCell className="text-sm">{station.region || '—'}</TableCell>
                   <TableCell className="text-sm">{station.address || '—'}</TableCell>
                   <TableCell>
-                    {station.is_active === 1 ? (
-                      <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                        Активна
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary">Неактивна</Badge>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {(station.is_active === 1 && station.connectors && station.connectors.length > 0) ? (
+                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                          Активна
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Оффлайн</Badge>
+                      )}
+                      {station.is_active === 1 && (!station.connectors || station.connectors.length === 0) && (
+                        <span className="text-xs text-red-500">Нет данных</span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <Button

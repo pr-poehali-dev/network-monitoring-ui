@@ -11,8 +11,13 @@ import Layout from '@/components/Layout';
 import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 import { StationData } from '@/types/websocket';
 
-const getStatusLabel = (is_active: number) => {
-  return is_active === 1 ? 'Активна' : 'Неактивна';
+const getStationStatus = (station: StationData): 'online' | 'offline' => {
+  const hasConnectors = station.connectors && station.connectors.length > 0;
+  return (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
+};
+
+const getStatusLabel = (status: 'online' | 'offline') => {
+  return status === 'online' ? 'Активна' : 'Оффлайн';
 };
 
 export default function Index() {
@@ -41,9 +46,10 @@ export default function Index() {
     
     const matchesRegion = !regionFilter || (station.region?.toLowerCase().includes(regionFilter.toLowerCase()) ?? false);
     
+    const stationStatus = getStationStatus(station);
     const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && station.is_active === 1) ||
-      (statusFilter === 'inactive' && station.is_active === 0);
+      (statusFilter === 'active' && stationStatus === 'online') ||
+      (statusFilter === 'inactive' && stationStatus === 'offline');
     
     return matchesSearch && matchesRegion && matchesStatus;
   });
@@ -242,12 +248,17 @@ export default function Index() {
                           {station.ip_address || '—'}
                         </TableCell>
                         <TableCell>
-                          <Badge 
-                            variant={station.is_active === 1 ? 'default' : 'secondary'}
-                            className={station.is_active === 1 ? 'bg-green-500' : ''}
-                          >
-                            {getStatusLabel(station.is_active)}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge 
+                              variant={getStationStatus(station) === 'online' ? 'default' : 'secondary'}
+                              className={getStationStatus(station) === 'online' ? 'bg-green-500' : ''}
+                            >
+                              {getStatusLabel(getStationStatus(station))}
+                            </Badge>
+                            {station.is_active === 1 && (!station.connectors || station.connectors.length === 0) && (
+                              <span className="text-xs text-red-500">Нет данных</span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Button
