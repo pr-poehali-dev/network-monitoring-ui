@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import StationHeader from '@/components/station/StationHeader';
 import StationTabs from '@/components/station/StationTabs';
+import { useWebSocket, useStations } from '@/hooks/useWebSocket';
+import { StationData } from '@/types/websocket';
 
 interface ChargingStation {
   id: string;
@@ -39,58 +41,6 @@ interface LogEntry {
   message: string;
 }
 
-const mockStations: ChargingStation[] = [
-  {
-    id: '1',
-    name: 'ЭЗС Центральная',
-    location: 'ул. Ленина, 15',
-    status: 'available',
-    coordinates: [55.7558, 37.6176],
-    totalSessions: 145,
-    lastActivity: '2 мин назад',
-    manufacturer: 'Promenergo',
-    serialNumber: '00053',
-    ocppId: 'EDK6QDT0J59EK69A2WETY',
-    connectors: [
-      { id: '1', type: 'CCS Combo 2', status: 'available', power: '120 кВт' },
-      { id: '2', type: 'GB/T DC', status: 'available', power: '120 кВт' },
-      { id: '3', type: 'CHAdeMO', status: 'available', power: '90 кВт' }
-    ]
-  },
-  {
-    id: '2', 
-    name: 'ЭЗС Торговый центр',
-    location: 'ТЦ Метрополис',
-    status: 'charging',
-    coordinates: [55.7387, 37.6032],
-    totalSessions: 89,
-    lastActivity: '15 мин назад',
-    manufacturer: 'ChargePoint',
-    serialNumber: '00042',
-    ocppId: 'TCP2QDT0J59EK69A2WETY',
-    connectors: [
-      { id: '1', type: 'Type 2', status: 'charging', power: '22 кВт', currentSession: { startTime: '14:30', energy: 12.5, cost: 450 } },
-      { id: '2', type: 'CHAdeMO', status: 'available', power: '50 кВт' }
-    ]
-  },
-  {
-    id: '3',
-    name: 'ЭЗС Парковая',
-    location: 'Парк Сокольники',
-    status: 'error',
-    coordinates: [55.7942, 37.6816], 
-    totalSessions: 203,
-    lastActivity: '1 час назад',
-    manufacturer: 'ABB',
-    serialNumber: '00078',
-    ocppId: 'ABB6QDT0J59EK69A2WETY',
-    connectors: [
-      { id: '1', type: 'Type 2', status: 'error', power: '22 кВт' },
-      { id: '2', type: 'CCS', status: 'error', power: '50 кВт' }
-    ]
-  }
-];
-
 const mockLogs: LogEntry[] = [
   { id: '1', timestamp: '16:01:20 25.09.2025', type: 'request', message: 'Heartbeat.req\n{}' },
   { id: '2', timestamp: '16:01:20 25.09.2025', type: 'response', message: 'Heartbeat.res\n{"currentTime":"2025-09-25T13:01:20.275Z"}' },
@@ -100,11 +50,96 @@ const mockLogs: LogEntry[] = [
   { id: '6', timestamp: '15:51:19 25.09.2025', type: 'request', message: 'Heartbeat.req\n{}' },
 ];
 
+function convertToChargingStation(data: StationData): ChargingStation {
+  const hasActiveConnectors = data.connectors && data.connectors.length > 0;
+  const isActive = data.is_active === 1 && hasActiveConnectors;
+  
+  let status: 'available' | 'charging' | 'error' | 'offline' = 'offline';
+  if (isActive) {
+    const hasCharging = data.connectors?.some(c => c.status === 2);
+    const hasError = data.connectors?.some(c => c.status === 3 || c.status === 4);
+    if (hasError) status = 'error';
+    else if (hasCharging) status = 'charging';
+    else status = 'available';
+  }
+
+  return {
+    id: String(data.id),
+    name: data.name || data.station_id,
+    location: data.address || data.region || 'Адрес не указан',
+    status,
+    coordinates: [data.lat || 0, data.lon || 0],
+    totalSessions: 0,
+    lastActivity: 'Неизвестно',
+    manufacturer: 'Неизвестно',
+    serialNumber: data.station_id,
+    ocppId: data.station_id,
+    connectors: data.connectors?.map(c => ({
+      id: String(c.id),
+      type: c.type || 'Type 2',
+      status: c.status === 1 ? 'available' : c.status === 2 ? 'charging' : 'error',
+      power: c.max_power ? `${c.max_power} кВт` : 'Неизвестно'
+    })) || []
+  };
+}
+
 export default function Station() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState('management');
+  const { isConnected, isConnecting } = useWebSocket();
+  const { getStationById } = useStations();
+  const [station, setStation] = useState<ChargingStation | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const station = mockStations.find(s => s.id === id);
+  useEffect(() => {
+    const loadStation = async () => {
+      if (!isConnected || !id) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const data = await getStationById(Number(id));
+        if (data) {
+          setStation(convertToChargingStation(data));
+        }
+      } catch (error) {
+        console.error('Error loading station:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (isConnected) {
+      loadStation();
+    }
+  }, [id, isConnected, getStationById]);
+
+  if (loading || isConnecting) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="Loader2" size={48} className="text-blue-500 mx-auto mb-4 animate-spin" />
+          <p className="text-gray-500">Загрузка данных станции...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Icon name="WifiOff" size={48} className="text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Нет подключения к серверу</h1>
+          <p className="text-gray-500 mb-4">Пожалуйста, проверьте соединение</p>
+          <Link to="/">
+            <Button>Вернуться к списку</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   if (!station) {
     return (
