@@ -443,7 +443,7 @@ export default function MapComponent({ stations, onStationClick, clustering = tr
     `;
 
     setMapHtml(html);
-  }, [clustering]);
+  }, [stations.length, clustering]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
