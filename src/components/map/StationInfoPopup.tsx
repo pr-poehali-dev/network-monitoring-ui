@@ -1,6 +1,7 @@
-import { StationData, ConnectorStatus } from '@/types/websocket';
+import { StationData, ConnectorStatus, StationStatus } from '@/types/websocket';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { parseErrorInfo } from '@/utils/errorParser';
 
 interface StationInfoPopupProps {
   station: StationData;
@@ -26,8 +27,24 @@ const getConnectorTypeLabel = (connectorType: number) => {
   return 'Unknown';
 };
 
+const getStationStatusInfo = (status: StationStatus) => {
+  switch (status) {
+    case 'connected':
+      return { label: 'Подключена', color: 'bg-green-500', textColor: 'text-green-700' };
+    case 'disconnected':
+      return { label: 'Отключена', color: 'bg-gray-400', textColor: 'text-gray-700' };
+    case 'error':
+      return { label: 'Ошибка', color: 'bg-red-500', textColor: 'text-red-700' };
+    case 'initializing':
+      return { label: 'Инициализация', color: 'bg-yellow-500', textColor: 'text-yellow-700' };
+    default:
+      return { label: 'Неизвестно', color: 'bg-gray-400', textColor: 'text-gray-700' };
+  }
+};
+
 export default function StationInfoPopup({ station, onClose }: StationInfoPopupProps) {
   const hasConnectors = station.connectors && station.connectors.length > 0;
+  const statusInfo = getStationStatusInfo(station.station_status);
 
   return (
     <div className="absolute top-4 right-4 bg-white rounded-lg shadow-lg p-4 max-w-sm z-10">
@@ -47,11 +64,22 @@ export default function StationInfoPopup({ station, onClose }: StationInfoPopupP
         <p className="text-sm text-gray-500">ID: {station.station_id}</p>
         
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${station.is_active === 1 ? 'bg-green-500' : 'bg-gray-400'}`} />
-          <span className="text-sm font-medium">
-            {station.is_active === 1 ? 'Активна' : 'Неактивна'}
+          <div className={`w-2 h-2 rounded-full ${getStationStatusInfo(station.station_status).color}`} />
+          <span className={`text-sm font-medium ${getStationStatusInfo(station.station_status).textColor}`}>
+            {getStationStatusInfo(station.station_status).label}
           </span>
         </div>
+        
+        {station.error_info && (
+          <div className="bg-red-50 border border-red-200 rounded p-2">
+            <h4 className="text-xs font-semibold text-red-800 mb-1">Ошибки:</h4>
+            <ul className="list-disc list-inside space-y-0.5">
+              {parseErrorInfo(station.error_info).map((error, idx) => (
+                <li key={idx} className="text-xs text-red-700">{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {station.address && (
           <p className="text-sm text-gray-600 pt-2 border-t">

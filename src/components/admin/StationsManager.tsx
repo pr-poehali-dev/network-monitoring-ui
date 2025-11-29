@@ -21,7 +21,28 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { useStations } from '@/hooks/useWebSocket';
-import { StationData } from '@/types/websocket';
+import { StationData, StationStatus } from '@/types/websocket';
+import { parseErrorInfo } from '@/utils/errorParser';
+
+const getStationStatusLabel = (status: StationStatus): string => {
+  switch (status) {
+    case 'connected': return 'Подключена';
+    case 'disconnected': return 'Отключена';
+    case 'error': return 'Ошибка';
+    case 'initializing': return 'Инициализация';
+    default: return 'Неизвестно';
+  }
+};
+
+const getStationStatusColor = (status: StationStatus): string => {
+  switch (status) {
+    case 'connected': return 'bg-green-100 text-green-700 hover:bg-green-100';
+    case 'disconnected': return 'bg-gray-100 text-gray-700 hover:bg-gray-100';
+    case 'error': return 'bg-red-100 text-red-700 hover:bg-red-100';
+    case 'initializing': return 'bg-yellow-100 text-yellow-700 hover:bg-yellow-100';
+    default: return 'bg-gray-100 text-gray-700 hover:bg-gray-100';
+  }
+};
 
 export default function StationsManager() {
   const { stations, loadStations } = useStations();
@@ -127,14 +148,15 @@ export default function StationsManager() {
                   <TableCell className="text-sm">{station.address || '—'}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {(station.is_active === 1 && station.connectors && station.connectors.length > 0) ? (
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                          Активна
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary">Оффлайн</Badge>
+                      <Badge className={getStationStatusColor(station.station_status)}>
+                        {getStationStatusLabel(station.station_status)}
+                      </Badge>
+                      {station.error_info && (
+                        <div className="text-xs text-red-600 mt-1">
+                          {parseErrorInfo(station.error_info).slice(0, 2).join(', ')}
+                        </div>
                       )}
-                      {station.is_active === 1 && (!station.connectors || station.connectors.length === 0) && (
+                      {station.station_status === 'connected' && (!station.connectors || station.connectors.length === 0) && (
                         <span className="text-xs text-red-500">Нет данных</span>
                       )}
                     </div>

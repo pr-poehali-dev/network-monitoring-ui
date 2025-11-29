@@ -66,8 +66,14 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
 
         const stations = ${JSON.stringify(validStations)};
         
-        function getStatusColor(is_active) {
-          return is_active === 1 ? '#22C55E' : '#9CA3AF';
+        function getStatusColor(station_status) {
+          switch (station_status) {
+            case 'connected': return '#22C55E';
+            case 'disconnected': return '#9CA3AF';
+            case 'error': return '#EF4444';
+            case 'initializing': return '#F59E0B';
+            default: return '#9CA3AF';
+          }
         }
         
         function getConnectorStatusColor(statusId) {
@@ -85,7 +91,7 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
 
         stations.forEach(station => {
           const hasConnectors = station.connectors && station.connectors.length > 0;
-          const stationStatus = (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
+          const stationStatus = station.station_status;
           
           const connectors = hasConnectors 
             ? station.connectors 

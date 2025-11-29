@@ -1,4 +1,5 @@
 import { getConnectorStatus } from '@/utils/connectors';
+import { StationStatus } from '@/types/websocket';
 
 interface Connector {
   id: string;
@@ -7,16 +8,17 @@ interface Connector {
 }
 
 interface StationMarkerProps {
-  stationStatus: 'online' | 'offline' | 'error';
+  stationStatus: StationStatus;
   connectors: Connector[];
   size?: number;
 }
 
-const getStationStatusColor = (status: string) => {
+const getStationStatusColor = (status: StationStatus) => {
   switch (status) {
-    case 'online': return '#22C55E';
-    case 'offline': return '#9CA3AF';
+    case 'connected': return '#22C55E';
+    case 'disconnected': return '#9CA3AF';
     case 'error': return '#EF4444';
+    case 'initializing': return '#F59E0B';
     default: return '#9CA3AF';
   }
 };
@@ -109,7 +111,7 @@ export default function StationMarker({ stationStatus, connectors, size = 48 }: 
   );
 }
 
-export function generateMarkerSVG(stationStatus: string, connectors: Connector[], size = 48): string {
+export function generateMarkerSVG(stationStatus: StationStatus, connectors: Connector[], size = 48): string {
   const centerSize = size * 0.6;
   const ringRadius = size / 2;
   const centerRadius = centerSize / 2;
