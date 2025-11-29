@@ -58,8 +58,8 @@ export default function Index() {
     navigate(`/station/${stationId}`);
   };
 
-  const activeStationsCount = stations.filter(s => s.is_active === 1).length;
-  const inactiveStationsCount = stations.filter(s => s.is_active === 0).length;
+  const activeStationsCount = stations.filter(s => getStationStatus(s) === 'online').length;
+  const inactiveStationsCount = stations.filter(s => getStationStatus(s) === 'offline').length;
 
   return (
     <Layout>
