@@ -89,9 +89,11 @@ export function useStations() {
       console.log('🔄 Station update received:', update);
       
       setStations(current => {
+        const changes = update.changes || update.updates || {};
+        
         const updated = current.map(station => 
           station.id === update.stationId 
-            ? { ...station, ...update.updates }
+            ? { ...station, ...changes }
             : station
         );
         
