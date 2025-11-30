@@ -36,6 +36,7 @@ interface ChargingStation {
 
 interface StationStatusProps {
   station: ChargingStation;
+  isStationOnline?: boolean;
 }
 
 const getStatusLabel = (status: string) => {
@@ -50,7 +51,7 @@ const getStatusLabel = (status: string) => {
 
 
 
-export default function StationStatus({ station }: StationStatusProps) {
+export default function StationStatus({ station, isStationOnline = true }: StationStatusProps) {
   return (
     <div className="space-y-6">
       {/* Station Status */}
@@ -80,11 +81,21 @@ export default function StationStatus({ station }: StationStatusProps) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                disabled={!isStationOnline}
+              >
                 <Icon name="RotateCcw" size={16} />
                 ПЕРЕЗАГРУЗКА
               </Button>
-              <Button variant="outline" size="sm" className="text-gray-600 border-gray-200 hover:bg-gray-50">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                disabled={!isStationOnline}
+              >
                 <Icon name="Wifi" size={16} />
                 OCPP ВКЛ/ВЫКЛ
               </Button>
@@ -119,13 +130,28 @@ export default function StationStatus({ station }: StationStatusProps) {
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="text-green-600 border-green-200 hover:bg-green-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-green-600 border-green-200 hover:bg-green-50"
+                  disabled={!isStationOnline}
+                >
                   СТАРТ
                 </Button>
-                <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  disabled={!isStationOnline}
+                >
                   СТОП
                 </Button>
-                <Button variant="outline" size="sm" className="text-gray-600 border-gray-200 hover:bg-gray-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                  disabled={!isStationOnline}
+                >
                   <Icon name="Power" size={16} />
                   ВКЛ/ВЫКЛ
                 </Button>

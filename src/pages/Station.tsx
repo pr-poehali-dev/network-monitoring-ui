@@ -171,6 +171,7 @@ export default function Station() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           onAction={handleAction}
+          isStationOnline={stationData?.station_status === 'connected'}
         />
       </div>
     </Layout>

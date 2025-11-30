@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 
 interface StationActionsProps {
   onAction: (action: string) => void;
+  isStationOnline?: boolean;
 }
 
 interface StationFile {
@@ -18,7 +19,7 @@ interface StationFile {
   url?: string; // Для скачивания
 }
 
-export default function StationActions({ onAction }: StationActionsProps) {
+export default function StationActions({ onAction, isStationOnline = true }: StationActionsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<StationFile[]>([
     {
@@ -133,7 +134,7 @@ export default function StationActions({ onAction }: StationActionsProps) {
             <p className="font-medium">Комментарий</p>
             <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
           </div>
-          <Button onClick={() => onAction('editComment')}>
+          <Button onClick={() => onAction('editComment')} disabled={!isStationOnline}>
             РЕДАКТИРОВАТЬ
           </Button>
         </div>
@@ -148,6 +149,7 @@ export default function StationActions({ onAction }: StationActionsProps) {
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2"
+              disabled={!isStationOnline}
             >
               <Icon name="Plus" size={16} />
               ЗАГРУЗИТЬ
