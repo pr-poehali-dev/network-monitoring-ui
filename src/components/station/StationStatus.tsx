@@ -34,9 +34,20 @@ interface ChargingStation {
   ocppId: string;
 }
 
+interface StationData {
+  station_id: string;
+  name: string;
+  ip_address: string;
+  ssh_port: number;
+  address: string;
+  region: string;
+  owner?: string;
+}
+
 interface StationStatusProps {
   station: ChargingStation;
   isStationOnline?: boolean;
+  stationData?: StationData | null;
 }
 
 const getStatusLabel = (status: string) => {
@@ -51,7 +62,7 @@ const getStatusLabel = (status: string) => {
 
 
 
-export default function StationStatus({ station, isStationOnline = true }: StationStatusProps) {
+export default function StationStatus({ station, isStationOnline = true, stationData }: StationStatusProps) {
   return (
     <div className="space-y-6">
       {/* Station Status */}
@@ -176,28 +187,28 @@ export default function StationStatus({ station, isStationOnline = true }: Stati
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between">
-            <span className="text-gray-500">Город</span>
-            <span className="font-medium">Москва</span>
-          </div>
-          <Separator />
-          <div className="flex justify-between">
-            <span className="text-gray-500">Приложение</span>
-            <span className="font-medium">МосЭнерго Заряд</span>
+            <span className="text-gray-500">Регион</span>
+            <span className="font-medium">{stationData?.region || 'None'}</span>
           </div>
           <Separator />
           <div className="flex justify-between">
             <span className="text-gray-500">IP адрес</span>
-            <span className="font-medium text-sm">192.168.1.45</span>
+            <span className="font-medium text-sm">{stationData?.ip_address || 'None'}</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between">
+            <span className="text-gray-500">SSH порт</span>
+            <span className="font-medium">{stationData?.ssh_port || 'None'}</span>
           </div>
           <Separator />
           <div className="flex justify-between">
             <span className="text-gray-500">Адрес</span>
-            <span className="font-medium text-sm">ул. Тверская, 12</span>
+            <span className="font-medium text-sm">{stationData?.address || 'None'}</span>
           </div>
           <Separator />
           <div className="flex justify-between">
             <span className="text-gray-500">Владелец</span>
-            <span className="font-medium">ООО "ЭкоЗаряд"</span>
+            <span className="font-medium">{stationData?.owner || 'None'}</span>
           </div>
         </CardContent>
       </Card>

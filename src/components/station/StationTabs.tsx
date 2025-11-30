@@ -62,9 +62,10 @@ interface StationTabsProps {
   onTabChange: (value: string) => void;
   onAction: (action: string) => void;
   isStationOnline?: boolean;
+  stationData?: any;
 }
 
-export default function StationTabs({ station, mockLogs, activeTab, onTabChange, onAction, isStationOnline = true }: StationTabsProps) {
+export default function StationTabs({ station, mockLogs, activeTab, onTabChange, onAction, isStationOnline = true, stationData }: StationTabsProps) {
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
   
   const mockTransactions: Transaction[] = [
@@ -105,7 +106,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsList>
 
         <TabsContent value="management" className="space-y-6">
-          <StationStatus station={station} isStationOnline={isStationOnline} />
+          <StationStatus station={station} isStationOnline={isStationOnline} stationData={stationData} />
           <StationActions onAction={onAction} isStationOnline={isStationOnline} />
         </TabsContent>
 
