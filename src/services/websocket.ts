@@ -154,6 +154,7 @@ export class WebSocketService {
   }
 
   async getStationBySerialNumber(serialNumber: string): Promise<StationData | null> {
+    console.log('🔍 Requesting station by serial number:', serialNumber);
     const response = await this.sendMessage({
       type: 'request',
       action: 'getStationBySerialNumber',
@@ -161,6 +162,7 @@ export class WebSocketService {
       requestId: ''
     });
 
+    console.log('📦 Response for serial', serialNumber, ':', response);
     return response.data?.station || null;
   }
 

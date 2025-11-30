@@ -89,18 +89,24 @@ function convertToChargingStation(data: StationData): ChargingStation {
 
 export default function Station() {
   const { id: serialNumber } = useParams();
+  console.log('🏭 Station component mounted, serialNumber:', serialNumber);
+  
   const [activeTab, setActiveTab] = useState('management');
   const { isConnected, isConnecting } = useWebSocket();
   const { station: stationData, loading, loadStation } = useStation(serialNumber);
   const [station, setStation] = useState<ChargingStation | null>(null);
   
+  console.log('📊 Station state:', { isConnected, isConnecting, loading, hasStationData: !!stationData, hasStation: !!station });
+  
   useEffect(() => {
+    console.log('🔄 Effect triggered: isConnected =', isConnected);
     if (isConnected) {
       loadStation();
     }
   }, [isConnected, loadStation]);
 
   useEffect(() => {
+    console.log('🔄 StationData changed:', stationData);
     if (stationData) {
       setStation(convertToChargingStation(stationData));
     } else {

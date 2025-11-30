@@ -146,7 +146,9 @@ export function useStation(serialNumber: string | undefined) {
   const [error, setError] = useState<string | null>(null);
 
   const loadStation = useCallback(async () => {
+    console.log('🎯 loadStation called with serialNumber:', serialNumber);
     if (!serialNumber) {
+      console.log('⚠️ No serial number provided, skipping load');
       setLoading(false);
       return;
     }
@@ -155,13 +157,18 @@ export function useStation(serialNumber: string | undefined) {
     setError(null);
 
     try {
+      console.log('📡 Fetching station data...');
       const data = await wsService.getStationBySerialNumber(serialNumber);
+      console.log('✅ Station data received:', data);
       setStation(data);
       
       if (data) {
         await wsService.subscribeToUpdates();
+      } else {
+        console.log('❌ Station not found');
       }
     } catch (err) {
+      console.error('❌ Error loading station:', err);
       setError(err instanceof Error ? err.message : 'Failed to load station');
     } finally {
       setLoading(false);
