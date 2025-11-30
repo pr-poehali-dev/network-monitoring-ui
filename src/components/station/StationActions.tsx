@@ -134,7 +134,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
             <p className="font-medium">Комментарий</p>
             <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
           </div>
-          <Button onClick={() => onAction('editComment')} disabled={!isStationOnline}>
+          <Button onClick={() => onAction('editComment')}>
             РЕДАКТИРОВАТЬ
           </Button>
         </div>
@@ -149,7 +149,6 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2"
-              disabled={!isStationOnline}
             >
               <Icon name="Plus" size={16} />
               ЗАГРУЗИТЬ
@@ -238,6 +237,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => handleExternalLink('https://agava.visualization.com/station/1', 'Визуализацию Агавы')}
               className="flex items-center gap-2"
+              disabled={!isStationOnline}
             >
               <Icon name="ExternalLink" size={16} />
               ОТКРЫТЬ
@@ -257,6 +257,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => handleExternalLink('https://router.config.com/station/1', 'настройки роутера')}
               className="flex items-center gap-2"
+              disabled={!isStationOnline}
             >
               <Icon name="ExternalLink" size={16} />
               ОТКРЫТЬ
