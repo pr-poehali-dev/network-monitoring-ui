@@ -29,14 +29,12 @@ export interface StationData {
 export interface WSClientMessage {
   type: 'request';
   action: 'getAllStations' | 'getStationById' | 'subscribeUpdates' | 'unsubscribeUpdates';
-  data?: {
-    stationId?: number;
-    filters?: {
-      region?: string;
-      station_status?: StationStatus;
-    };
+  requestId: string;
+  stationId?: number;
+  filters?: {
+    region?: string;
+    station_status?: StationStatus;
   };
-  requestId: string; // Уникальный ID для сопоставления запроса и ответа
 }
 
 // Структура сообщений сервер -> клиент
@@ -44,7 +42,9 @@ export interface WSServerMessage {
   type: 'response' | 'update' | 'error';
   action: string;
   data?: any;
-  requestId?: string; // Для сопоставления с запросом
+  requestId?: string;
+  code?: string;
+  message?: string;
   error?: {
     code: string;
     message: string;

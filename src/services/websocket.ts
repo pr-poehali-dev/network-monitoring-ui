@@ -104,7 +104,8 @@ export class WebSocketService {
       // Устанавливаем обработчик ответа
       this.messageHandlers.set(requestId, (response: WSServerMessage) => {
         if (response.type === 'error') {
-          reject(new Error(response.error?.message || 'Unknown error'));
+          const errorMsg = response.message || response.error?.message || 'Unknown error';
+          reject(new Error(errorMsg));
         } else {
           resolve(response);
         }
@@ -124,14 +125,18 @@ export class WebSocketService {
   }
 
   // API методы
-  async getAllStations(filters?: { region?: string; is_active?: number }): Promise<StationData[]> {
-    const response = await this.sendMessage({
+  async getAllStations(filters?: { region?: string; station_status?: string }): Promise<StationData[]> {
+    const message: any = {
       type: 'request',
       action: 'getAllStations',
-      data: filters ? { filters } : undefined,
       requestId: ''
-    });
-
+    };
+    
+    if (filters) {
+      message.filters = filters;
+    }
+    
+    const response = await this.sendMessage(message);
     return response.data?.stations || [];
   }
 
@@ -139,11 +144,9 @@ export class WebSocketService {
     const response = await this.sendMessage({
       type: 'request',
       action: 'getStationById',
-      data: {
-        stationId
-      },
+      stationId,
       requestId: ''
-    });
+    } as any);
 
     return response.data?.station || null;
   }
@@ -188,4 +191,4 @@ export class WebSocketService {
 }
 
 // Singleton instance
-export const wsService = new WebSocketService('wss://eprom.online:10008/');
+export const wsService = new WebSocketService('wss://eprom.online:10008');
