@@ -155,15 +155,19 @@ export class WebSocketService {
 
   async getStationBySerialNumber(serialNumber: string): Promise<StationData | null> {
     console.log('🔍 Requesting station by serial number:', serialNumber);
+    
+    // Получаем все станции и фильтруем по серийному номеру
     const response = await this.sendMessage({
       type: 'request',
-      action: 'getStationBySerialNumber',
-      serialNumber,
+      action: 'getAllStations',
       requestId: ''
     });
 
-    console.log('📦 Response for serial', serialNumber, ':', response);
-    return response.data?.station || null;
+    const stations = response.data?.stations || [];
+    const station = stations.find((s: StationData) => s.station_id === serialNumber);
+    
+    console.log('📦 Found station for serial', serialNumber, ':', station);
+    return station || null;
   }
 
   async subscribeToUpdates(): Promise<void> {
