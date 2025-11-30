@@ -24,11 +24,11 @@ export interface ConnectorStatusInfo {
 
 const CONNECTOR_STATUS_MAP: Record<number, ConnectorStatusInfo> = {
   [-1]: {
-    type: 'preparing',
-    label: 'Подготовка',
-    color: 'text-yellow-700',
-    bgColor: 'bg-yellow-50',
-    borderColor: 'border-yellow-200'
+    type: 'faulted',
+    label: 'Неисправен',
+    color: 'text-red-700',
+    bgColor: 'bg-red-50',
+    borderColor: 'border-red-200'
   },
   [0]: {
     type: 'available',
