@@ -10,14 +10,7 @@ import Map from '@/components/Map';
 import Layout from '@/components/Layout';
 import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 import { StationData } from '@/types/websocket';
-
-const getStationStatus = (station: StationData): 'online' | 'offline' => {
-  return (station.station_status === 'connected' || station.station_status === 'initializing') ? 'online' : 'offline';
-};
-
-const getStatusLabel = (status: 'online' | 'offline') => {
-  return status === 'online' ? 'Активна' : 'Оффлайн';
-};
+import { getStationStatus, getStatusLabel } from '@/utils/station';
 
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');

@@ -83,12 +83,18 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
           return '#A855F7';
         }
 
+        function getStationStatus(station) {
+          if (station.station_status === 'error') return 'error';
+          if (station.station_status === 'connected' || station.station_status === 'initializing') return 'online';
+          return 'offline';
+        }
+
         const useClustering = ${useClustering};
         const markers = useClustering ? L.markerClusterGroup() : L.layerGroup();
 
         stations.forEach(station => {
           const hasConnectors = station.connectors && station.connectors.length > 0;
-          const stationStatus = (station.station_status === 'connected' || station.station_status === 'initializing') ? 'online' : 'offline';
+          const stationStatus = getStationStatus(station);
           
           const connectors = hasConnectors 
             ? station.connectors 
@@ -256,7 +262,7 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
 
             newStations.forEach(station => {
               const hasConnectors = station.connectors && station.connectors.length > 0;
-              const stationStatus = (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
+              const stationStatus = getStationStatus(station);
               
               const connectors = hasConnectors 
                 ? station.connectors 
@@ -309,13 +315,13 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
                     cx="24"
                     cy="24"
                     r="14.4"
-                    fill="\${stationStatus === 'online' ? '#22C55E' : '#9CA3AF'}"
+                    fill="\${getStatusColor(station.station_status)}"
                     stroke="white"
                     stroke-width="2"
                   />
                   <path
                     d="M 24 48 L 20 54 L 28 54 Z"
-                    fill="\${stationStatus === 'online' ? '#22C55E' : '#9CA3AF'}"
+                    fill="\${getStatusColor(station.station_status)}"
                     stroke="white"
                     stroke-width="1"
                   />
