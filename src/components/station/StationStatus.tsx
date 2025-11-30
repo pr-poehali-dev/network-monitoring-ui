@@ -74,10 +74,16 @@ export default function StationStatus({ station, isStationOnline = true }: Stati
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Icon name="BatteryCharging" size={32} className="text-green-600" />
+              <Icon 
+                name={isStationOnline ? "BatteryCharging" : "WifiOff"} 
+                size={32} 
+                className={isStationOnline ? "text-green-600" : "text-gray-400"} 
+              />
               <div>
-                <p className="font-medium">Available</p>
-                <p className="text-sm text-gray-500">Available</p>
+                <p className="font-medium">{getStatusLabel(station.status)}</p>
+                <p className="text-sm text-gray-500">
+                  {isStationOnline ? 'Станция подключена' : 'Станция отключена'}
+                </p>
               </div>
             </div>
             <div className="flex gap-2">
@@ -104,13 +110,14 @@ export default function StationStatus({ station, isStationOnline = true }: Stati
         </CardContent>
       </Card>
 
-      {/* Connectors */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Коннекторы</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {station.connectors.map((connector, index) => (
+      {/* Connectors - скрываем когда станция офлайн */}
+      {isStationOnline && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Коннекторы</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {station.connectors.map((connector, index) => (
             <div key={connector.id} className={`flex items-center justify-between p-4 border rounded-lg ${connector.statusBorder}`}>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
@@ -157,9 +164,10 @@ export default function StationStatus({ station, isStationOnline = true }: Stati
                 </Button>
               </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Station Info */}
       <Card>
