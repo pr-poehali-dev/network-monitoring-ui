@@ -4,8 +4,8 @@ export class WebSocketService {
   private ws: WebSocket | null = null;
   private url: string;
   private reconnectAttempts = 0;
-  private maxReconnectAttempts = 10;
-  private reconnectDelay = 2000;
+  private maxReconnectAttempts = 20;
+  private reconnectDelay = 1000;
   private messageHandlers = new Map<string, (data: any) => void>();
   private requestCounter = 0;
   private subscribed = false;
@@ -20,8 +20,18 @@ export class WebSocketService {
       try {
         console.log('🔄 Attempting to connect to:', this.url);
         this.ws = new WebSocket(this.url);
+        
+        // Таймаут на подключение 15 секунд
+        const connectTimeout = setTimeout(() => {
+          if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+            console.error('❌ Connection timeout');
+            this.ws.close();
+            reject(new Error('Connection timeout'));
+          }
+        }, 15000);
 
         this.ws.onopen = () => {
+          clearTimeout(connectTimeout);
           console.log('✅ WebSocket connected to:', this.url);
           this.reconnectAttempts = 0;
           this.subscribed = false;
@@ -38,11 +48,13 @@ export class WebSocketService {
         };
 
         this.ws.onclose = (event) => {
+          clearTimeout(connectTimeout);
           console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
           this.handleReconnect();
         };
 
         this.ws.onerror = (error) => {
+          clearTimeout(connectTimeout);
           console.error('❌ WebSocket error:', error);
           console.error('Failed to connect to:', this.url);
           reject(error);
@@ -122,7 +134,7 @@ export class WebSocketService {
           this.messageHandlers.delete(requestId);
           reject(new Error('Request timeout'));
         }
-      }, 10000); // 10 секунд таймаут
+      }, 30000); // 30 секунд таймаут
     });
   }
 
