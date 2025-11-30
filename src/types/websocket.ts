@@ -7,8 +7,6 @@ export interface ConnectorData {
   max_power?: number;
 }
 
-export type StationStatus = 'connected' | 'disconnected' | 'error' | 'initializing';
-
 export interface StationData {
   id: number;
   station_id: string;
@@ -17,8 +15,7 @@ export interface StationData {
   ssh_port: number | null;
   address: string | null;
   region: string | null;
-  station_status: StationStatus;
-  error_info: string | null;
+  is_active: number;
   created_at: string;
   lat: number | null;
   lon: number | null;
@@ -29,12 +26,14 @@ export interface StationData {
 export interface WSClientMessage {
   type: 'request';
   action: 'getAllStations' | 'getStationById' | 'subscribeUpdates' | 'unsubscribeUpdates';
-  requestId: string;
-  stationId?: number;
-  filters?: {
-    region?: string;
-    station_status?: StationStatus;
+  data?: {
+    stationId?: number;
+    filters?: {
+      region?: string;
+      is_active?: number;
+    };
   };
+  requestId: string; // Уникальный ID для сопоставления запроса и ответа
 }
 
 // Структура сообщений сервер -> клиент
@@ -42,9 +41,7 @@ export interface WSServerMessage {
   type: 'response' | 'update' | 'error';
   action: string;
   data?: any;
-  requestId?: string;
-  code?: string;
-  message?: string;
+  requestId?: string; // Для сопоставления с запросом
   error?: {
     code: string;
     message: string;
@@ -65,8 +62,8 @@ export interface StationResponse {
 // Real-time обновления
 export interface StationUpdate {
   stationId: number;
-  changes: Partial<StationData>;
-  timestamp?: string;
+  updates: Partial<StationData>;
+  timestamp: string;
 }
 
 // Статус WebSocket соединения

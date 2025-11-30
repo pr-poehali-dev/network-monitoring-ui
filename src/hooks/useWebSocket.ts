@@ -56,7 +56,7 @@ export function useStations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadStations = useCallback(async (filters?: { region?: string; station_status?: string }) => {
+  const loadStations = useCallback(async (filters?: { region?: string; is_active?: number }) => {
     setLoading(true);
     setError(null);
 

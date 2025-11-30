@@ -9,31 +9,15 @@ import Icon from '@/components/ui/icon';
 import Map from '@/components/Map';
 import Layout from '@/components/Layout';
 import { useWebSocket, useStations } from '@/hooks/useWebSocket';
-import { StationData, StationStatus } from '@/types/websocket';
-import { parseErrorInfo } from '@/utils/errorParser';
+import { StationData } from '@/types/websocket';
 
-const isStationActive = (station: StationData): boolean => {
-  return station.station_status === 'connected' || station.station_status === 'initializing';
+const getStationStatus = (station: StationData): 'online' | 'offline' => {
+  const hasConnectors = station.connectors && station.connectors.length > 0;
+  return (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
 };
 
-const getStationStatusLabel = (status: StationStatus): string => {
-  switch (status) {
-    case 'connected': return 'Подключена';
-    case 'disconnected': return 'Отключена';
-    case 'error': return 'Ошибка';
-    case 'initializing': return 'Инициализация';
-    default: return 'Неизвестно';
-  }
-};
-
-const getStationStatusColor = (status: StationStatus): string => {
-  switch (status) {
-    case 'connected': return 'bg-green-500';
-    case 'disconnected': return 'bg-gray-400';
-    case 'error': return 'bg-red-500';
-    case 'initializing': return 'bg-yellow-500';
-    default: return 'bg-gray-400';
-  }
+const getStatusLabel = (status: 'online' | 'offline') => {
+  return status === 'online' ? 'Активна' : 'Оффлайн';
 };
 
 export default function Index() {
@@ -62,10 +46,10 @@ export default function Index() {
     
     const matchesRegion = !regionFilter || (station.region?.toLowerCase().includes(regionFilter.toLowerCase()) ?? false);
     
-    const isActive = isStationActive(station);
+    const stationStatus = getStationStatus(station);
     const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && isActive) ||
-      (statusFilter === 'inactive' && !isActive);
+      (statusFilter === 'active' && stationStatus === 'online') ||
+      (statusFilter === 'inactive' && stationStatus === 'offline');
     
     return matchesSearch && matchesRegion && matchesStatus;
   });
@@ -74,8 +58,8 @@ export default function Index() {
     navigate(`/station/${stationId}`);
   };
 
-  const activeStationsCount = stations.filter(s => isStationActive(s)).length;
-  const inactiveStationsCount = stations.filter(s => !isStationActive(s)).length;
+  const activeStationsCount = stations.filter(s => getStationStatus(s) === 'online').length;
+  const inactiveStationsCount = stations.filter(s => getStationStatus(s) === 'offline').length;
 
   return (
     <Layout>
@@ -265,16 +249,13 @@ export default function Index() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${getStationStatusColor(station.station_status)}`} />
-                              <span className="text-sm">{getStationStatusLabel(station.station_status)}</span>
-                            </div>
-                            {station.error_info && (
-                              <div className="text-xs text-red-600 mt-1">
-                                {parseErrorInfo(station.error_info).join(', ')}
-                              </div>
-                            )}
-                            {station.station_status === 'connected' && (!station.connectors || station.connectors.length === 0) && (
+                            <Badge 
+                              variant={getStationStatus(station) === 'online' ? 'default' : 'secondary'}
+                              className={getStationStatus(station) === 'online' ? 'bg-green-500' : ''}
+                            >
+                              {getStatusLabel(getStationStatus(station))}
+                            </Badge>
+                            {station.is_active === 1 && (!station.connectors || station.connectors.length === 0) && (
                               <span className="text-xs text-red-500">Нет данных</span>
                             )}
                           </div>
