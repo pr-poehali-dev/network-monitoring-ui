@@ -47,7 +47,10 @@ export default function Index() {
   });
 
   const handleStationClick = (stationId: number) => {
-    navigate(`/station/${stationId}`);
+    const station = stations.find(s => s.id === stationId);
+    if (station) {
+      navigate(`/station/${station.station_id}`);
+    }
   };
 
   const activeStationsCount = stations.filter(s => getStationStatus(s) === 'online').length;

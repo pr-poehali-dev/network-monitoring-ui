@@ -153,6 +153,17 @@ export class WebSocketService {
     return response.data?.station || null;
   }
 
+  async getStationBySerialNumber(serialNumber: string): Promise<StationData | null> {
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'getStationBySerialNumber',
+      serialNumber,
+      requestId: ''
+    });
+
+    return response.data?.station || null;
+  }
+
   async subscribeToUpdates(): Promise<void> {
     if (this.subscribed) return;
 

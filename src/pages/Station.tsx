@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import Icon from '@/components/ui/icon';
 import StationHeader from '@/components/station/StationHeader';
 import StationTabs from '@/components/station/StationTabs';
-import { useWebSocket, useStations } from '@/hooks/useWebSocket';
-import { StationData, ConnectorData } from '@/types/websocket';
+import { useWebSocket, useStation } from '@/hooks/useWebSocket';
+import { StationData } from '@/types/websocket';
 import { getConnectorType, getConnectorStatus, getStationOverallStatus } from '@/utils/connectors';
 
 interface ChargingStation {
@@ -88,36 +88,25 @@ function convertToChargingStation(data: StationData): ChargingStation {
 }
 
 export default function Station() {
-  const { id } = useParams();
+  const { id: serialNumber } = useParams();
   const [activeTab, setActiveTab] = useState('management');
   const { isConnected, isConnecting } = useWebSocket();
-  const { getStationById } = useStations();
+  const { station: stationData, loading, loadStation } = useStation(serialNumber);
   const [station, setStation] = useState<ChargingStation | null>(null);
-  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    const loadStation = async () => {
-      if (!isConnected || !id) {
-        setLoading(false);
-        return;
-      }
-      
-      try {
-        const data = await getStationById(Number(id));
-        if (data) {
-          setStation(convertToChargingStation(data));
-        }
-      } catch (error) {
-        console.error('Error loading station:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (isConnected) {
       loadStation();
     }
-  }, [id, isConnected, getStationById]);
+  }, [isConnected, loadStation]);
+
+  useEffect(() => {
+    if (stationData) {
+      setStation(convertToChargingStation(stationData));
+    } else {
+      setStation(null);
+    }
+  }, [stationData]);
 
   if (loading || isConnecting) {
     return (
@@ -151,7 +140,7 @@ export default function Station() {
         <div className="text-center">
           <Icon name="AlertCircle" size={48} className="text-red-500 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Станция не найдена</h1>
-          <p className="text-gray-500 mb-4">Станция с ID {id} не существует</p>
+          <p className="text-gray-500 mb-4">Станция с серийным номером {serialNumber} не существует</p>
           <Link to="/">
             <Button>Вернуться к списку</Button>
           </Link>

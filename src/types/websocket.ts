@@ -27,9 +27,10 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'subscribeUpdates' | 'unsubscribeUpdates';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates';
   requestId: string;
   stationId?: number;
+  serialNumber?: string;
   filters?: {
     region?: string;
     station_status?: string;

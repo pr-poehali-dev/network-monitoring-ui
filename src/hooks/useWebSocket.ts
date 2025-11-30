@@ -82,6 +82,15 @@ export function useStations() {
     }
   }, []);
 
+  const getStationBySerialNumber = useCallback(async (serialNumber: string): Promise<StationData | null> => {
+    try {
+      return await wsService.getStationBySerialNumber(serialNumber);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load station');
+      return null;
+    }
+  }, []);
+
   // Подписка на real-time обновления
   useEffect(() => {
     const handleStationUpdate = (event: CustomEvent) => {
@@ -126,6 +135,62 @@ export function useStations() {
     error,
     loadStations,
     getStationById,
+    getStationBySerialNumber,
     setStations
+  };
+}
+
+export function useStation(serialNumber: string | undefined) {
+  const [station, setStation] = useState<StationData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStation = useCallback(async () => {
+    if (!serialNumber) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await wsService.getStationBySerialNumber(serialNumber);
+      setStation(data);
+      
+      if (data) {
+        await wsService.subscribeToUpdates();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load station');
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  useEffect(() => {
+    const handleStationUpdate = (event: CustomEvent) => {
+      const update = event.detail;
+      
+      if (!station || update.stationId !== station.id) {
+        return;
+      }
+
+      const changes = update.changes || update.updates || {};
+      setStation(current => current ? { ...current, ...changes } : null);
+    };
+
+    window.addEventListener('stationUpdate', handleStationUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('stationUpdate', handleStationUpdate as EventListener);
+    };
+  }, [station]);
+
+  return {
+    station,
+    loading,
+    error,
+    loadStation
   };
 }
