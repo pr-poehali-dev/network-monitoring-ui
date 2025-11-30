@@ -1,11 +1,19 @@
 import { useLocation, Link } from 'react-router-dom';
+import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import Icon from '@/components/ui/icon';
-import { useStations } from '@/hooks/useWebSocket';
+import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 
 const Sidebar = () => {
   const location = useLocation();
-  const { stations } = useStations();
+  const { isConnected } = useWebSocket();
+  const { stations, loadStations } = useStations();
+  
+  useEffect(() => {
+    if (isConnected && stations.length === 0) {
+      loadStations();
+    }
+  }, [isConnected, stations.length, loadStations]);
   
   const navigation = [
     {
