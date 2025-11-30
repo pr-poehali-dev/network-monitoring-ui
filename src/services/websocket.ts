@@ -9,6 +9,8 @@ export class WebSocketService {
   private messageHandlers = new Map<string, (data: any) => void>();
   private requestCounter = 0;
   private subscribed = false;
+  private isConnecting = false;
+  private messageQueue: Array<{message: WSClientMessage, resolve: any, reject: any}> = [];
 
   constructor(url: string) {
     this.url = url;
@@ -16,6 +18,12 @@ export class WebSocketService {
   }
 
   connect(): Promise<void> {
+    if (this.isConnecting) {
+      return Promise.resolve();
+    }
+    
+    this.isConnecting = true;
+    
     return new Promise((resolve, reject) => {
       try {
         console.log('🔄 Attempting to connect to:', this.url);
@@ -32,9 +40,14 @@ export class WebSocketService {
 
         this.ws.onopen = () => {
           clearTimeout(connectTimeout);
+          this.isConnecting = false;
           console.log('✅ WebSocket connected to:', this.url);
           this.reconnectAttempts = 0;
           this.subscribed = false;
+          
+          // Отправляем сообщения из очереди
+          this.processMessageQueue();
+          
           resolve();
         };
 
@@ -49,12 +62,14 @@ export class WebSocketService {
 
         this.ws.onclose = (event) => {
           clearTimeout(connectTimeout);
+          this.isConnecting = false;
           console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
           this.handleReconnect();
         };
 
         this.ws.onerror = (error) => {
           clearTimeout(connectTimeout);
+          this.isConnecting = false;
           console.error('❌ WebSocket error:', error);
           console.error('Failed to connect to:', this.url);
           reject(error);
@@ -104,8 +119,34 @@ export class WebSocketService {
   private generateRequestId(): string {
     return `req_${Date.now()}_${++this.requestCounter}`;
   }
+  
+  private processMessageQueue() {
+    while (this.messageQueue.length > 0 && this.ws?.readyState === WebSocket.OPEN) {
+      const item = this.messageQueue.shift();
+      if (item) {
+        this.sendMessageDirect(item.message).then(item.resolve).catch(item.reject);
+      }
+    }
+  }
 
   private sendMessage(message: WSClientMessage): Promise<WSServerMessage> {
+    return new Promise((resolve, reject) => {
+      // Если WebSocket не подключен или подключается, добавляем в очередь
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+        if (this.isConnecting || this.reconnectAttempts > 0) {
+          console.log('⏳ Queueing message until connection is established');
+          this.messageQueue.push({ message, resolve, reject });
+          return;
+        }
+        reject(new Error('WebSocket is not connected'));
+        return;
+      }
+      
+      this.sendMessageDirect(message).then(resolve).catch(reject);
+    });
+  }
+  
+  private sendMessageDirect(message: WSClientMessage): Promise<WSServerMessage> {
     return new Promise((resolve, reject) => {
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
         reject(new Error('WebSocket is not connected'));
