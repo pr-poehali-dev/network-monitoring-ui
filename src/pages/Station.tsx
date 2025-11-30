@@ -66,7 +66,7 @@ function convertToChargingStation(data: StationData): ChargingStation {
       statusColor: statusInfo.color,
       statusBg: statusInfo.bgColor,
       statusBorder: statusInfo.borderColor,
-      power: c.max_power ? `${c.max_power} кВт` : 'Неизвестно'
+      power: 'Неизвестно'
     };
   }) || [];
 

@@ -66,8 +66,11 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
 
         const stations = ${JSON.stringify(validStations)};
         
-        function getStatusColor(is_active) {
-          return is_active === 1 ? '#22C55E' : '#9CA3AF';
+        function getStatusColor(station_status) {
+          if (station_status === 'connected') return '#22C55E';
+          if (station_status === 'initializing') return '#3B82F6';
+          if (station_status === 'error') return '#EF4444';
+          return '#9CA3AF';
         }
         
         function getConnectorStatusColor(statusId) {
@@ -85,7 +88,7 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
 
         stations.forEach(station => {
           const hasConnectors = station.connectors && station.connectors.length > 0;
-          const stationStatus = (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
+          const stationStatus = (station.station_status === 'connected' || station.station_status === 'initializing') ? 'online' : 'offline';
           
           const connectors = hasConnectors 
             ? station.connectors 
@@ -138,13 +141,13 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
                 cx="24"
                 cy="24"
                 r="14.4"
-                fill="\${stationStatus === 'online' ? '#22C55E' : '#9CA3AF'}"
+                fill="\${getStatusColor(station.station_status)}"
                 stroke="white"
                 stroke-width="2"
               />
               <path
                 d="M 24 48 L 20 54 L 28 54 Z"
-                fill="\${stationStatus === 'online' ? '#22C55E' : '#9CA3AF'}"
+                fill="\${getStatusColor(station.station_status)}"
                 stroke="white"
                 stroke-width="1"
               />
@@ -171,9 +174,10 @@ export const generateMapHtml = (validStations: StationData[], useClustering: boo
           }
 
           function getConnectorTypeLabel(connectorType) {
-            if (connectorType === 1) return 'Type 2';
-            if (connectorType === 2) return 'CCS2';
-            if (connectorType === 3) return 'CHAdeMO';
+            if (connectorType === 1) return 'CHAdeMO';
+            if (connectorType === 2) return 'CCS';
+            if (connectorType === 3) return 'GB/T';
+            if (connectorType === 4) return 'Type2';
             return 'Unknown';
           }
           

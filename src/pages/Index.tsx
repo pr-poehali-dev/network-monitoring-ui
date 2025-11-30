@@ -12,8 +12,7 @@ import { useWebSocket, useStations } from '@/hooks/useWebSocket';
 import { StationData } from '@/types/websocket';
 
 const getStationStatus = (station: StationData): 'online' | 'offline' => {
-  const hasConnectors = station.connectors && station.connectors.length > 0;
-  return (station.is_active === 1 && hasConnectors) ? 'online' : 'offline';
+  return (station.station_status === 'connected' || station.station_status === 'initializing') ? 'online' : 'offline';
 };
 
 const getStatusLabel = (status: 'online' | 'offline') => {

@@ -54,17 +54,19 @@ export class WebSocketService {
   }
 
   private handleMessage(message: WSServerMessage) {
+    // Обработка real-time обновлений (приоритет выше)
+    if (message.type === 'update' && message.action === 'stationUpdate') {
+      this.handleRealtimeUpdate(message);
+      return;
+    }
+
+    // Обработка ответов на запросы
     if (message.requestId && this.messageHandlers.has(message.requestId)) {
       const handler = this.messageHandlers.get(message.requestId);
       if (handler) {
         handler(message);
         this.messageHandlers.delete(message.requestId);
       }
-    }
-
-    // Обработка real-time обновлений
-    if (message.type === 'update') {
-      this.handleRealtimeUpdate(message);
     }
   }
 
@@ -104,7 +106,8 @@ export class WebSocketService {
       // Устанавливаем обработчик ответа
       this.messageHandlers.set(requestId, (response: WSServerMessage) => {
         if (response.type === 'error') {
-          reject(new Error(response.error?.message || 'Unknown error'));
+          const errorMsg = response.message || 'Unknown error';
+          reject(new Error(errorMsg));
         } else {
           resolve(response);
         }
@@ -124,14 +127,18 @@ export class WebSocketService {
   }
 
   // API методы
-  async getAllStations(filters?: { region?: string; is_active?: number }): Promise<StationData[]> {
-    const response = await this.sendMessage({
+  async getAllStations(filters?: { region?: string; station_status?: string }): Promise<StationData[]> {
+    const message: WSClientMessage = {
       type: 'request',
       action: 'getAllStations',
-      data: filters ? { filters } : undefined,
       requestId: ''
-    });
-
+    };
+    
+    if (filters) {
+      message.filters = filters;
+    }
+    
+    const response = await this.sendMessage(message);
     return response.data?.stations || [];
   }
 
@@ -139,9 +146,7 @@ export class WebSocketService {
     const response = await this.sendMessage({
       type: 'request',
       action: 'getStationById',
-      data: {
-        stationId
-      },
+      stationId,
       requestId: ''
     });
 
@@ -188,4 +193,4 @@ export class WebSocketService {
 }
 
 // Singleton instance
-export const wsService = new WebSocketService('wss://eprom.online:10008/');
+export const wsService = new WebSocketService('wss://eprom.online:10008');

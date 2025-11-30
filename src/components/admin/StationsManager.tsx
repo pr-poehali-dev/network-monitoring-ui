@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { useStations } from '@/hooks/useWebSocket';
 import { StationData } from '@/types/websocket';
+import { parseErrorInfo, getErrorColor } from '@/utils/errors';
 
 export default function StationsManager() {
   const { stations, loadStations } = useStations();
@@ -127,15 +128,36 @@ export default function StationsManager() {
                   <TableCell className="text-sm">{station.address || '—'}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {(station.is_active === 1 && station.connectors && station.connectors.length > 0) ? (
+                      {station.station_status === 'connected' && (
                         <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-                          Активна
+                          Подключена
                         </Badge>
-                      ) : (
-                        <Badge variant="secondary">Оффлайн</Badge>
                       )}
-                      {station.is_active === 1 && (!station.connectors || station.connectors.length === 0) && (
-                        <span className="text-xs text-red-500">Нет данных</span>
+                      {station.station_status === 'initializing' && (
+                        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                          Инициализация
+                        </Badge>
+                      )}
+                      {station.station_status === 'error' && (
+                        <Badge className="bg-red-100 text-red-700 hover:bg-red-100">
+                          Ошибка
+                        </Badge>
+                      )}
+                      {station.station_status === 'disconnected' && (
+                        <Badge variant="secondary">Отключена</Badge>
+                      )}
+                      {station.error_info && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {parseErrorInfo(station.error_info).map((error, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="outline"
+                              className={`text-xs ${getErrorColor(error.type)}`}
+                            >
+                              {error.label}
+                            </Badge>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </TableCell>

@@ -1,13 +1,14 @@
-import { StationData, ConnectorStatus } from '@/types/websocket';
+import { StationData } from '@/types/websocket';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
+import { parseErrorInfo, getErrorColor } from '@/utils/errors';
 
 interface StationInfoPopupProps {
   station: StationData;
   onClose: () => void;
 }
 
-const getConnectorStatusInfo = (statusId: ConnectorStatus) => {
+const getConnectorStatusInfo = (statusId: number) => {
   if (statusId === 0) return { label: 'Доступен', variant: 'default' as const, color: 'bg-green-100 text-green-800' };
   if (statusId === 3) return { label: 'Зарядка', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' };
   if (statusId === 1 || statusId === 2 || statusId === 6 || statusId === 7 || statusId === 8) {
@@ -20,9 +21,10 @@ const getConnectorStatusInfo = (statusId: ConnectorStatus) => {
 };
 
 const getConnectorTypeLabel = (connectorType: number) => {
-  if (connectorType === 1) return 'Type 2';
-  if (connectorType === 2) return 'CCS2';
-  if (connectorType === 3) return 'CHAdeMO';
+  if (connectorType === 1) return 'CHAdeMO';
+  if (connectorType === 2) return 'CCS';
+  if (connectorType === 3) return 'GB/T';
+  if (connectorType === 4) return 'Type2';
   return 'Unknown';
 };
 
@@ -47,11 +49,33 @@ export default function StationInfoPopup({ station, onClose }: StationInfoPopupP
         <p className="text-sm text-gray-500">ID: {station.station_id}</p>
         
         <div className="flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${station.is_active === 1 ? 'bg-green-500' : 'bg-gray-400'}`} />
+          <div className={`w-2 h-2 rounded-full ${
+            station.station_status === 'connected' ? 'bg-green-500' :
+            station.station_status === 'initializing' ? 'bg-blue-500' :
+            station.station_status === 'error' ? 'bg-red-500' :
+            'bg-gray-400'
+          }`} />
           <span className="text-sm font-medium">
-            {station.is_active === 1 ? 'Активна' : 'Неактивна'}
+            {station.station_status === 'connected' ? 'Подключена' :
+             station.station_status === 'initializing' ? 'Инициализация' :
+             station.station_status === 'error' ? 'Ошибка' :
+             'Отключена'}
           </span>
         </div>
+        
+        {station.error_info && (
+          <div className="flex flex-wrap gap-1 pt-2 border-t">
+            {parseErrorInfo(station.error_info).map((error, idx) => (
+              <Badge
+                key={idx}
+                variant="outline"
+                className={`text-xs ${getErrorColor(error.type)}`}
+              >
+                {error.label}
+              </Badge>
+            ))}
+          </div>
+        )}
 
         {station.address && (
           <p className="text-sm text-gray-600 pt-2 border-t">
