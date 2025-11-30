@@ -18,11 +18,20 @@ export class WebSocketService {
   }
 
   connect(): Promise<void> {
+    // Если уже подключены, не создаем новое соединение
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log('✅ Already connected, skipping');
+      return Promise.resolve();
+    }
+    
+    // Если идет подключение, не создаем еще одно
     if (this.isConnecting) {
+      console.log('⏳ Connection already in progress, skipping');
       return Promise.resolve();
     }
     
     this.isConnecting = true;
+    console.log('🔄 Starting new connection...');
     
     return new Promise((resolve, reject) => {
       try {
@@ -64,7 +73,11 @@ export class WebSocketService {
           clearTimeout(connectTimeout);
           this.isConnecting = false;
           console.log('🔌 WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
-          this.handleReconnect();
+          
+          // Только реконнект если это не намеренное отключение (код 1000)
+          if (event.code !== 1000) {
+            this.handleReconnect();
+          }
         };
 
         this.ws.onerror = (error) => {
@@ -106,13 +119,20 @@ export class WebSocketService {
   }
 
   private handleReconnect() {
+    // Не пытаемся переподключиться если уже идет подключение или уже подключены
+    if (this.isConnecting || this.ws?.readyState === WebSocket.OPEN) {
+      return;
+    }
+    
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
-      console.log(`Attempting to reconnect... (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+      console.log(`⏳ Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
       
       setTimeout(() => {
         this.connect().catch(console.error);
-      }, this.reconnectDelay * this.reconnectAttempts);
+      }, this.reconnectDelay);
+    } else {
+      console.error('❌ Max reconnection attempts reached');
     }
   }
 
@@ -246,11 +266,15 @@ export class WebSocketService {
   }
 
   disconnect() {
+    console.log('🔌 Disconnecting WebSocket...');
+    this.reconnectAttempts = this.maxReconnectAttempts; // Останавливаем реконнекты
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'Client disconnect'); // Код 1000 = нормальное закрытие
       this.ws = null;
     }
     this.messageHandlers.clear();
+    this.messageQueue = [];
+    this.isConnecting = false;
   }
 
   isConnected(): boolean {

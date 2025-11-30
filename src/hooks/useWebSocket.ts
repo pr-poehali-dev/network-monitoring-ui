@@ -28,8 +28,10 @@ export function useWebSocket() {
   }, []);
 
   useEffect(() => {
-    // Автоматическое подключение при загрузке
-    connect();
+    // Автоматическое подключение при загрузке только если не подключены
+    if (!wsService.isConnected()) {
+      connect();
+    }
 
     // Проверяем состояние соединения
     const interval = setInterval(() => {
@@ -38,9 +40,9 @@ export function useWebSocket() {
 
     return () => {
       clearInterval(interval);
-      disconnect();
+      // НЕ отключаем при размонтировании - оставляем соединение активным
     };
-  }, [connect, disconnect]);
+  }, [connect]);
 
   return {
     isConnected,
