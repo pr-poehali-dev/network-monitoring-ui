@@ -2,16 +2,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Transaction {
-  id: string;
-  connector: number;
-  energy: number;
-  duration: string;
-  status: string;
-  startTime: string;
-  endTime: string;
+  time: string;
+  connectorId: number;
+  transactionId: number;
+  energyKwh: number;
+  durationSec: number;
+  success: boolean;
+  reason: string;
 }
 
 interface TransactionDetailModalProps {
@@ -20,43 +20,18 @@ interface TransactionDetailModalProps {
   onClose: () => void;
 }
 
-// Генерируем заглушечные данные для графиков
-const generateMockData = (points: number, baseValue: number, variance: number) => {
+const generateMockChartData = (points: number = 30) => {
   return Array.from({ length: points }, (_, i) => {
-    const time = `${String(Math.floor(i / 4) + 14).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`;
-    const randomVariance = (Math.random() - 0.5) * variance;
-    const value = baseValue + randomVariance + Math.sin(i * 0.3) * variance * 0.3;
-    return {
-      time,
-      value: Math.max(0, Math.round(value * 10) / 10) // Округляем до 1 знака после запятой
-    };
-  });
-};
-
-const generateEnergyData = (points: number, totalEnergy: number) => {
-  return Array.from({ length: points }, (_, i) => {
-    const time = `${String(Math.floor(i / 4) + 14).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`;
     const progress = i / (points - 1);
-    // S-образная кривая для более реалистичного накопления энергии
-    const energyProgress = progress < 0.1 ? progress * 2 : 
-                          progress > 0.9 ? 0.2 + (progress - 0.1) * 0.5 : 
-                          0.2 + (progress - 0.1) * 1.0;
+    const minutes = Math.floor(progress * 120);
+    
     return {
-      time,
-      value: totalEnergy * Math.min(1, energyProgress)
-    };
-  });
-};
-
-const generateSOCData = (points: number) => {
-  return Array.from({ length: points }, (_, i) => {
-    const time = `${String(Math.floor(i / 4) + 14).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}`;
-    const progress = i / (points - 1);
-    // SOC растет от 20% до 85% с замедлением к концу
-    const socProgress = 20 + (85 - 20) * (1 - Math.pow(1 - progress, 1.5));
-    return {
-      time,
-      value: Math.round(socProgress * 10) / 10
+      time: `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`,
+      current: 25 + Math.random() * 10 + (progress > 0.8 ? -15 * (progress - 0.8) * 5 : 0),
+      voltage: 395 + Math.random() * 15,
+      soc: 20 + progress * 65,
+      power: 20 + Math.random() * 8 + (progress > 0.8 ? -10 * (progress - 0.8) * 5 : 0),
+      energy: progress * 45
     };
   });
 };
@@ -64,264 +39,124 @@ const generateSOCData = (points: number) => {
 export default function TransactionDetailModal({ transaction, isOpen, onClose }: TransactionDetailModalProps) {
   if (!transaction) return null;
 
-  // Генерируем данные на основе транзакции
-  const powerData = generateMockData(20, 22, 4);
-  const energyData = generateEnergyData(20, transaction.energy);
-  const currentData = generateMockData(20, 28, 6);
-  const voltageData = generateMockData(20, 400, 15);
-  const socData = generateSOCData(20);
+  const chartData = generateMockChartData();
+  const mockData = {
+    startTime: new Date(new Date(transaction.time).getTime() - transaction.durationSec * 1000).toLocaleString('ru-RU'),
+    endTime: new Date(transaction.time).toLocaleString('ru-RU'),
+    startSOC: 20,
+    endSOC: 85,
+    peakPower: 28.5,
+    duration: `${Math.floor(transaction.durationSec / 3600)}ч ${Math.floor((transaction.durationSec % 3600) / 60)}м`
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
-            <Icon name="CreditCard" size={24} className="text-blue-500" />
-            Детали транзакции #{transaction.id}
+            <Icon name="Activity" size={24} className="text-blue-500" />
+            Детали зарядной сессии #{transaction.transactionId}
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
           {/* Основная информация */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Icon name="Zap" size={14} />
-                  Коннектор
-                </div>
-                <div className="text-lg font-semibold">Коннектор {transaction.connector}</div>
+                <div className="text-xs text-gray-600 mb-1">Время начала</div>
+                <div className="text-sm font-semibold">{mockData.startTime}</div>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Icon name="Battery" size={14} />
-                  Энергия
-                </div>
-                <div className="text-lg font-semibold text-green-600">{transaction.energy} кВт⋅ч</div>
+                <div className="text-xs text-gray-600 mb-1">Время завершения</div>
+                <div className="text-sm font-semibold">{mockData.endTime}</div>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Icon name="Clock" size={14} />
-                  Длительность
-                </div>
-                <div className="text-lg font-semibold">{transaction.duration}</div>
+                <div className="text-xs text-gray-600 mb-1">Начальный процент</div>
+                <div className="text-sm font-semibold text-orange-600">{mockData.startSOC}%</div>
               </CardContent>
             </Card>
             
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <Icon name="CheckCircle" size={14} />
-                  Статус
-                </div>
-                <div className={`text-sm px-2 py-1 rounded-full font-medium ${
-                  transaction.status.includes('Успешно') || transaction.status === 'Автоматически' ? 'bg-green-100 text-green-700' :
-                  transaction.status.includes('Прервана') ? 'bg-red-100 text-red-700' :
-                  'bg-orange-100 text-orange-700'
-                }`}>
-                  {transaction.status}
-                </div>
+                <div className="text-xs text-gray-600 mb-1">Конечный процент</div>
+                <div className="text-sm font-semibold text-green-600">{mockData.endSOC}%</div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-gray-600 mb-1">Пиковая мощность</div>
+                <div className="text-sm font-semibold text-blue-600">{mockData.peakPower} кВт</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-gray-600 mb-1">Причина завершения</div>
+                <div className="text-sm font-semibold">{transaction.reason}</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-gray-600 mb-1">Переданная энергия</div>
+                <div className="text-sm font-semibold text-green-600">{transaction.energyKwh.toFixed(2)} кВт⋅ч</div>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-xs text-gray-600 mb-1">Длительность</div>
+                <div className="text-sm font-semibold">{mockData.duration}</div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Временная линия и действия */}
-          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Время начала</div>
-                <div className="font-medium">{transaction.startTime}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Время завершения</div>
-                <div className="font-medium">{transaction.endTime}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Начальный SOC</div>
-                <div className="font-medium text-orange-600">20%</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600 mb-1">Конечный SOC</div>
-                <div className="font-medium text-green-600">85%</div>
-              </div>
-            </div>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => {
-                // Имитируем скачивание лога
-                const logContent = `Транзакция: ${transaction.id}
-Коннектор: ${transaction.connector}
-Время начала: ${transaction.startTime}
-Время завершения: ${transaction.endTime}
-Переданная энергия: ${transaction.energy} кВт⋅ч
-Длительность: ${transaction.duration}
-Статус завершения: ${transaction.status}
-
-=== ДЕТАЛЬНЫЙ ЛОГ ТРАНЗАКЦИИ ===
-2025-09-25 14:30:00 [INFO] Инициализация зарядки на коннекторе ${transaction.connector}
-2025-09-25 14:30:15 [INFO] Авторизация пользователя успешна
-2025-09-25 14:30:30 [INFO] Начало подачи энергии (мощность: 22.5 кВт)
-2025-09-25 14:45:00 [INFO] Стабильная зарядка (SOC: 45%)
-2025-09-25 15:30:00 [INFO] Снижение мощности (SOC: 80%)
-2025-09-25 16:45:00 [INFO] Зарядка завершена (итого: ${transaction.energy} кВт⋅ч)
-2025-09-25 16:45:15 [INFO] Отключение коннектора
-2025-09-25 16:45:30 [INFO] Финализация транзакции ${transaction.id}`;
-
-                const blob = new Blob([logContent], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `transaction_${transaction.id}_log.txt`;
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-              className="flex items-center gap-2 whitespace-nowrap"
-            >
-              <Icon name="Download" size={14} />
-              Скачать лог
-            </Button>
-          </div>
-
-          {/* Графики - каждый на полную ширину */}
-          <div className="space-y-6">
-            {/* График мощности */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="Zap" size={16} className="text-blue-500" />
-                  Мощность (кВт)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={powerData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                      <XAxis 
-                        dataKey="time" 
-                        stroke="#666"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis 
-                        stroke="#666"
-                        tick={{ fontSize: 12 }}
-                        domain={['dataMin - 2', 'dataMax + 2']}
-                      />
-                      <Tooltip 
-                        labelStyle={{ color: '#333' }}
-                        contentStyle={{ 
-                          backgroundColor: '#fff', 
-                          border: '1px solid #ccc',
-                          borderRadius: '4px'
-                        }}
-                        formatter={(value: number) => [`${value.toFixed(1)} кВт`, 'Мощность']}
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#3b82f6" 
-                        strokeWidth={2}
-                        dot={{ fill: '#3b82f6', strokeWidth: 2, r: 3 }}
-                        activeDot={{ r: 5, stroke: '#3b82f6', strokeWidth: 2, fill: '#fff' }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* График энергии */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="Battery" size={16} className="text-green-500" />
-                  Переданная энергия (кВт⋅ч)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={energyData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                      <XAxis 
-                        dataKey="time" 
-                        stroke="#666"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis 
-                        stroke="#666"
-                        tick={{ fontSize: 12 }}
-                        domain={[0, 'dataMax + 5']}
-                      />
-                      <Tooltip 
-                        labelStyle={{ color: '#333' }}
-                        contentStyle={{ 
-                          backgroundColor: '#fff', 
-                          border: '1px solid #ccc',
-                          borderRadius: '4px'
-                        }}
-                        formatter={(value: number) => [`${value.toFixed(1)} кВт⋅ч`, 'Энергия']}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#10b981"
-                        fill="#10b981"
-                        fillOpacity={0.2}
-                        strokeWidth={2}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </CardContent>
-            </Card>
-
+          {/* Графики */}
+          <div className="space-y-4">
             {/* График тока */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="Activity" size={16} className="text-orange-500" />
+                  <Icon name="Zap" size={16} className="text-yellow-500" />
                   Ток (А)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={currentData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis 
                         dataKey="time" 
-                        stroke="#666"
                         tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
                       />
                       <YAxis 
-                        stroke="#666"
                         tick={{ fontSize: 12 }}
-                        domain={[20, 35]}
+                        stroke="#9ca3af"
+                        domain={[0, 40]}
                       />
                       <Tooltip 
-                        labelStyle={{ color: '#333' }}
                         contentStyle={{ 
-                          backgroundColor: '#fff', 
-                          border: '1px solid #ccc',
-                          borderRadius: '4px'
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
                         }}
-                        formatter={(value: number) => [`${value.toFixed(1)} А`, 'Ток']}
                       />
                       <Line 
                         type="monotone" 
-                        dataKey="value" 
-                        stroke="#f97316" 
+                        dataKey="current" 
+                        stroke="#eab308" 
                         strokeWidth={2}
-                        dot={{ fill: '#f97316', strokeWidth: 2, r: 3 }}
-                        activeDot={{ r: 5, stroke: '#f97316', strokeWidth: 2, fill: '#fff' }}
+                        dot={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -333,41 +168,38 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="Gauge" size={16} className="text-purple-500" />
+                  <Icon name="Activity" size={16} className="text-purple-500" />
                   Напряжение (В)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={voltageData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis 
                         dataKey="time" 
-                        stroke="#666"
                         tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
                       />
                       <YAxis 
-                        stroke="#666"
                         tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
                         domain={[380, 420]}
                       />
                       <Tooltip 
-                        labelStyle={{ color: '#333' }}
                         contentStyle={{ 
-                          backgroundColor: '#fff', 
-                          border: '1px solid #ccc',
-                          borderRadius: '4px'
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
                         }}
-                        formatter={(value: number) => [`${value.toFixed(0)} В`, 'Напряжение']}
                       />
                       <Line 
                         type="monotone" 
-                        dataKey="value" 
+                        dataKey="voltage" 
                         stroke="#a855f7" 
                         strokeWidth={2}
-                        dot={{ fill: '#a855f7', strokeWidth: 2, r: 3 }}
-                        activeDot={{ r: 5, stroke: '#a855f7', strokeWidth: 2, fill: '#fff' }}
+                        dot={false}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -375,47 +207,130 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
               </CardContent>
             </Card>
 
-            {/* График SOC батареи */}
+            {/* График процента заряда */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base flex items-center gap-2">
-                  <Icon name="BatteryCharging" size={16} className="text-blue-600" />
-                  Заряд АКБ (SOC, %)
+                  <Icon name="Battery" size={16} className="text-green-500" />
+                  Процент заряда авто (%)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-64 w-full">
+                <div className="h-48 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={socData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis 
                         dataKey="time" 
-                        stroke="#666"
                         tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
                       />
                       <YAxis 
-                        stroke="#666"
                         tick={{ fontSize: 12 }}
-                        domain={[15, 90]}
+                        stroke="#9ca3af"
+                        domain={[0, 100]}
                       />
                       <Tooltip 
-                        labelStyle={{ color: '#333' }}
                         contentStyle={{ 
-                          backgroundColor: '#fff', 
-                          border: '1px solid #ccc',
-                          borderRadius: '4px'
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
                         }}
-                        formatter={(value: number) => [`${value.toFixed(1)}%`, 'SOC']}
                       />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="#2563eb"
-                        fill="#2563eb"
-                        fillOpacity={0.3}
-                        strokeWidth={3}
+                      <Line 
+                        type="monotone" 
+                        dataKey="soc" 
+                        stroke="#22c55e" 
+                        strokeWidth={2}
+                        dot={false}
                       />
-                    </AreaChart>
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* График мощности */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Icon name="Gauge" size={16} className="text-blue-500" />
+                  Мощность (кВт)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="time" 
+                        tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
+                        domain={[0, 35]}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="power" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* График переданной энергии */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Icon name="TrendingUp" size={16} className="text-emerald-500" />
+                  Переданная энергия (кВт⋅ч)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-48 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis 
+                        dataKey="time" 
+                        tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 12 }}
+                        stroke="#9ca3af"
+                        domain={[0, 50]}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'white',
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="energy" 
+                        stroke="#10b981" 
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </CardContent>
@@ -423,8 +338,8 @@ export default function TransactionDetailModal({ transaction, isOpen, onClose }:
           </div>
 
           {/* Кнопка закрытия */}
-          <div className="flex justify-end pt-4 border-t">
-            <Button variant="outline" onClick={onClose}>
+          <div className="flex justify-end">
+            <Button onClick={onClose} variant="outline">
               Закрыть
             </Button>
           </div>

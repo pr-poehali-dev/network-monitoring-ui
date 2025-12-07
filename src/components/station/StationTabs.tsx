@@ -11,6 +11,7 @@ import AvailabilityTab from './AvailabilityTab';
 import StatisticsTab from './StatisticsTab';
 import InputMeterTab from './InputMeterTab';
 import RectifiersTab from './RectifiersTab';
+import { Transaction } from '@/types/websocket';
 
 interface Connector {
   id: string;
@@ -56,10 +57,10 @@ interface StationTabsProps {
 }
 
 export default function StationTabs({ station, mockLogs, activeTab, onTabChange, onAction, isStationOnline = true, stationData }: StationTabsProps) {
-  const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  const handleTransactionClick = (transactionId: string) => {
-    setSelectedTransaction(transactionId);
+  const handleTransactionClick = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
   };
 
   const handleModalClose = () => {
@@ -122,13 +123,11 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsContent>
       </Tabs>
 
-      {selectedTransaction && (
-        <TransactionDetailModal 
-          transaction={null}
-          isOpen={true}
-          onClose={handleModalClose}
-        />
-      )}
+      <TransactionDetailModal 
+        transaction={selectedTransaction}
+        isOpen={selectedTransaction !== null}
+        onClose={handleModalClose}
+      />
     </>
   );
 }

@@ -7,7 +7,7 @@ import { useTransactions } from '@/hooks/useWebSocket';
 
 interface TransactionsTabProps {
   serialNumber: string;
-  onTransactionClick?: (transactionId: string) => void;
+  onTransactionClick?: (transaction: Transaction) => void;
 }
 
 function formatDateTime(isoString: string): string {
@@ -130,7 +130,7 @@ export default function TransactionsTab({ serialNumber, onTransactionClick }: Tr
                   <tr
                     key={`${transaction.transactionId}-${idx}`}
                     className="border-b hover:bg-gray-50/50 cursor-pointer"
-                    onClick={() => onTransactionClick?.(String(transaction.transactionId))}
+                    onClick={() => onTransactionClick?.(transaction)}
                   >
                     <td className="py-3 px-4">
                       <span className="font-mono text-sm text-blue-600">#{transaction.transactionId}</span>
