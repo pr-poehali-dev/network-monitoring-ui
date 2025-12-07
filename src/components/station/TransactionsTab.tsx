@@ -31,17 +31,7 @@ function formatDuration(seconds: number): string {
   return `${minutes}м`;
 }
 
-function getReasonLabel(reason: string): string {
-  const reasonMap: Record<string, string> = {
-    'EVDisconnected': 'Авто отключено',
-    'Remote': 'Удаленная остановка',
-    'Local': 'Локальная остановка',
-    'PowerLoss': 'Потеря питания',
-    'EmergencyStop': 'Экстренная остановка',
-    'Other': 'Другое'
-  };
-  return reasonMap[reason] || reason;
-}
+
 
 export default function TransactionsTab({ serialNumber, onTransactionClick }: TransactionsTabProps) {
   const { transactions, loading, error, loadTransactions } = useTransactions(serialNumber);
@@ -171,7 +161,7 @@ export default function TransactionsTab({ serialNumber, onTransactionClick }: Tr
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-xs text-gray-600">{getReasonLabel(transaction.reason)}</span>
+                      <span className="text-xs text-gray-600">{transaction.reason}</span>
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-xs text-gray-500">{formatDateTime(transaction.time)}</span>
