@@ -62,14 +62,14 @@ export default function TransactionDetailModal({ transaction, serialNumber, isOp
   const txDetails = details?.transaction;
   const metrics = details?.metrics;
 
-  const mockData = {
-    startTime: txDetails ? new Date(txDetails.startTime).toLocaleString('ru-RU') : new Date(new Date(transaction.time).getTime() - transaction.durationSec * 1000).toLocaleString('ru-RU'),
-    endTime: txDetails ? new Date(txDetails.endTime).toLocaleString('ru-RU') : new Date(transaction.time).toLocaleString('ru-RU'),
-    startSOC: txDetails?.startSoc ?? 20,
-    endSOC: txDetails?.endSoc ?? 85,
-    peakPower: txDetails?.peakPowerKw ?? 28.5,
-    duration: `${Math.floor(transaction.durationSec / 3600)}ч ${Math.floor((transaction.durationSec % 3600) / 60)}м`
-  };
+  const durationSec = txDetails?.durationSec ?? transaction.durationSec;
+  const startTime = txDetails ? new Date(txDetails.startTime).toLocaleString('ru-RU') : new Date(new Date(transaction.time).getTime() - transaction.durationSec * 1000).toLocaleString('ru-RU');
+  const endTime = txDetails ? new Date(txDetails.endTime).toLocaleString('ru-RU') : new Date(transaction.time).toLocaleString('ru-RU');
+  const startSOC = txDetails?.startSoc;
+  const endSOC = txDetails?.endSoc;
+  const peakPower = txDetails?.peakPowerKw;
+  const energyKwh = txDetails?.energyKwh ?? transaction.energyKwh;
+  const duration = `${Math.floor(durationSec / 3600)}ч ${Math.floor((durationSec % 3600) / 60)}м`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -90,56 +90,64 @@ export default function TransactionDetailModal({ transaction, serialNumber, isOp
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Время начала</div>
-                  <div className="text-sm font-semibold">{mockData.startTime}</div>
+                  <div className="text-sm font-semibold">{startTime}</div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Время завершения</div>
-                  <div className="text-sm font-semibold">{mockData.endTime}</div>
+                  <div className="text-sm font-semibold">{endTime}</div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Начальный процент</div>
-                  <div className="text-sm font-semibold text-orange-600">{mockData.startSOC}%</div>
+                  <div className="text-sm font-semibold text-orange-600">
+                    {startSOC !== null && startSOC !== undefined ? `${startSOC}%` : 'Нет данных'}
+                  </div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Конечный процент</div>
-                  <div className="text-sm font-semibold text-green-600">{mockData.endSOC}%</div>
+                  <div className="text-sm font-semibold text-green-600">
+                    {endSOC !== null && endSOC !== undefined ? `${endSOC}%` : 'Нет данных'}
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Пиковая мощность</div>
-                  <div className="text-sm font-semibold text-blue-600">{mockData.peakPower.toFixed(1)} кВт</div>
+                  <div className="text-sm font-semibold text-blue-600">
+                    {peakPower !== null && peakPower !== undefined && peakPower > 0 ? `${peakPower.toFixed(1)} кВт` : 'Нет данных'}
+                  </div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Причина завершения</div>
-                  <div className="text-sm font-semibold">{transaction.reason}</div>
+                  <div className="text-sm font-semibold">{transaction.reason || 'Нет данных'}</div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Переданная энергия</div>
-                  <div className="text-sm font-semibold text-green-600">{transaction.energyKwh.toFixed(2)} кВт⋅ч</div>
+                  <div className="text-sm font-semibold text-green-600">
+                    {energyKwh > 0 ? `${energyKwh.toFixed(2)} кВт⋅ч` : 'Нет данных'}
+                  </div>
                 </CardContent>
               </Card>
               
               <Card>
                 <CardContent className="p-4">
                   <div className="text-xs text-gray-600 mb-1">Длительность</div>
-                  <div className="text-sm font-semibold">{mockData.duration}</div>
+                  <div className="text-sm font-semibold">{duration}</div>
                 </CardContent>
               </Card>
             </div>
