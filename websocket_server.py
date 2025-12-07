@@ -51,6 +51,14 @@ class StationData:
     connectors: List[Dict[str, Any]] = field(default_factory=list)
     energy_meter: Dict[str, Any] = field(default_factory=dict)
     
+    # Дополнительные поля для соответствия протоколу
+    ip_address: str = ''
+    ssh_port: int = 22
+    region: str = ''
+    created_at: str = ''
+    owner: str = ''
+    error_info: str = ''
+    
     # Статистика по транзакциям
     total_energy_kwh: float = 0.0
     total_sessions: int = 0
@@ -78,6 +86,7 @@ class MockDataGenerator:
         for i in range(1, count + 1):
             city = random.choice(self.cities)
             coords = self.coordinates[city][i % len(self.coordinates[city])]
+            created = datetime.now() - timedelta(days=random.randint(30, 365))
             
             station = StationData(
                 serial=f'{i:05d}',
@@ -89,6 +98,12 @@ class MockDataGenerator:
                 lon=coords[1],
                 station_status='connected',
                 energy_meter_status='ok',
+                ip_address=f'192.168.{random.randint(0, 255)}.{random.randint(1, 254)}',
+                ssh_port=22,
+                region=city,
+                created_at=created.strftime('%Y-%m-%d %H:%M:%S'),
+                owner='',
+                error_info='',
                 connectors=[
                     {'id': 1, 'status': 0, 'type': 2, 'delivered_power_w': 0, 'battery_soc': 0},
                     {'id': 2, 'status': 0, 'type': 1, 'delivered_power_w': 0, 'battery_soc': 0}
@@ -370,25 +385,38 @@ class WebSocketServer:
     # ===== Обработка запросов от фронтенда (port 10008) =====
     
     def get_all_stations(self, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
-        """Возвращает список всех станций"""
+        """Возвращает список всех станций с поддержкой фильтрации"""
         result = []
         for station in self.stations.values():
-            result.append({
+            station_dict = {
                 'id': station.id,
                 'station_id': station.serial,
                 'name': station.name,
                 'city': station.city,
-                'region': station.city,
+                'region': station.region,
                 'address': station.address,
                 'lat': station.lat,
                 'lon': station.lon,
+                'ip_address': station.ip_address,
+                'ssh_port': station.ssh_port,
+                'created_at': station.created_at,
+                'owner': station.owner,
                 'station_status': station.station_status,
-                'energy_meter_status': station.energy_meter_status,
-                'connectors': station.connectors,
-                'total_sessions': station.total_sessions,
-                'successful_sessions': station.successful_sessions,
-                'total_energy_kwh': station.total_energy_kwh
-            })
+                'error_info': station.error_info,
+                'connectors': station.connectors
+            }
+            
+            # Применяем фильтры (если есть)
+            if filters:
+                matches = True
+                for key, value in filters.items():
+                    if station_dict.get(key) != value:
+                        matches = False
+                        break
+                if not matches:
+                    continue
+            
+            result.append(station_dict)
         return result
     
     def get_station_by_id(self, station_id: int) -> Optional[Dict[str, Any]]:
@@ -402,17 +430,17 @@ class WebSocketServer:
             'station_id': station.serial,
             'name': station.name,
             'city': station.city,
-            'region': station.city,
+            'region': station.region,
             'address': station.address,
             'lat': station.lat,
             'lon': station.lon,
+            'ip_address': station.ip_address,
+            'ssh_port': station.ssh_port,
+            'created_at': station.created_at,
+            'owner': station.owner,
             'station_status': station.station_status,
-            'energy_meter_status': station.energy_meter_status,
-            'connectors': station.connectors,
-            'energy_meter': station.energy_meter,
-            'total_sessions': station.total_sessions,
-            'successful_sessions': station.successful_sessions,
-            'total_energy_kwh': station.total_energy_kwh
+            'error_info': station.error_info,
+            'connectors': station.connectors
         }
     
     def get_station_by_serial(self, serial: str) -> Optional[Dict[str, Any]]:
@@ -426,17 +454,17 @@ class WebSocketServer:
             'station_id': station.serial,
             'name': station.name,
             'city': station.city,
-            'region': station.city,
+            'region': station.region,
             'address': station.address,
             'lat': station.lat,
             'lon': station.lon,
+            'ip_address': station.ip_address,
+            'ssh_port': station.ssh_port,
+            'created_at': station.created_at,
+            'owner': station.owner,
             'station_status': station.station_status,
-            'energy_meter_status': station.energy_meter_status,
-            'connectors': station.connectors,
-            'energy_meter': station.energy_meter,
-            'total_sessions': station.total_sessions,
-            'successful_sessions': station.successful_sessions,
-            'total_energy_kwh': station.total_energy_kwh
+            'error_info': station.error_info,
+            'connectors': station.connectors
         }
     
     def get_station_stats(self, station_id: int) -> Optional[Dict[str, Any]]:
@@ -552,17 +580,35 @@ class WebSocketServer:
                 }
             
             else:
-                raise ValueError(f"Unknown action: {action}")
+                # Неизвестный action
+                error_response = {
+                    'type': 'error',
+                    'action': action,
+                    'requestId': request_id,
+                    'code': 'INVALID_ACTION',
+                    'message': 'Unknown action'
+                }
+                await websocket.send(json.dumps(error_response))
+                return
             
             await websocket.send(json.dumps(response))
         
         except ValueError as e:
+            # Определяем код ошибки
+            error_msg = str(e)
+            if 'required' in error_msg or 'must be' in error_msg:
+                error_code = 'INVALID_REQUEST'
+            elif 'not found' in error_msg.lower():
+                error_code = 'NOT_FOUND'
+            else:
+                error_code = 'INVALID_REQUEST'
+            
             error_response = {
                 'type': 'error',
                 'action': action,
                 'requestId': request_id,
-                'code': 'INVALID_REQUEST' if 'required' in str(e) else 'NOT_FOUND',
-                'message': str(e)
+                'code': error_code,
+                'message': error_msg
             }
             await websocket.send(json.dumps(error_response))
         except Exception as e:
@@ -609,12 +655,10 @@ class WebSocketServer:
             'action': 'stationUpdate',
             'data': {
                 'stationId': station.id,
-                'updates': {
+                'changes': {
                     'station_status': station.station_status,
-                    'connectors': station.connectors,
-                    'total_sessions': station.total_sessions,
-                    'successful_sessions': station.successful_sessions,
-                    'total_energy_kwh': station.total_energy_kwh
+                    'error_info': station.error_info,
+                    'connectors': station.connectors
                 }
             }
         }
