@@ -140,12 +140,49 @@ class WebSocketServer:
         
         # История транзакций для статистики: List[Dict]
         self.transactions: List[Dict[str, Any]] = []
+        self._generate_mock_transactions()
         
         # Подключенные клиенты
         self.frontend_clients = set()
         self.station_clients: Dict[str, WebSocketServerProtocol] = {}  # serial -> websocket
         
         logger.info(f"Инициализировано {len(self.stations)} станций")
+    
+    def _generate_mock_transactions(self):
+        """Генерирует фейковые транзакции для тестирования"""
+        reasons = ['EVDisconnected', 'Remote', 'Local', 'PowerLoss']
+        now = datetime.now()
+        
+        for station in self.stations.values():
+            for i in range(random.randint(5, 15)):
+                days_ago = random.uniform(0, 30)
+                timestamp = now - timedelta(days=days_ago)
+                
+                connector_id = random.choice([1, 2])
+                energy_kwh = random.uniform(2, 80)
+                duration_sec = int(random.uniform(600, 14400))
+                reason = random.choice(reasons)
+                is_successful = energy_kwh > 2.0 and reason != 'Local'
+                
+                meter_start = random.uniform(10000, 50000)
+                meter_stop = meter_start + (energy_kwh * 1000)
+                
+                transaction = {
+                    'station_serial': station.serial,
+                    'transaction_id': 1000 + len(self.transactions),
+                    'connector_id': connector_id,
+                    'start_ts': int(timestamp.timestamp()),
+                    'duration_sec': duration_sec,
+                    'energy_kwh': round(energy_kwh, 3),
+                    'stop_reason': reason,
+                    'is_successful': is_successful,
+                    'timestamp': timestamp.isoformat() + 'Z',
+                    'meter_start_wh': round(meter_start, 1),
+                    'meter_stop_wh': round(meter_stop, 1)
+                }
+                self.transactions.append(transaction)
+        
+        logger.info(f"Сгенерировано {len(self.transactions)} тестовых транзакций")
     
     def create_ssl_context(self) -> ssl.SSLContext:
         """Создает SSL контекст для WSS"""
@@ -320,6 +357,9 @@ class WebSocketServer:
         is_successful = energy_kwh > 2.0 and reason != 'Local'
         
         # Сохраняем транзакцию
+        meter_start = session.start_energy_wh if session else 0
+        meter_stop = final_energy
+        
         transaction = {
             'station_serial': serial,
             'transaction_id': transaction_id,
@@ -327,9 +367,11 @@ class WebSocketServer:
             'start_ts': session.start_ts if session else int(time.time()),
             'duration_sec': duration_sec,
             'energy_kwh': round(energy_kwh, 3),
-            'reason': reason,
+            'stop_reason': reason,
             'is_successful': is_successful,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat() + 'Z',
+            'meter_start_wh': meter_start,
+            'meter_stop_wh': meter_stop
         }
         self.transactions.append(transaction)
         
@@ -501,6 +543,68 @@ class WebSocketServer:
             'connectors': list(connector_stats.values())
         }
     
+    def get_station_transactions(
+        self, 
+        serial_number: str, 
+        from_time: Optional[str] = None, 
+        to_time: Optional[str] = None, 
+        limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """Возвращает список транзакций станции за период"""
+        from datetime import datetime, timedelta
+        
+        now = datetime.now()
+        
+        if from_time and to_time:
+            try:
+                start = datetime.fromisoformat(from_time.replace('Z', '+00:00'))
+                end = datetime.fromisoformat(to_time.replace('Z', '+00:00'))
+            except ValueError:
+                start = now - timedelta(hours=24)
+                end = now
+        elif from_time:
+            try:
+                start = datetime.fromisoformat(from_time.replace('Z', '+00:00'))
+                end = now
+            except ValueError:
+                start = now - timedelta(hours=24)
+                end = now
+        elif to_time:
+            try:
+                end = datetime.fromisoformat(to_time.replace('Z', '+00:00'))
+                start = end - timedelta(hours=24)
+            except ValueError:
+                start = now - timedelta(hours=24)
+                end = now
+        else:
+            start = now - timedelta(hours=24)
+            end = now
+        
+        filtered_transactions = [
+            t for t in self.transactions
+            if t['station_serial'] == serial_number
+            and start <= datetime.fromisoformat(t['timestamp'].replace('Z', '+00:00')) <= end
+        ]
+        
+        filtered_transactions.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        result = []
+        for t in filtered_transactions[:limit]:
+            result.append({
+                'time': t['timestamp'],
+                'connectorId': t['connector_id'],
+                'transactionId': t['transaction_id'],
+                'energyWh': round(t['energy_kwh'] * 1000, 1),
+                'energyKwh': round(t['energy_kwh'], 2),
+                'durationSec': t['duration_sec'],
+                'success': t['is_successful'],
+                'reason': t.get('stop_reason', 'Unknown'),
+                'meterStartWh': round(t.get('meter_start_wh', 0), 1),
+                'meterStopWh': round(t.get('meter_stop_wh', 0), 1)
+            })
+        
+        return result
+    
     async def handle_frontend_request(self, websocket: WebSocketServerProtocol, data: Dict[str, Any]):
         """Обработка запроса от фронтенда"""
         action = data.get('action')
@@ -577,6 +681,23 @@ class WebSocketServer:
                     'action': action,
                     'requestId': request_id,
                     'data': {'unsubscribed': True}
+                }
+            
+            elif action == 'getStationTransactions':
+                serial_number = data.get('serialNumber')
+                if not serial_number:
+                    raise ValueError("serialNumber is required")
+                
+                from_time = data.get('from')
+                to_time = data.get('to')
+                limit = data.get('limit', 100)
+                
+                transactions = self.get_station_transactions(serial_number, from_time, to_time, limit)
+                response = {
+                    'type': 'response',
+                    'action': action,
+                    'requestId': request_id,
+                    'data': {'transactions': transactions}
                 }
             
             else:

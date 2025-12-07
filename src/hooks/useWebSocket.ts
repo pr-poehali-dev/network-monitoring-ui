@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { wsService } from '@/services/websocket';
-import { StationData } from '@/types/websocket';
+import { StationData, Transaction } from '@/types/websocket';
 
 export function useWebSocket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -201,5 +201,43 @@ export function useStation(serialNumber: string | undefined) {
     loading,
     error,
     loadStation
+  };
+}
+
+export function useTransactions(serialNumber: string | undefined) {
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTransactions = useCallback(async (
+    from?: string,
+    to?: string,
+    limit: number = 50
+  ) => {
+    if (!serialNumber) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await wsService.getStationTransactions(serialNumber, from, to, limit);
+      setTransactions(data);
+    } catch (err) {
+      console.error('Error loading transactions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load transactions');
+      setTransactions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  return {
+    transactions,
+    loading,
+    error,
+    loadTransactions
   };
 }

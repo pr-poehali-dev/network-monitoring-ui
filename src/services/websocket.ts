@@ -265,16 +265,34 @@ export class WebSocketService {
     console.log('🔕 Unsubscribed from station updates');
   }
 
+  async getStationTransactions(
+    serialNumber: string,
+    from?: string,
+    to?: string,
+    limit?: number
+  ): Promise<any[]> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getStationTransactions',
+      serialNumber,
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+    if (limit) message.limit = limit;
+
+    const response = await this.sendMessage(message);
+    return response.data?.transactions || [];
+  }
+
   disconnect() {
-    console.log('🔌 Disconnecting WebSocket...');
-    this.reconnectAttempts = this.maxReconnectAttempts; // Останавливаем реконнекты
     if (this.ws) {
-      this.ws.close(1000, 'Client disconnect'); // Код 1000 = нормальное закрытие
+      this.ws.close(1000, 'Client disconnect');
       this.ws = null;
+      this.subscribed = false;
+      console.log('🔌 WebSocket disconnected');
     }
-    this.messageHandlers.clear();
-    this.messageQueue = [];
-    this.isConnecting = false;
   }
 
   isConnected(): boolean {
@@ -282,5 +300,4 @@ export class WebSocketService {
   }
 }
 
-// Singleton instance
 export const wsService = new WebSocketService('wss://eprom.online:10008');

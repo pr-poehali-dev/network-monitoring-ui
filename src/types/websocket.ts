@@ -28,10 +28,13 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
   filters?: {
     region?: string;
     station_status?: string;
@@ -70,4 +73,17 @@ export interface WSConnectionStatus {
   connected: boolean;
   reconnecting: boolean;
   error: string | null;
+}
+
+export interface Transaction {
+  time: string;
+  connectorId: number;
+  transactionId: number;
+  energyWh: number;
+  energyKwh: number;
+  durationSec: number;
+  success: boolean;
+  reason: string;
+  meterStartWh: number;
+  meterStopWh: number;
 }

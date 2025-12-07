@@ -45,16 +45,6 @@ interface LogEntry {
   message: string;
 }
 
-interface Transaction {
-  id: string;
-  connector: number;
-  energy: number;
-  duration: string;
-  status: string;
-  startTime: string;
-  endTime: string;
-}
-
 interface StationTabsProps {
   station: ChargingStation;
   mockLogs: LogEntry[];
@@ -67,18 +57,6 @@ interface StationTabsProps {
 
 export default function StationTabs({ station, mockLogs, activeTab, onTabChange, onAction, isStationOnline = true, stationData }: StationTabsProps) {
   const [selectedTransaction, setSelectedTransaction] = useState<string | null>(null);
-  
-  const mockTransactions: Transaction[] = [
-    { id: 'TXN001234', connector: 1, energy: 45.2, duration: '2ч 15м', status: 'Успешно завершена', startTime: '25.09.2025 14:30', endTime: '25.09.2025 16:45' },
-    { id: 'TXN001235', connector: 2, energy: 12.8, duration: '45м', status: 'Прервана пользователем', startTime: '25.09.2025 12:00', endTime: '25.09.2025 12:45' },
-    { id: 'TXN001236', connector: 1, energy: 78.5, duration: '3ч 20м', status: 'Автоматически', startTime: '24.09.2025 18:15', endTime: '24.09.2025 21:35' },
-    { id: 'TXN001237', connector: 3, energy: 25.1, duration: '1ч 10м', status: 'Ошибка связи', startTime: '24.09.2025 09:30', endTime: '24.09.2025 10:40' },
-    { id: 'TXN001238', connector: 2, energy: 92.7, duration: '4ч 5м', status: 'Успешно завершена', startTime: '23.09.2025 15:45', endTime: '23.09.2025 19:50' }
-  ];
-
-  const getTransactionById = (id: string): Transaction | null => {
-    return mockTransactions.find(t => t.id === id) || null;
-  };
 
   const handleTransactionClick = (transactionId: string) => {
     setSelectedTransaction(transactionId);
@@ -87,8 +65,6 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
   const handleModalClose = () => {
     setSelectedTransaction(null);
   };
-
-  const selectedTransactionData = selectedTransaction ? getTransactionById(selectedTransaction) : null;
 
   return (
     <>
@@ -111,7 +87,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsContent>
 
         <TabsContent value="transactions">
-          <TransactionsTab transactions={mockTransactions} onTransactionClick={handleTransactionClick} />
+          <TransactionsTab serialNumber={station.serialNumber} onTransactionClick={handleTransactionClick} />
         </TabsContent>
 
         <TabsContent value="settings">
@@ -146,11 +122,13 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsContent>
       </Tabs>
 
-      <TransactionDetailModal 
-        transaction={selectedTransactionData}
-        isOpen={!!selectedTransaction}
-        onClose={handleModalClose}
-      />
+      {selectedTransaction && (
+        <TransactionDetailModal 
+          transaction={null}
+          isOpen={true}
+          onClose={handleModalClose}
+        />
+      )}
     </>
   );
 }
