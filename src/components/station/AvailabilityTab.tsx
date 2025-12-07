@@ -29,13 +29,13 @@ export default function AvailabilityTab({ serialNumber }: AvailabilityTabProps) 
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+    const mins = Math.floor(minutes % 60);
     const secs = Math.floor((minutes - Math.floor(minutes)) * 60);
     
     if (hours > 0) {
-      return `${hours} час${hours > 1 ? 'а' : ''}, ${mins} минут${mins > 1 ? 'ы' : ''}`;
+      return `${hours} час${hours > 1 ? 'а' : ''}, ${mins.toFixed(0)} минут${mins > 1 ? 'ы' : ''}`;
     } else if (mins > 0) {
-      return `${mins} минут${mins > 1 ? 'ы' : ''}, ${secs} секунд${secs > 1 ? 'ы' : 'а'}`;
+      return `${mins.toFixed(0)} минут${mins > 1 ? 'ы' : ''}, ${secs} секунд${secs > 1 ? 'ы' : 'а'}`;
     } else {
       return `${secs} секунд${secs > 1 ? 'ы' : 'а'}`;
     }
@@ -220,10 +220,10 @@ export default function AvailabilityTab({ serialNumber }: AvailabilityTabProps) 
             <div className="font-medium text-gray-900">{tooltip.endTime}</div>
             <div className="mt-2 space-y-1">
               <div className="text-gray-700">
-                <span className="font-medium">Online:</span> {formatTime(tooltip.onlineMinutes)}
+                <span className="font-medium">Online:</span> {formatTime(Math.round(tooltip.onlineMinutes * 10) / 10)}
               </div>
               <div className="text-gray-700">
-                <span className="font-medium">Offline:</span> {formatTime(tooltip.offlineMinutes)}
+                <span className="font-medium">Offline:</span> {formatTime(Math.round(tooltip.offlineMinutes * 10) / 10)}
               </div>
             </div>
           </div>
