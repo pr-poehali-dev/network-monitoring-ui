@@ -125,6 +125,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
 
       <TransactionDetailModal 
         transaction={selectedTransaction}
+        serialNumber={station.serialNumber}
         isOpen={selectedTransaction !== null}
         onClose={handleModalClose}
       />

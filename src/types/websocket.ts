@@ -28,10 +28,11 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
+  transactionId?: string | number;
   from?: string;
   to?: string;
   limit?: number;
@@ -94,4 +95,35 @@ export interface UptimeBucket {
   to: string;
   onlineMs: number;
   offlineMs: number;
+}
+
+export interface MetricPoint {
+  time: string;
+  value: number;
+}
+
+export interface TransactionMetrics {
+  current: MetricPoint[];
+  voltage: MetricPoint[];
+  soc: MetricPoint[];
+  power: MetricPoint[];
+  energy: MetricPoint[];
+}
+
+export interface TransactionDetails {
+  transaction: {
+    serialNumber: string;
+    transactionId: string;
+    connectorId: string | null;
+    startTime: string;
+    endTime: string;
+    durationSec: number;
+    startSoc: number | null;
+    endSoc: number | null;
+    peakPowerKw: number;
+    energyKwh: number;
+    reason: string;
+    success: boolean;
+  };
+  metrics: TransactionMetrics;
 }

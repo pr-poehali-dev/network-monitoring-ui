@@ -307,6 +307,22 @@ export class WebSocketService {
     return response.data?.buckets || [];
   }
 
+  async getTransactionDetails(
+    serialNumber: string,
+    transactionId: string | number
+  ): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getTransactionDetails',
+      serialNumber,
+      transactionId,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response.data || null;
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
