@@ -1,2 +1,0 @@
-# WebSocket сервер для тестирования
-websockets==12.0
