@@ -110,7 +110,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsContent>
 
         <TabsContent value="availability">
-          <AvailabilityTab />
+          <AvailabilityTab serialNumber={station.serialNumber} />
         </TabsContent>
 
         <TabsContent value="input-meter">

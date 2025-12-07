@@ -241,3 +241,41 @@ export function useTransactions(serialNumber: string | undefined) {
     loadTransactions
   };
 }
+
+export function useUptimeBuckets(serialNumber: string | undefined) {
+  const [buckets, setBuckets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadBuckets = useCallback(async (
+    from?: string,
+    to?: string,
+    bucketMinutes: number = 120
+  ) => {
+    if (!serialNumber) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await wsService.getStationUptimeBuckets(serialNumber, from, to, bucketMinutes);
+      setBuckets(data);
+    } catch (err) {
+      console.error('Error loading uptime buckets:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load uptime data');
+      setBuckets([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  return {
+    buckets,
+    loading,
+    error,
+    loadBuckets
+  };
+}

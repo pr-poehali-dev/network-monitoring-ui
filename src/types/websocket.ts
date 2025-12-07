@@ -28,13 +28,14 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
   from?: string;
   to?: string;
   limit?: number;
+  bucketMinutes?: number;
   filters?: {
     region?: string;
     station_status?: string;
@@ -86,4 +87,11 @@ export interface Transaction {
   reason: string;
   meterStartWh: number;
   meterStopWh: number;
+}
+
+export interface UptimeBucket {
+  from: string;
+  to: string;
+  onlineMs: number;
+  offlineMs: number;
 }

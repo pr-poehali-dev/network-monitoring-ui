@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import { useUptimeBuckets } from '@/hooks/useWebSocket';
 
 interface TooltipData {
   interval: number;
@@ -12,8 +13,19 @@ interface TooltipData {
   y: number;
 }
 
-export default function AvailabilityTab() {
+interface AvailabilityTabProps {
+  serialNumber: string;
+}
+
+export default function AvailabilityTab({ serialNumber }: AvailabilityTabProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const { buckets, loading, loadBuckets } = useUptimeBuckets(serialNumber);
+
+  useEffect(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    loadBuckets(weekAgo.toISOString(), now.toISOString(), 120);
+  }, [loadBuckets]);
 
   const formatTime = (minutes: number) => {
     const hours = Math.floor(minutes / 60);
@@ -29,6 +41,30 @@ export default function AvailabilityTab() {
     }
   };
 
+  const totalOnlineMs = buckets.reduce((sum, b) => sum + b.onlineMs, 0);
+  const totalOfflineMs = buckets.reduce((sum, b) => sum + b.offlineMs, 0);
+  const totalMs = totalOnlineMs + totalOfflineMs;
+  const availabilityPercent = totalMs > 0 ? ((totalOnlineMs / totalMs) * 100).toFixed(3) : '0.000';
+
+  const formatDuration = (ms: number) => {
+    const hours = Math.floor(ms / 3600000);
+    const minutes = Math.floor((ms % 3600000) / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardContent className="py-12">
+            <div className="text-center text-gray-500">Загрузка данных...</div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -43,19 +79,19 @@ export default function AvailabilityTab() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-left">
               <div className="text-sm text-gray-600 mb-2">ДОСТУПНОСТЬ</div>
-              <div className="text-3xl font-bold text-gray-900">79.547 %</div>
+              <div className="text-3xl font-bold text-gray-900">{availabilityPercent} %</div>
             </div>
             <div className="text-left">
               <div className="text-sm text-gray-600 mb-2">ВРЕМЯ OFFLINE</div>
-              <div className="text-3xl font-bold text-red-600">34:28:54</div>
+              <div className="text-3xl font-bold text-red-600">{formatDuration(totalOfflineMs)}</div>
             </div>
             <div className="text-left">
               <div className="text-sm text-gray-600 mb-2">ВРЕМЯ ONLINE</div>
-              <div className="text-3xl font-bold text-green-600">134:06:34</div>
+              <div className="text-3xl font-bold text-green-600">{formatDuration(totalOnlineMs)}</div>
             </div>
             <div className="text-left">
               <div className="text-sm text-gray-600 mb-2">ОБЩЕЕ ВРЕМЯ</div>
-              <div className="text-3xl font-bold text-gray-900">168:35:29</div>
+              <div className="text-3xl font-bold text-gray-900">{formatDuration(totalMs)}</div>
             </div>
           </div>
 
@@ -75,23 +111,9 @@ export default function AvailabilityTab() {
               {/* График */}
               <div className="ml-8">
                 <div className="flex items-end h-48 gap-px relative">
-                  {/* Данные за неделю - каждая полоска представляет 2 часа */}
-                  {Array.from({ length: 84 }, (_, i) => {
-                    // Каждый интервал = 2 часа (168 часов / 2 = 84 интервала)
-                    const day = Math.floor(i / 12); // 12 интервалов по 2 часа в сутках
-                    const intervalInDay = i % 12;
-                    const startHour = intervalInDay * 2;
-                    
-                    // Дата начала недели (19 сентября)
-                    const baseDate = new Date(2025, 8, 19); // месяц 8 = сентябрь (0-indexed)
-                    const currentDate = new Date(baseDate);
-                    currentDate.setDate(baseDate.getDate() + day);
-                    currentDate.setHours(startHour, 0, 0, 0);
-                    
-                    const endDate = new Date(currentDate);
-                    endDate.setHours(startHour + 2, 0, 0, 0);
-                    
-                    const formatDateTime = (date: Date) => {
+                  {buckets.map((bucket, i) => {
+                    const formatDateTime = (isoString: string) => {
+                      const date = new Date(isoString);
                       const day = String(date.getDate()).padStart(2, '0');
                       const month = String(date.getMonth() + 1).padStart(2, '0');
                       const year = date.getFullYear();
@@ -101,44 +123,12 @@ export default function AvailabilityTab() {
                       return `${day}.${month}.${year}, ${hour}:${minute}:${second}`;
                     };
                     
-                    // Симуляция данных доступности для 2-часового интервала
-                    let onlineMinutes = 120; // По умолчанию весь интервал online
-                    let offlineMinutes = 0;
+                    const onlineMinutes = bucket.onlineMs / 60000;
+                    const offlineMinutes = bucket.offlineMs / 60000;
+                    const totalMinutes = onlineMinutes + offlineMinutes;
                     
-                    // 22 сентября (день 3) - пример с частичным сбоем 13:00-15:00
-                    if (day === 3 && startHour === 12) {
-                      // 13:00-15:00 - частичный сбой (как на скриншоте)
-                      onlineMinutes = 67; // 1 час 7 минут
-                      offlineMinutes = 53; // 53 минуты
-                    }
-                    // 20 сентября (день 1) - сбой с 18:00 до 21:00 (3 часа)
-                    else if (day === 1 && startHour >= 18 && startHour < 22) {
-                      if (startHour === 18) {
-                        // 18:00-20:00 - полностью offline
-                        onlineMinutes = 0;
-                        offlineMinutes = 120;
-                      } else if (startHour === 20) {
-                        // 20:00-22:00 - 1 час offline, 1 час online
-                        onlineMinutes = 60;
-                        offlineMinutes = 60;
-                      }
-                    }
-                    // 22 сентября (день 3) - другие интервалы с долгим сбоем
-                    else if (day === 3 && startHour >= 8 && startHour < 20 && startHour !== 12) {
-                      onlineMinutes = 0;
-                      offlineMinutes = 120;
-                    }
-                    // 24 сентября (день 5) - короткие сбои 14:00-16:00 и 20:00-22:00
-                    else if (day === 5) {
-                      if (startHour === 14 || startHour === 20) {
-                        onlineMinutes = 0;
-                        offlineMinutes = 120;
-                      }
-                    }
-                    
-                    // Расчет высоты частей (от 0 до 100%)
-                    const onlinePercent = (onlineMinutes / 120) * 100;
-                    const offlinePercent = (offlineMinutes / 120) * 100;
+                    const onlinePercent = totalMinutes > 0 ? (onlineMinutes / totalMinutes) * 100 : 0;
+                    const offlinePercent = totalMinutes > 0 ? (offlineMinutes / totalMinutes) * 100 : 0;
                     
                     return (
                       <div
@@ -149,8 +139,8 @@ export default function AvailabilityTab() {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setTooltip({
                             interval: i,
-                            startTime: formatDateTime(currentDate),
-                            endTime: formatDateTime(endDate),
+                            startTime: formatDateTime(bucket.from),
+                            endTime: formatDateTime(bucket.to),
                             onlineMinutes,
                             offlineMinutes,
                             x: rect.left + rect.width / 2,
@@ -180,14 +170,22 @@ export default function AvailabilityTab() {
                 
                 {/* Ось X с датами */}
                 <div className="flex justify-between mt-2 text-xs text-gray-500">
-                  <span>19 сент.</span>
-                  <span>20 сент.</span>
-                  <span>21 сент.</span>
-                  <span>22 сент.</span>
-                  <span>23 сент.</span>
-                  <span>24 сент.</span>
-                  <span>25 сент.</span>
-                  <span>26 сент.</span>
+                  {buckets.length > 0 && (() => {
+                    const days: string[] = [];
+                    let lastDate = '';
+                    const monthNames = ['янв.', 'фев.', 'мар.', 'апр.', 'мая', 'июн.', 'июл.', 'авг.', 'сен.', 'окт.', 'ноя.', 'дек.'];
+                    
+                    buckets.forEach((bucket) => {
+                      const date = new Date(bucket.from);
+                      const dateStr = `${date.getDate()} ${monthNames[date.getMonth()]}`;
+                      if (dateStr !== lastDate) {
+                        days.push(dateStr);
+                        lastDate = dateStr;
+                      }
+                    });
+                    
+                    return days.map((day, idx) => <span key={idx}>{day}</span>);
+                  })()}
                 </div>
               </div>
             </div>

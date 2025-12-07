@@ -286,6 +286,27 @@ export class WebSocketService {
     return response.data?.transactions || [];
   }
 
+  async getStationUptimeBuckets(
+    serialNumber: string,
+    from?: string,
+    to?: string,
+    bucketMinutes: number = 120
+  ): Promise<any[]> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getStationUptimeBuckets',
+      serialNumber,
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+    message.bucketMinutes = bucketMinutes;
+
+    const response = await this.sendMessage(message);
+    return response.data?.buckets || [];
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
