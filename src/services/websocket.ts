@@ -323,6 +323,18 @@ export class WebSocketService {
     return response.data || null;
   }
 
+  async getRectifiersStatus(serialNumber: string): Promise<any[]> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getRectifiersStatus',
+      serialNumber,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response.data?.modules || [];
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');

@@ -28,7 +28,7 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
@@ -126,4 +126,30 @@ export interface TransactionDetails {
     success: boolean;
   };
   metrics: TransactionMetrics;
+}
+
+export interface RectifierModule {
+  moduleId: string;
+  time: string;
+  temperatureC: number;
+  voltageSet: number;
+  currentSet: number;
+  voltageOut: number;
+  currentOut: number;
+  moduleFault: boolean;
+  moduleProtection: boolean;
+  sciCommunicationFailureInModule: boolean;
+  inputModeDetectionError: boolean;
+  dcdcOvervoltage: boolean;
+  abnormalPfcVoltage: boolean;
+  acOvervoltage: boolean;
+  acUndervoltage: boolean;
+  canCommunicationFailure: boolean;
+  temperatureLimitedPower: boolean;
+  acPowerLimit: boolean;
+  shortCircuitToDcdc: boolean;
+  dcdcOvertemperature: boolean;
+  dcdcOutputOvervoltage: boolean;
+  notConnect: boolean;
+  isOn: boolean;
 }

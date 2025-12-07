@@ -1,246 +1,103 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import { wsService } from '@/services/websocket';
+import { RectifierModule } from '@/types/websocket';
 
-interface RectifierStatus {
-  id: string;
-  name: string;
-  temperature: number;
-  isDisabled: boolean;
-  faults: {
-    moduleFault: boolean;
-    moduleProtection: boolean;
-    sciCommunicationFailure: boolean;
-    inputModeDetectionError: boolean;
-    fanFailure: boolean;
-    canCommunicationFailure: boolean;
-    abnormalPFCVoltage: boolean;
-    moduleUnevenness: boolean;
-    shortCircuitToDCDC: boolean;
-    dcDcOnOffStatus: boolean;
-    temperatureLimitedPower: boolean;
-    acPowerLimit: boolean;
-    acOvervoltage: boolean;
-    acUndervoltage: boolean;
-    dcDcOutputOvervoltage: boolean;
-    dcDcOvervoltage: boolean;
-    dcDcOvertemperature: boolean;
-    modulePowerLimit: boolean;
-    noConnection: boolean;
-  };
+interface RectifiersTabProps {
+  serialNumber: string;
 }
 
-export default function RectifiersTab() {
-  // Имитация данных по модулям выпрямителей
-  const rectifiers: RectifierStatus[] = [
-    {
-      id: 'PM1',
-      name: 'PM1',
-      temperature: 25.1,
-      isDisabled: false,
-      faults: {
-        moduleFault: false,
-        moduleProtection: false,
-        sciCommunicationFailure: false,
-        inputModeDetectionError: false,
-        fanFailure: false,
-        canCommunicationFailure: false,
-        abnormalPFCVoltage: false,
-        moduleUnevenness: false,
-        shortCircuitToDCDC: false,
-        dcDcOnOffStatus: false,
-        temperatureLimitedPower: false,
-        acPowerLimit: false,
-        acOvervoltage: false,
-        acUndervoltage: false,
-        dcDcOutputOvervoltage: false,
-        dcDcOvervoltage: false,
-        dcDcOvertemperature: false,
-        modulePowerLimit: false,
-        noConnection: false
-      }
-    },
-    {
-      id: 'PM2',
-      name: 'PM2',
-      temperature: 25.3,
-      isDisabled: false,
-      faults: {
-        moduleFault: false,
-        moduleProtection: false,
-        sciCommunicationFailure: false,
-        inputModeDetectionError: false,
-        fanFailure: false,
-        canCommunicationFailure: false,
-        abnormalPFCVoltage: false,
-        moduleUnevenness: false,
-        shortCircuitToDCDC: false,
-        dcDcOnOffStatus: false,
-        temperatureLimitedPower: false,
-        acPowerLimit: false,
-        acOvervoltage: false,
-        acUndervoltage: false,
-        dcDcOutputOvervoltage: false,
-        dcDcOvervoltage: false,
-        dcDcOvertemperature: false,
-        modulePowerLimit: false,
-        noConnection: false
-      }
-    },
-    {
-      id: 'PM3',
-      name: 'PM3',
-      temperature: 24.3,
-      isDisabled: false,
-      faults: {
-        moduleFault: false,
-        moduleProtection: false,
-        sciCommunicationFailure: false,
-        inputModeDetectionError: false,
-        fanFailure: false,
-        canCommunicationFailure: false,
-        abnormalPFCVoltage: false,
-        moduleUnevenness: false,
-        shortCircuitToDCDC: false,
-        dcDcOnOffStatus: false,
-        temperatureLimitedPower: false,
-        acPowerLimit: false,
-        acOvervoltage: false,
-        acUndervoltage: false,
-        dcDcOutputOvervoltage: false,
-        dcDcOvervoltage: false,
-        dcDcOvertemperature: false,
-        modulePowerLimit: false,
-        noConnection: false
-      }
-    },
-    {
-      id: 'PM4',
-      name: 'PM4',
-      temperature: 23.3,
-      isDisabled: true, // Этот модуль отключен
-      faults: {
-        moduleFault: false,
-        moduleProtection: false,
-        sciCommunicationFailure: false,
-        inputModeDetectionError: false,
-        fanFailure: false,
-        canCommunicationFailure: false,
-        abnormalPFCVoltage: false,
-        moduleUnevenness: false,
-        shortCircuitToDCDC: false,
-        dcDcOnOffStatus: false,
-        temperatureLimitedPower: false,
-        acPowerLimit: false,
-        acOvervoltage: false,
-        acUndervoltage: false,
-        dcDcOutputOvervoltage: false,
-        dcDcOvervoltage: false,
-        dcDcOvertemperature: false,
-        modulePowerLimit: false,
-        noConnection: true // Нет связи
-      }
-    },
-    {
-      id: 'PM5',
-      name: 'PM5',
-      temperature: 21.7,
-      isDisabled: false,
-      faults: {
-        moduleFault: false,
-        moduleProtection: false,
-        sciCommunicationFailure: false,
-        inputModeDetectionError: false,
-        fanFailure: false,
-        canCommunicationFailure: false,
-        abnormalPFCVoltage: false,
-        moduleUnevenness: false,
-        shortCircuitToDCDC: false,
-        dcDcOnOffStatus: false,
-        temperatureLimitedPower: false,
-        acPowerLimit: false,
-        acOvervoltage: false,
-        acUndervoltage: false,
-        dcDcOutputOvervoltage: false,
-        dcDcOvervoltage: false,
-        dcDcOvertemperature: false,
-        modulePowerLimit: false,
-        noConnection: false
-      }
-    }
-  ];
+export default function RectifiersTab({ serialNumber }: RectifiersTabProps) {
+  const [modules, setModules] = useState<RectifierModule[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const statusRows = [
-    { key: 'temperature', label: 'Температура °C', isTemperature: true },
-    { key: 'isDisabled', label: 'Отключен', isStatus: true },
-    { key: 'moduleFault', label: 'Module Fault' },
-    { key: 'moduleProtection', label: 'Module Protection' },
-    { key: 'sciCommunicationFailure', label: 'SCI Communication Failure in Module' },
-    { key: 'inputModeDetectionError', label: 'Input Mode Detection Error' },
-    { key: 'fanFailure', label: 'Fan Failure' },
-    { key: 'canCommunicationFailure', label: 'CAN Communication Failure' },
-    { key: 'abnormalPFCVoltage', label: 'Abnormal PFC Voltage' },
-    { key: 'moduleUnevenness', label: 'Module Unevenness' },
-    { key: 'shortCircuitToDCDC', label: 'Short Circuit to DC/DC' },
-    { key: 'dcDcOnOffStatus', label: 'DC/DC On/Off Status' },
-    { key: 'temperatureLimitedPower', label: 'Temperature Limited Power' },
-    { key: 'acPowerLimit', label: 'AC Power Limit' },
-    { key: 'acOvervoltage', label: 'AC Overvoltage' },
-    { key: 'acUndervoltage', label: 'AC Undervoltage' },
-    { key: 'dcDcOutputOvervoltage', label: 'DC/DC Output Overvoltage' },
-    { key: 'dcDcOvervoltage', label: 'DC/DC Overvoltage' },
-    { key: 'dcDcOvertemperature', label: 'DC/DC Overtemperature' },
-    { key: 'modulePowerLimit', label: 'Module Power Limit' },
-    { key: 'noConnection', label: 'Нет связи' }
-  ];
+  useEffect(() => {
+    loadRectifiers();
+  }, [serialNumber]);
 
-  const getStatusValue = (rectifier: RectifierStatus, key: string) => {
-    if (key === 'temperature') {
-      return rectifier.temperature;
+  const loadRectifiers = async () => {
+    setLoading(true);
+    try {
+      const data = await wsService.getRectifiersStatus(serialNumber);
+      setModules(data);
+    } catch (err) {
+      console.error('Error loading rectifiers:', err);
+    } finally {
+      setLoading(false);
     }
-    if (key === 'isDisabled') {
-      return rectifier.isDisabled;
-    }
-    return rectifier.faults[key as keyof typeof rectifier.faults];
   };
 
-  const getTemperatureColor = (temp: number, isDisabled: boolean) => {
-    if (isDisabled) return 'text-gray-500';
+  const statusRows = [
+    { key: 'temperatureC', label: 'Температура °C', isTemperature: true },
+    { key: 'isOn', label: 'Отключен / ON / OFF', isStatus: true },
+    { key: 'moduleFault', label: 'Module Fault' },
+    { key: 'moduleProtection', label: 'Module Protection' },
+    { key: 'sciCommunicationFailureInModule', label: 'SCI Communication Failure in Module' },
+    { key: 'inputModeDetectionError', label: 'Input Mode Detection Error' },
+    { key: 'dcdcOvervoltage', label: 'DC/DC Overvoltage' },
+    { key: 'abnormalPfcVoltage', label: 'Abnormal PFC Voltage' },
+    { key: 'acOvervoltage', label: 'AC Overvoltage' },
+    { key: 'acUndervoltage', label: 'AC Undervoltage' },
+    { key: 'canCommunicationFailure', label: 'CAN Communication Failure' },
+    { key: 'temperatureLimitedPower', label: 'Temperature Limited Power' },
+    { key: 'acPowerLimit', label: 'AC Power Limit' },
+    { key: 'shortCircuitToDcdc', label: 'Short Circuit to DC/DC' },
+    { key: 'dcdcOvertemperature', label: 'DC/DC Overtemperature' },
+    { key: 'dcdcOutputOvervoltage', label: 'DC/DC Output Overvoltage' },
+    { key: 'notConnect', label: 'Нет связи' }
+  ];
+
+  const getStatusValue = (module: RectifierModule, key: string) => {
+    return module[key as keyof RectifierModule];
+  };
+
+  const getTemperatureColor = (temp: number, notConnect: boolean) => {
+    if (notConnect) return 'text-gray-500';
     if (temp >= 30) return 'text-red-600';
     if (temp >= 25) return 'text-orange-600';
     return 'text-green-600';
   };
 
-  const StatusCell = ({ value, isTemperature, isStatus, isDisabled }: { 
+  const StatusCell = ({ value, isTemperature, isStatus, notConnect }: { 
     value: boolean | number; 
     isTemperature?: boolean; 
     isStatus?: boolean;
-    isDisabled?: boolean;
+    notConnect?: boolean;
   }) => {
     if (isTemperature) {
       return (
-        <div className={`font-mono text-sm font-semibold ${getTemperatureColor(value as number, isDisabled || false)}`}>
+        <div className={`font-mono text-sm font-semibold ${getTemperatureColor(value as number, notConnect || false)}`}>
           {(value as number).toFixed(1)}
         </div>
       );
     }
 
     if (isStatus) {
+      if (notConnect) {
+        return (
+          <div className="flex justify-center">
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+              НЕТ СВЯЗИ
+            </div>
+          </div>
+        );
+      }
       return (
         <div className="flex justify-center">
           {value ? (
-            <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
-              OFF
-            </div>
-          ) : (
             <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
               ON
+            </div>
+          ) : (
+            <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+              OFF
             </div>
           )}
         </div>
       );
     }
 
-    // Для обычных статусов - круглые индикаторы
     return (
       <div className="flex justify-center">
         {value ? (
@@ -252,59 +109,66 @@ export default function RectifiersTab() {
     );
   };
 
+  if (loading) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center text-gray-500">Загрузка данных...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (modules.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12">
+          <div className="text-center text-gray-500">Нет данных о выпрямителях</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Заголовок */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Icon name="Cpu" size={20} />
-            Состояние модулей выпрямителей
+            <Icon name="Zap" size={20} />
+            Состояние выпрямителей
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-sm text-gray-600">
-            Диагностическая таблица показывает текущее состояние всех выпрямительных модулей и их параметры.
-            Зеленые индикаторы означают нормальное состояние, красные - наличие проблемы.
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Стилизованная таблица */}
-      <Card>
-        <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              {/* Заголовок таблицы */}
+            <table className="w-full">
               <thead>
-                <tr className="bg-gray-50 border-b-2 border-gray-200">
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700 min-w-[180px] text-sm">
+                <tr className="border-b-2 border-gray-300">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
                     Параметр
                   </th>
-                  {rectifiers.map((rectifier) => (
-                    <th key={rectifier.id} className="px-2 py-2 text-center font-semibold text-gray-700 min-w-[70px] text-sm">
-                      {rectifier.name}
+                  {modules.map((module) => (
+                    <th key={module.moduleId} className="text-center py-3 px-4 text-sm font-semibold text-gray-700">
+                      PM{module.moduleId}
                     </th>
                   ))}
                 </tr>
               </thead>
-
-              {/* Строки данных */}
               <tbody>
-                {statusRows.map((row, rowIndex) => (
-                  <tr key={row.key} className={`border-b border-gray-100 hover:bg-gray-25 ${
-                    rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                  }`}>
-                    <td className="px-3 py-2 font-medium text-gray-700 text-sm">
+                {statusRows.map((row, idx) => (
+                  <tr 
+                    key={row.key} 
+                    className={`border-b ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
+                  >
+                    <td className="py-3 px-4 text-sm font-medium text-gray-700">
                       {row.label}
                     </td>
-                    {rectifiers.map((rectifier) => (
-                      <td key={rectifier.id} className="px-2 py-2 text-center">
+                    {modules.map((module) => (
+                      <td key={module.moduleId} className="py-3 px-4 text-center">
                         <StatusCell 
-                          value={getStatusValue(rectifier, row.key)}
+                          value={getStatusValue(module, row.key) as boolean | number} 
                           isTemperature={row.isTemperature}
                           isStatus={row.isStatus}
-                          isDisabled={rectifier.isDisabled}
+                          notConnect={module.notConnect}
                         />
                       </td>
                     ))}
@@ -316,45 +180,45 @@ export default function RectifiersTab() {
         </CardContent>
       </Card>
 
-      {/* Легенда */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Icon name="Info" size={20} />
-            Обозначения
+            Легенда
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <h4 className="font-semibold text-gray-800">Статусы неисправностей:</h4>
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-green-500 rounded-full border border-green-300 shadow-sm"></div>
-                <span className="text-sm">Нормальное состояние</span>
+                <div className="w-3 h-3 bg-green-500 rounded-full border border-green-300"></div>
+                <span className="text-sm text-gray-700">Нет проблем / Норма</span>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-red-500 rounded-full border border-red-300 shadow-sm"></div>
-                <span className="text-sm">Обнаружена проблема</span>
+                <div className="w-3 h-3 bg-red-500 rounded-full border border-red-300"></div>
+                <span className="text-sm text-gray-700">Ошибка / Проблема</span>
               </div>
             </div>
-
             <div className="space-y-3">
-              <h4 className="font-semibold text-gray-800">Состояние модуля:</h4>
               <div className="flex items-center gap-3">
                 <div className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
                   ON
                 </div>
-                <span className="text-sm">Модуль включен</span>
+                <span className="text-sm text-gray-700">Модуль включен</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
                   OFF
                 </div>
-                <span className="text-sm">Модуль отключен</span>
+                <span className="text-sm text-gray-700">Модуль выключен</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                  НЕТ СВЯЗИ
+                </div>
+                <span className="text-sm text-gray-700">Нет связи с модулем</span>
               </div>
             </div>
-
-
           </div>
         </CardContent>
       </Card>
