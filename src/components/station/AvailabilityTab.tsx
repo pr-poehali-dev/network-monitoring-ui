@@ -202,25 +202,6 @@ export default function AvailabilityTab({ serialNumber }: AvailabilityTabProps) 
               </div>
             </div>
           </div>
-
-          {/* Статистика сбоев */}
-          <div className="pt-4 border-t">
-            <h4 className="font-semibold mb-4">Статистика сбоев</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600 mb-1">4</div>
-                <div className="text-sm text-gray-600">Количество сбоев</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600 mb-1">8ч 37м</div>
-                <div className="text-sm text-gray-600">Средняя длительность</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-700 mb-1">12ч 45м</div>
-                <div className="text-sm text-gray-600">Самый долгий сбой</div>
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
