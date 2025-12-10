@@ -335,18 +335,6 @@ export class WebSocketService {
     return response.data?.modules || [];
   }
 
-  async getStationLogDates(serialNumber: string): Promise<string[]> {
-    const message: WSClientMessage = {
-      type: 'request',
-      action: 'getStationLogDates',
-      serialNumber,
-      requestId: ''
-    };
-
-    const response = await this.sendMessage(message);
-    return response.data?.dates || [];
-  }
-
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
