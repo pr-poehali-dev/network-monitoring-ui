@@ -370,6 +370,25 @@ export class WebSocketService {
     };
   }
 
+  async getStationStatistics(
+    serialNumber: string,
+    from?: string,
+    to?: string
+  ): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getStationStatistics',
+      serialNumber,
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+
+    const response = await this.sendMessage(message);
+    return response.data || null;
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
