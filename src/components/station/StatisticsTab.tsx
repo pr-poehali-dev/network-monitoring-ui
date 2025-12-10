@@ -166,6 +166,8 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
 
   const { summary, connectors } = statistics;
 
+  const hasData = summary.totalSessions > 0;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -234,7 +236,16 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {!hasData ? (
+            <div className="py-12 text-center space-y-3">
+              <Icon name="DatabaseZap" size={48} className="mx-auto text-gray-400" />
+              <p className="text-gray-600 font-medium">Нет данных за выбранный период</p>
+              <p className="text-sm text-gray-500">
+                За период с {formatDateTime(summary.from)} по {formatDateTime(summary.to)} не зафиксировано транзакций
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2 text-blue-700 mb-2">
                 <Icon name="Zap" size={18} />
@@ -305,11 +316,13 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
               <div className="text-2xl font-bold text-cyan-900">{summary.successRatePct.toFixed(1)}%</div>
             </div>
           </div>
+          )}
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-        {connectors.map((connector) => (
+      {hasData && connectors.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {connectors.map((connector) => (
           <Card key={connector.connectorId}>
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -369,8 +382,9 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
