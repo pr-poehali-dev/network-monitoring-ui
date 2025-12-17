@@ -15,7 +15,7 @@ import { getStationStatus, getStatusLabel } from '@/utils/station';
 export default function Index() {
   const [searchQuery, setSearchQuery] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive' | 'error'>('all');
   const [clustering, setClustering] = useState(true);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -40,8 +40,9 @@ export default function Index() {
     
     const stationStatus = getStationStatus(station);
     const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && stationStatus === 'online') ||
-      (statusFilter === 'inactive' && stationStatus === 'offline');
+      (statusFilter === 'active' && (stationStatus === 'online' || stationStatus === 'error')) ||
+      (statusFilter === 'inactive' && stationStatus === 'offline') ||
+      (statusFilter === 'error' && stationStatus === 'error');
     
     return matchesSearch && matchesRegion && matchesStatus;
   });
@@ -53,8 +54,12 @@ export default function Index() {
     }
   };
 
-  const activeStationsCount = stations.filter(s => getStationStatus(s) === 'online').length;
+  const activeStationsCount = stations.filter(s => {
+    const status = getStationStatus(s);
+    return status === 'online' || status === 'error';
+  }).length;
   const inactiveStationsCount = stations.filter(s => getStationStatus(s) === 'offline').length;
+  const errorStationsCount = stations.filter(s => getStationStatus(s) === 'error').length;
 
   return (
     <Layout>
@@ -64,7 +69,7 @@ export default function Index() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Мониторинг ЭЗС</h1>
               <p className="text-sm text-gray-500 mt-1">
-                Всего станций: {stations.length} | Активных: {activeStationsCount} | Неактивных: {inactiveStationsCount}
+                Всего станций: {stations.length} | Активных: {activeStationsCount} | Неактивных: {inactiveStationsCount} | В ошибке: {errorStationsCount}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -119,6 +124,14 @@ export default function Index() {
                 onClick={() => setStatusFilter('active')}
               >
                 Активные
+              </Button>
+              <Button
+                variant={statusFilter === 'error' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter('error')}
+                className={statusFilter === 'error' ? 'bg-red-600 hover:bg-red-700' : ''}
+              >
+                В ошибке
               </Button>
               <Button
                 variant={statusFilter === 'inactive' ? 'default' : 'outline'}
