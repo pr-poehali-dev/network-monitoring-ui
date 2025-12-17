@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -9,6 +10,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { wsService } from '@/services/websocket';
@@ -41,8 +50,20 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [addingStation, setAddingStation] = useState<string | null>(null);
+  const [addingStation, setAddingStation] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<UnknownStation | null>(null);
   const { toast } = useToast();
+  
+  const [formData, setFormData] = useState({
+    name: '',
+    serialNumber: '',
+    lat: '',
+    lon: '',
+    region: '',
+    address: '',
+    ipAddress: '',
+  });
 
   const loadUnknownStations = async () => {
     setLoading(true);
@@ -93,22 +114,44 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
     });
   };
 
-  const handleAddStation = async (station: UnknownStation) => {
-    setAddingStation(station.serialNumber);
+  const handleOpenAddDialog = (station: UnknownStation) => {
+    setSelectedStation(station);
+    setFormData({
+      name: `ЭЗС ${station.serialNumber}`,
+      serialNumber: station.serialNumber,
+      lat: '',
+      lon: '',
+      region: '',
+      address: '',
+      ipAddress: station.ip || '',
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleAddStation = async () => {
+    if (!selectedStation) return;
+    
+    setAddingStation(true);
     
     try {
       const result = await wsService.saveStation({
-        serialNumber: station.serialNumber,
-        name: `ЭЗС ${station.serialNumber}`,
-        ipAddress: station.ip || undefined,
+        serialNumber: formData.serialNumber,
+        name: formData.name || undefined,
+        address: formData.address || undefined,
+        region: formData.region || undefined,
+        ipAddress: formData.ipAddress || undefined,
+        lat: formData.lat ? parseFloat(formData.lat) : undefined,
+        lon: formData.lon ? parseFloat(formData.lon) : undefined,
       });
       
       if (result.type === 'response' && result.data?.operation) {
         toast({
           title: 'Станция добавлена',
-          description: `Станция ${station.serialNumber} успешно добавлена в систему`,
+          description: `Станция ${formData.serialNumber} успешно добавлена в систему`,
         });
         
+        setIsDialogOpen(false);
+        setSelectedStation(null);
         await loadUnknownStations();
       } else if (result.type === 'error') {
         let errorMessage = result.message || 'Ошибка при добавлении станции';
@@ -135,8 +178,17 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
         variant: 'destructive',
       });
     } finally {
-      setAddingStation(null);
+      setAddingStation(false);
     }
+  };
+
+  const handleCancel = () => {
+    setIsDialogOpen(false);
+    setSelectedStation(null);
+  };
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const getStatusBadge = (status: string) => {
@@ -292,21 +344,11 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
                       <TableCell className="text-right">
                         <Button
                           size="sm"
-                          onClick={() => handleAddStation(station)}
-                          disabled={addingStation === station.serialNumber}
+                          onClick={() => handleOpenAddDialog(station)}
                           className="bg-green-600 hover:bg-green-700 text-white"
                         >
-                          {addingStation === station.serialNumber ? (
-                            <>
-                              <Icon name="Loader2" size={16} className="animate-spin" />
-                              Добавление...
-                            </>
-                          ) : (
-                            <>
-                              <Icon name="Plus" size={16} />
-                              Добавить
-                            </>
-                          )}
+                          <Icon name="Plus" size={16} />
+                          Добавить
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -332,12 +374,124 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
                 (обычно отличается ведущими нулями, например "857" и "00857")
               </li>
               <li>
-                Для добавления станции в систему используйте раздел "Управление станциями"
+                Для добавления станции в систему нажмите кнопку "Добавить" в таблице
               </li>
             </ul>
           </div>
         </div>
       </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon name="Plus" size={20} />
+              Добавление станции
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="serialNumber">Серийный номер</Label>
+              <Input
+                id="serialNumber"
+                value={formData.serialNumber}
+                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                placeholder="00857"
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Название</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="ЭЗС 00857"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lat">Широта</Label>
+              <Input
+                id="lat"
+                type="number"
+                step="0.000001"
+                value={formData.lat}
+                onChange={(e) => handleInputChange('lat', e.target.value)}
+                placeholder="55.7558"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lon">Долгота</Label>
+              <Input
+                id="lon"
+                type="number"
+                step="0.000001"
+                value={formData.lon}
+                onChange={(e) => handleInputChange('lon', e.target.value)}
+                placeholder="37.6173"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ipAddress">IP-адрес</Label>
+              <Input
+                id="ipAddress"
+                value={formData.ipAddress}
+                onChange={(e) => handleInputChange('ipAddress', e.target.value)}
+                placeholder="62.118.80.8"
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="region">Регион</Label>
+              <Input
+                id="region"
+                value={formData.region}
+                onChange={(e) => handleInputChange('region', e.target.value)}
+                placeholder="Московская область"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="address">Адрес</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="г. Москва, ул. Ленина, д. 1"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancel} disabled={addingStation}>
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleAddStation} 
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              disabled={addingStation}
+            >
+              {addingStation ? (
+                <>
+                  <Icon name="Loader2" size={18} className="animate-spin" />
+                  Добавление...
+                </>
+              ) : (
+                <>
+                  <Icon name="Plus" size={18} />
+                  Добавить станцию
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
