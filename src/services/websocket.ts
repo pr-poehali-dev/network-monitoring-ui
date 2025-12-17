@@ -95,9 +95,15 @@ export class WebSocketService {
 
   private handleMessage(message: WSServerMessage) {
     // Обработка real-time обновлений (приоритет выше)
-    if (message.type === 'update' && message.action === 'stationUpdate') {
-      this.handleRealtimeUpdate(message);
-      return;
+    if (message.type === 'update') {
+      if (message.action === 'stationUpdate') {
+        this.handleRealtimeUpdate(message);
+        return;
+      }
+      if (message.action === 'systemStats') {
+        this.handleSystemStatsUpdate(message);
+        return;
+      }
     }
 
     // Обработка ответов на запросы
@@ -113,6 +119,14 @@ export class WebSocketService {
   private handleRealtimeUpdate(message: WSServerMessage) {
     // Эмитируем событие для компонентов
     const event = new CustomEvent('stationUpdate', {
+      detail: message.data
+    });
+    window.dispatchEvent(event);
+  }
+
+  private handleSystemStatsUpdate(message: WSServerMessage) {
+    // Эмитируем событие для компонентов
+    const event = new CustomEvent('systemStatsUpdate', {
       detail: message.data
     });
     window.dispatchEvent(event);
@@ -461,8 +475,16 @@ export class WebSocketService {
   }
 
   onSystemStatsUpdate(callback: (data: any) => void): () => void {
-    this.on('systemStats', callback);
-    return () => this.off('systemStats', callback);
+    const handler = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      callback(customEvent.detail);
+    };
+    
+    window.addEventListener('systemStatsUpdate', handler);
+    
+    return () => {
+      window.removeEventListener('systemStatsUpdate', handler);
+    };
   }
 
   disconnect() {

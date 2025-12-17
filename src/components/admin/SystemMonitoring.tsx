@@ -74,6 +74,7 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
         setLoading(true);
         setError(null);
 
+        console.log('📊 Setting up system stats update listener');
         unsubscribeCallback = wsService.onSystemStatsUpdate((data: SystemStatsData) => {
           console.log('📊 System stats update received');
           setStats(data);
@@ -81,15 +82,19 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
           if (loading) setLoading(false);
         });
 
+        console.log('📊 Sending subscribeSystemStats request...');
         const response = await wsService.subscribeSystemStats(2000, ['/', '/home', '/var/log']);
+        
+        console.log('📊 Subscribe response:', response);
         
         if (response.type === 'response' && response.data?.stats) {
           setStats(response.data.stats);
           addToHistory(response.data.stats);
           isSubscribed = true;
           setLoading(false);
-          console.log('✅ Subscribed to system stats');
+          console.log('✅ Subscribed to system stats successfully');
         } else if (response.type === 'error') {
+          console.error('❌ Subscription error:', response);
           setError(response.message || 'Ошибка подписки на системную статистику');
           setLoading(false);
         }
