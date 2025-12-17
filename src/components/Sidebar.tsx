@@ -32,13 +32,15 @@ const Sidebar = () => {
       name: 'Статистика',
       href: '/statistics',
       icon: 'BarChart3',
-      active: location.pathname === '/statistics'
+      active: location.pathname === '/statistics',
+      disabled: true
     },
     {
       name: 'Мониторинг',
       href: '/monitoring',
       icon: 'AlertTriangle',
-      active: location.pathname === '/monitoring'
+      active: location.pathname === '/monitoring',
+      disabled: true
     },
     {
       name: 'Администрирование',
@@ -74,6 +76,7 @@ const Sidebar = () => {
               to={item.href}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
+                item.disabled && 'opacity-50 cursor-not-allowed pointer-events-none',
                 item.active
                   ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
