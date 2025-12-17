@@ -421,6 +421,50 @@ export class WebSocketService {
     return response;
   }
 
+  async subscribeSystemStats(
+    intervalMs?: number,
+    paths?: string[]
+  ): Promise<WSServerMessage> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'subscribeSystemStats',
+      intervalMs,
+      paths,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response;
+  }
+
+  async unsubscribeSystemStats(): Promise<WSServerMessage> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'unsubscribeSystemStats',
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response;
+  }
+
+  async getSystemStats(paths?: string[]): Promise<WSServerMessage> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getSystemStats',
+      paths,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response;
+  }
+
+  onSystemStatsUpdate(callback: (data: any) => void): () => void {
+    this.on('systemStats', callback);
+    return () => this.off('systemStats', callback);
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
