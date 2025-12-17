@@ -12,6 +12,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { wsService } from '@/services/websocket';
+import { useToast } from '@/hooks/use-toast';
 
 interface UnknownStation {
   serialNumber: string;
@@ -40,6 +41,8 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [addingStation, setAddingStation] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const loadUnknownStations = async () => {
     setLoading(true);
@@ -88,6 +91,52 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const handleAddStation = async (station: UnknownStation) => {
+    setAddingStation(station.serialNumber);
+    
+    try {
+      const result = await wsService.saveStation({
+        serialNumber: station.serialNumber,
+        name: `ЭЗС ${station.serialNumber}`,
+        ipAddress: station.ip || undefined,
+      });
+      
+      if (result.type === 'response' && result.data?.operation) {
+        toast({
+          title: 'Станция добавлена',
+          description: `Станция ${station.serialNumber} успешно добавлена в систему`,
+        });
+        
+        await loadUnknownStations();
+      } else if (result.type === 'error') {
+        let errorMessage = result.message || 'Ошибка при добавлении станции';
+        
+        if (result.code === 'ALREADY_EXISTS') {
+          errorMessage = 'Станция с таким серийным номером уже существует';
+        } else if (result.code === 'SERIAL_NORMALIZED_EXISTS') {
+          errorMessage = 'Станция с похожим серийным номером уже существует (проверьте ведущие нули)';
+        } else if (result.code === 'INVALID_REQUEST') {
+          errorMessage = 'Некорректные данные для сохранения станции';
+        }
+        
+        toast({
+          title: 'Ошибка',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Error adding station:', err);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось добавить станцию',
+        variant: 'destructive',
+      });
+    } finally {
+      setAddingStation(null);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -198,6 +247,7 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
                     <TableHead>Подключена с</TableHead>
                     <TableHead>Совпадение в БД</TableHead>
                     <TableHead>Ошибки</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -238,6 +288,26 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
                         ) : (
                           <span className="text-gray-400">—</span>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleAddStation(station)}
+                          disabled={addingStation === station.serialNumber}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          {addingStation === station.serialNumber ? (
+                            <>
+                              <Icon name="Loader2" size={16} className="animate-spin" />
+                              Добавление...
+                            </>
+                          ) : (
+                            <>
+                              <Icon name="Plus" size={16} />
+                              Добавить
+                            </>
+                          )}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

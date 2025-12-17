@@ -23,11 +23,15 @@ import Icon from '@/components/ui/icon';
 import { useStations } from '@/hooks/useWebSocket';
 import { StationData } from '@/types/websocket';
 import { parseErrorInfo, getErrorColor } from '@/utils/errors';
+import { wsService } from '@/services/websocket';
+import { useToast } from '@/hooks/use-toast';
 
 export default function StationsManager() {
   const { stations, loadStations } = useStations();
   const [searchTerm, setSearchTerm] = useState('');
   const [editingStation, setEditingStation] = useState<StationData | null>(null);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadStations();
@@ -63,10 +67,59 @@ export default function StationsManager() {
     setIsDialogOpen(true);
   };
 
-  const handleSave = () => {
-    console.log('Сохранение станции:', formData);
-    setIsDialogOpen(false);
-    setEditingStation(null);
+  const handleSave = async () => {
+    if (!editingStation) return;
+    
+    setSaving(true);
+    
+    try {
+      const result = await wsService.saveStation({
+        stationId: editingStation.id,
+        serialNumber: formData.station_id,
+        name: formData.name || undefined,
+        address: formData.address || undefined,
+        region: formData.region || undefined,
+        ipAddress: formData.ip_address || undefined,
+        lat: formData.lat ? parseFloat(formData.lat) : undefined,
+        lon: formData.lon ? parseFloat(formData.lon) : undefined,
+      });
+      
+      if (result.type === 'response' && result.data?.operation) {
+        toast({
+          title: 'Станция обновлена',
+          description: `Изменения успешно сохранены`,
+        });
+        
+        setIsDialogOpen(false);
+        setEditingStation(null);
+        await loadStations();
+      } else if (result.type === 'error') {
+        let errorMessage = result.message || 'Ошибка при сохранении';
+        
+        if (result.code === 'ALREADY_EXISTS') {
+          errorMessage = 'Станция с таким серийным номером уже существует';
+        } else if (result.code === 'SERIAL_NORMALIZED_EXISTS') {
+          errorMessage = 'Станция с похожим серийным номером уже существует (проверьте ведущие нули)';
+        } else if (result.code === 'INVALID_REQUEST') {
+          errorMessage = 'Некорректные данные для сохранения станции';
+        }
+        
+        toast({
+          title: 'Ошибка',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('Error saving station:', err);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось сохранить изменения',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -271,12 +324,25 @@ export default function StationsManager() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+            <Button variant="outline" onClick={handleCancel} disabled={saving}>
               Отмена
             </Button>
-            <Button onClick={handleSave} className="flex items-center gap-2">
-              <Icon name="Save" size={18} />
-              Сохранить изменения
+            <Button 
+              onClick={handleSave} 
+              className="flex items-center gap-2"
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Icon name="Loader2" size={18} className="animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Icon name="Save" size={18} />
+                  Сохранить изменения
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -400,6 +400,27 @@ export class WebSocketService {
     return response;
   }
 
+  async saveStation(station: {
+    stationId?: number;
+    serialNumber?: string;
+    name?: string;
+    address?: string;
+    region?: string;
+    ipAddress?: string;
+    lat?: number;
+    lon?: number;
+  }): Promise<WSServerMessage> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'saveStation',
+      station,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response;
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
