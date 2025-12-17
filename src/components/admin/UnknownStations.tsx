@@ -47,9 +47,7 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
     
     try {
       console.log('Sending getUnknownConnectedStations request...');
-      const result = await wsService.sendRequest({
-        action: 'getUnknownConnectedStations',
-      });
+      const result = await wsService.getUnknownConnectedStations();
       
       console.log('Received response:', result);
       

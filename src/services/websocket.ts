@@ -389,6 +389,17 @@ export class WebSocketService {
     return response.data || null;
   }
 
+  async getUnknownConnectedStations(): Promise<WSServerMessage> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getUnknownConnectedStations',
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response;
+  }
+
   disconnect() {
     if (this.ws) {
       this.ws.close(1000, 'Client disconnect');
