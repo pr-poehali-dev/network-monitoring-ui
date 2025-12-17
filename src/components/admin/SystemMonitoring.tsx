@@ -120,15 +120,22 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
 
   const addToHistory = (data: SystemStatsData) => {
     const now = new Date();
-    const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+    const timeStr = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
     
     setHistory(prev => {
-      const updated = [...prev, {
+      const newPoint = {
         time: timeStr,
-        cpu: data.cpu.percent,
-        ram: data.memory.percent,
-        network: data.network.totalMbps
-      }];
+        cpu: Math.round(data.cpu.percent * 10) / 10,
+        ram: Math.round(data.memory.percent * 10) / 10,
+        network: Math.round(data.network.totalMbps * 10) / 10
+      };
+      
+      const lastPoint = prev[prev.length - 1];
+      if (lastPoint && lastPoint.time === timeStr) {
+        return prev;
+      }
+      
+      const updated = [...prev, newPoint];
       return updated.slice(-20);
     });
   };
@@ -350,8 +357,12 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={history}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="time" />
-              <YAxis />
+              <XAxis 
+                dataKey="time" 
+                interval="preserveStartEnd"
+                minTickGap={50}
+              />
+              <YAxis domain={[0, 100]} />
               <Tooltip />
               <Line 
                 type="monotone" 
@@ -359,6 +370,8 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
                 stroke="#3b82f6" 
                 strokeWidth={2}
                 name="CPU %"
+                dot={false}
+                isAnimationActive={false}
               />
               <Line 
                 type="monotone" 
@@ -366,6 +379,8 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
                 stroke="#a855f7" 
                 strokeWidth={2}
                 name="RAM %"
+                dot={false}
+                isAnimationActive={false}
               />
               <Line 
                 type="monotone" 
@@ -373,6 +388,8 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
                 stroke="#22c55e" 
                 strokeWidth={2}
                 name="Network Мбит/с"
+                dot={false}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>
