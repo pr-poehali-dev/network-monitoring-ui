@@ -98,7 +98,7 @@ export default function SystemMonitoring() {
             className="h-2"
             indicatorClassName={getProgressColor(stats.cpu, [60, 80])}
           />
-          <p className="text-xs text-gray-500 mt-2">8 ядер / 16 потоков</p>
+          <p className="text-xs text-gray-500 mt-2">8 ядер</p>
         </Card>
 
         <Card className="p-6">
