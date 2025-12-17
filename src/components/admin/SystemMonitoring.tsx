@@ -68,9 +68,14 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
       return;
     }
 
-    console.log('Tab active, subscribing to system stats');
+    if (subscribed) {
+      console.log('Already subscribed, skipping');
+      return;
+    }
+
+    console.log('📊 Tab active, subscribing to system stats');
     let unsubscribe: (() => void) | null = null;
-    let isSubscribed = false;
+    let isSubscribedLocal = false;
 
     const subscribe = async () => {
       try {
@@ -78,31 +83,33 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
         setError(null);
 
         unsubscribe = wsService.onSystemStatsUpdate((data) => {
-          console.log('Received system stats update:', data);
+          console.log('📊 Received system stats update');
           setStats(data);
           addToHistory(data);
           setLoading(false);
         });
 
+        console.log('📊 Sending subscribeSystemStats request...');
         const response = await wsService.subscribeSystemStats(2000, ['/', '/home', '/var/log']);
         
-        console.log('Subscribe response:', response);
+        console.log('📊 Subscribe response:', response.type);
         
         if (response.type === 'response') {
           if (response.data?.stats) {
             setStats(response.data.stats);
             addToHistory(response.data.stats);
           }
-          isSubscribed = true;
+          isSubscribedLocal = true;
           setSubscribed(true);
           setLoading(false);
+          console.log('✅ Successfully subscribed to system stats');
         } else if (response.type === 'error') {
           setError(response.message || 'Ошибка подписки на системную статистику');
           setLoading(false);
         }
 
       } catch (err) {
-        console.error('Error subscribing to system stats:', err);
+        console.error('❌ Error subscribing to system stats:', err);
         setError('Не удалось подключиться к мониторингу системы');
         setLoading(false);
       }
@@ -111,16 +118,19 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
     subscribe();
 
     return () => {
-      console.log('Cleanup: unsubscribing from system stats, isSubscribed:', isSubscribed);
-      if (isSubscribed) {
-        wsService.unsubscribeSystemStats().catch(console.error);
+      console.log('🧹 Cleanup: tab switched, unsubscribing from system stats');
+      if (isSubscribedLocal) {
+        console.log('📊 Sending unsubscribeSystemStats request...');
+        wsService.unsubscribeSystemStats().then(() => {
+          console.log('✅ Successfully unsubscribed from system stats');
+        }).catch(console.error);
         setSubscribed(false);
       }
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [isActive]);
+  }, [isActive, subscribed]);
 
   const addToHistory = (data: SystemStatsData) => {
     const now = new Date();
