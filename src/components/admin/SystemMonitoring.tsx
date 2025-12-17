@@ -65,15 +65,12 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
 
   useEffect(() => {
     if (!isActive) {
-      if (subscribed) {
-        console.log('Tab inactive, unsubscribing from system stats');
-        wsService.unsubscribeSystemStats().catch(console.error);
-        setSubscribed(false);
-      }
       return;
     }
 
+    console.log('Tab active, subscribing to system stats');
     let unsubscribe: (() => void) | null = null;
+    let isSubscribed = false;
 
     const subscribe = async () => {
       try {
@@ -96,6 +93,7 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
             setStats(response.data.stats);
             addToHistory(response.data.stats);
           }
+          isSubscribed = true;
           setSubscribed(true);
           setLoading(false);
         } else if (response.type === 'error') {
@@ -113,15 +111,16 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
     subscribe();
 
     return () => {
-      console.log('Cleanup: unsubscribing from system stats');
-      if (subscribed) {
+      console.log('Cleanup: unsubscribing from system stats, isSubscribed:', isSubscribed);
+      if (isSubscribed) {
         wsService.unsubscribeSystemStats().catch(console.error);
+        setSubscribed(false);
       }
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [isActive, subscribed]);
+  }, [isActive]);
 
   const addToHistory = (data: SystemStatsData) => {
     const now = new Date();
