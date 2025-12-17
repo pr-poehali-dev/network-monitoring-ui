@@ -46,7 +46,7 @@ export default function Admin() {
           </TabsContent>
 
           <TabsContent value="unknown">
-            <UnknownStations />
+            <UnknownStations isActive={activeTab === 'unknown'} />
           </TabsContent>
         </Tabs>
       </div>

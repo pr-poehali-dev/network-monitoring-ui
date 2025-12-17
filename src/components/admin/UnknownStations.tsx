@@ -30,20 +30,28 @@ interface UnknownStationsResponse {
   error?: string;
 }
 
-export default function UnknownStations() {
+interface UnknownStationsProps {
+  isActive?: boolean;
+}
+
+export default function UnknownStations({ isActive = false }: UnknownStationsProps) {
   const [stations, setStations] = useState<UnknownStation[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   const loadUnknownStations = async () => {
     setLoading(true);
     setError(null);
     
     try {
+      console.log('Sending getUnknownConnectedStations request...');
       const result = await wsService.sendRequest({
         action: 'getUnknownConnectedStations',
       });
+      
+      console.log('Received response:', result);
       
       if (result.type === 'response' && result.data) {
         const responseData = result.data as UnknownStationsResponse;
@@ -54,6 +62,7 @@ export default function UnknownStations() {
         
         setStations(responseData.stations || []);
         setLastUpdate(new Date());
+        setHasLoaded(true);
       } else if (result.type === 'error') {
         setError(result.message || 'Ошибка загрузки данных');
       }
@@ -66,8 +75,10 @@ export default function UnknownStations() {
   };
 
   useEffect(() => {
-    loadUnknownStations();
-  }, []);
+    if (isActive && !hasLoaded) {
+      loadUnknownStations();
+    }
+  }, [isActive]);
 
   const formatDate = (isoString: string | null) => {
     if (!isoString) return '—';
