@@ -83,7 +83,7 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
         });
 
         console.log('📊 Sending subscribeSystemStats request...');
-        const response = await wsService.subscribeSystemStats(2000, ['/', '/mnt', '/mnt/influxdb']);
+        const response = await wsService.subscribeSystemStats(5000, ['/', '/mnt', '/mnt/influxdb']);
         
         console.log('📊 Subscribe response:', response);
         
