@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { wsService } from '@/services/websocket';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -39,55 +39,37 @@ interface UnknownStationsResponse {
 }
 
 export default function UnknownStations() {
-  const { sendMessage } = useWebSocket();
   const [stations, setStations] = useState<UnknownStation[]>([]);
   const [loading, setLoading] = useState(false);
   const [matchMode, setMatchMode] = useState<'strict' | 'numeric'>('strict');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadUnknownStations = () => {
+  const loadUnknownStations = async () => {
     setLoading(true);
     setError(null);
     
-    const requestId = `unknown-stations-${Date.now()}`;
-    
-    sendMessage({
-      requestId,
-      action: 'getUnknownConnectedStations',
-      matchMode,
-      includeDisconnected: false,
-      includeDbMatchHint: true,
-      limit: 500,
-    });
-
-    const handleResponse = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
-        
-        if (data.requestId === requestId) {
-          if (data.type === 'response' && data.action === 'getUnknownConnectedStations') {
-            const responseData = data.data as UnknownStationsResponse;
-            setStations(responseData.stations);
-            setLastUpdate(new Date());
-            setLoading(false);
-          } else if (data.type === 'error') {
-            setError(data.message || 'Ошибка загрузки данных');
-            setLoading(false);
-          }
-        }
-      } catch (err) {
-        console.error('Error parsing WebSocket message:', err);
+    try {
+      const result = await wsService.sendRequest({
+        action: 'getUnknownConnectedStations',
+        matchMode,
+        includeDisconnected: false,
+        includeDbMatchHint: true,
+        limit: 500,
+      });
+      
+      if (result.type === 'response' && result.data) {
+        const responseData = result.data as UnknownStationsResponse;
+        setStations(responseData.stations);
+        setLastUpdate(new Date());
+      } else if (result.type === 'error') {
+        setError(result.message || 'Ошибка загрузки данных');
       }
-    };
-
-    const ws = (sendMessage as any).ws;
-    if (ws) {
-      ws.addEventListener('message', handleResponse);
-      setTimeout(() => {
-        ws.removeEventListener('message', handleResponse);
-        setLoading(false);
-      }, 5000);
+    } catch (err) {
+      console.error('Error loading unknown stations:', err);
+      setError('Не удалось загрузить данные');
+    } finally {
+      setLoading(false);
     }
   };
 
