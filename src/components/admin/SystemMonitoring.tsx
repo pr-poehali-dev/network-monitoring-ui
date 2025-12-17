@@ -64,7 +64,14 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
   const [history, setHistory] = useState<HistoryPoint[]>([]);
 
   useEffect(() => {
-    if (!isActive) return;
+    if (!isActive) {
+      if (subscribed) {
+        console.log('Tab inactive, unsubscribing from system stats');
+        wsService.unsubscribeSystemStats().catch(console.error);
+        setSubscribed(false);
+      }
+      return;
+    }
 
     let unsubscribe: (() => void) | null = null;
 
@@ -73,23 +80,28 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
         setLoading(true);
         setError(null);
 
+        unsubscribe = wsService.onSystemStatsUpdate((data) => {
+          console.log('Received system stats update:', data);
+          setStats(data);
+          addToHistory(data);
+          setLoading(false);
+        });
+
         const response = await wsService.subscribeSystemStats(2000, ['/', '/home', '/var/log']);
         
-        if (response.type === 'response' && response.data?.stats) {
-          setStats(response.data.stats);
+        console.log('Subscribe response:', response);
+        
+        if (response.type === 'response') {
+          if (response.data?.stats) {
+            setStats(response.data.stats);
+            addToHistory(response.data.stats);
+          }
           setSubscribed(true);
           setLoading(false);
-          
-          addToHistory(response.data.stats);
         } else if (response.type === 'error') {
           setError(response.message || 'Ошибка подписки на системную статистику');
           setLoading(false);
         }
-
-        unsubscribe = wsService.onSystemStatsUpdate((data) => {
-          setStats(data);
-          addToHistory(data);
-        });
 
       } catch (err) {
         console.error('Error subscribing to system stats:', err);
@@ -101,15 +113,15 @@ export default function SystemMonitoring({ isActive = false }: SystemMonitoringP
     subscribe();
 
     return () => {
+      console.log('Cleanup: unsubscribing from system stats');
       if (subscribed) {
         wsService.unsubscribeSystemStats().catch(console.error);
-        setSubscribed(false);
       }
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [isActive]);
+  }, [isActive, subscribed]);
 
   const addToHistory = (data: SystemStatsData) => {
     const now = new Date();
