@@ -11,15 +11,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
-import { useWebSocket } from '@/hooks/useWebSocket';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { wsService } from '@/services/websocket';
 
 interface UnknownStation {
   serialNumber: string;
@@ -34,66 +26,48 @@ interface UnknownStation {
 
 interface UnknownStationsResponse {
   count: number;
-  matchMode: string;
   stations: UnknownStation[];
+  error?: string;
 }
 
 export default function UnknownStations() {
-  const { sendMessage } = useWebSocket();
   const [stations, setStations] = useState<UnknownStation[]>([]);
   const [loading, setLoading] = useState(false);
-  const [matchMode, setMatchMode] = useState<'strict' | 'numeric'>('strict');
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadUnknownStations = () => {
+  const loadUnknownStations = async () => {
     setLoading(true);
     setError(null);
     
-    const requestId = `unknown-stations-${Date.now()}`;
-    
-    sendMessage({
-      requestId,
-      action: 'getUnknownConnectedStations',
-      matchMode,
-      includeDisconnected: false,
-      includeDbMatchHint: true,
-      limit: 500,
-    });
-
-    const handleResponse = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data);
+    try {
+      const result = await wsService.sendRequest({
+        action: 'getUnknownConnectedStations',
+      });
+      
+      if (result.type === 'response' && result.data) {
+        const responseData = result.data as UnknownStationsResponse;
         
-        if (data.requestId === requestId) {
-          if (data.type === 'response' && data.action === 'getUnknownConnectedStations') {
-            const responseData = data.data as UnknownStationsResponse;
-            setStations(responseData.stations);
-            setLastUpdate(new Date());
-            setLoading(false);
-          } else if (data.type === 'error') {
-            setError(data.message || 'Ошибка загрузки данных');
-            setLoading(false);
-          }
+        if (responseData.error) {
+          setError(`Ошибка сбора данных: ${responseData.error}`);
         }
-      } catch (err) {
-        console.error('Error parsing WebSocket message:', err);
+        
+        setStations(responseData.stations || []);
+        setLastUpdate(new Date());
+      } else if (result.type === 'error') {
+        setError(result.message || 'Ошибка загрузки данных');
       }
-    };
-
-    const ws = (sendMessage as any).ws;
-    if (ws) {
-      ws.addEventListener('message', handleResponse);
-      setTimeout(() => {
-        ws.removeEventListener('message', handleResponse);
-        setLoading(false);
-      }, 5000);
+    } catch (err) {
+      console.error('Error loading unknown stations:', err);
+      setError('Не удалось загрузить данные');
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     loadUnknownStations();
-  }, [matchMode]);
+  }, []);
 
   const formatDate = (isoString: string | null) => {
     if (!isoString) return '—';
@@ -160,31 +134,23 @@ export default function UnknownStations() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Label htmlFor="matchMode" className="text-sm">Режим сравнения:</Label>
-            <Select value={matchMode} onValueChange={(value: 'strict' | 'numeric') => setMatchMode(value)}>
-              <SelectTrigger id="matchMode" className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="strict">Строгий</SelectItem>
-                <SelectItem value="numeric">Числовой</SelectItem>
-              </SelectContent>
-            </Select>
+        {lastUpdate && (
+          <div className="mb-4 text-sm text-gray-500">
+            Последнее обновление: {lastUpdate.toLocaleString('ru-RU')}
           </div>
-          
-          {lastUpdate && (
-            <div className="text-sm text-gray-500">
-              Обновлено: {lastUpdate.toLocaleTimeString('ru-RU')}
-            </div>
-          )}
-        </div>
+        )}
 
         {error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
             <Icon name="AlertCircle" size={20} className="text-red-600" />
             <span className="text-red-700">{error}</span>
+          </div>
+        )}
+
+        {loading && (
+          <div className="text-center py-12">
+            <Icon name="Loader2" size={48} className="mx-auto text-gray-300 mb-3 animate-spin" />
+            <p className="text-gray-500">Загрузка данных...</p>
           </div>
         )}
 
@@ -196,7 +162,7 @@ export default function UnknownStations() {
           </div>
         )}
 
-        {!loading && !error && stations.length > 0 && (
+        {!loading && stations.length > 0 && (
           <>
             <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-start gap-3">
@@ -271,32 +237,25 @@ export default function UnknownStations() {
             </div>
           </>
         )}
-
-        {loading && (
-          <div className="text-center py-12">
-            <Icon name="Loader2" size={48} className="mx-auto text-gray-300 mb-3 animate-spin" />
-            <p className="text-gray-500">Загрузка данных...</p>
-          </div>
-        )}
       </Card>
 
       <Card className="p-6 bg-blue-50 border-blue-200">
         <div className="flex items-start gap-3">
           <Icon name="Info" size={20} className="text-blue-600 mt-0.5" />
           <div className="space-y-2 text-sm text-blue-900">
-            <p className="font-medium">Режимы сравнения:</p>
+            <p className="font-medium">О неизвестных станциях:</p>
             <ul className="space-y-1 ml-4 list-disc">
               <li>
-                <strong>Строгий:</strong> точное совпадение серийного номера (учитываются ведущие нули)
+                <strong>Серийный номер:</strong> идентификатор станции из Redis
               </li>
               <li>
-                <strong>Числовой:</strong> сравнение по числовому значению (игнорируются ведущие нули: "00857" = "857")
+                <strong>Совпадение в БД:</strong> если указано, значит в базе есть станция с похожим серийником 
+                (обычно отличается ведущими нулями, например "857" и "00857")
+              </li>
+              <li>
+                Для добавления станции в систему используйте раздел "Управление станциями"
               </li>
             </ul>
-            <p className="mt-3">
-              <strong>Совпадение в БД:</strong> если указано, значит в базе есть похожая станция, 
-              но серийные номера отличаются (обычно из-за ведущих нулей)
-            </p>
           </div>
         </div>
       </Card>
