@@ -38,7 +38,7 @@ export default function Admin() {
           </TabsList>
 
           <TabsContent value="monitoring">
-            <SystemMonitoring />
+            <SystemMonitoring isActive={activeTab === 'monitoring'} />
           </TabsContent>
 
           <TabsContent value="stations">
