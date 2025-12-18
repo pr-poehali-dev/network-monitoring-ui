@@ -73,12 +73,12 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         <TabsList className="mb-6 inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground w-full overflow-x-auto">
           <TabsTrigger value="management" className="whitespace-nowrap">Панель управления</TabsTrigger>
           <TabsTrigger value="transactions" className="whitespace-nowrap">Транзакции</TabsTrigger>
-          <TabsTrigger value="settings" className="whitespace-nowrap" disabled>Настройки</TabsTrigger>
-          <TabsTrigger value="errors" className="whitespace-nowrap" disabled>Ошибки</TabsTrigger>
+          <TabsTrigger value="settings" className="whitespace-nowrap">Настройки</TabsTrigger>
+          <TabsTrigger value="errors" className="whitespace-nowrap">Ошибки</TabsTrigger>
           <TabsTrigger value="logs" className="whitespace-nowrap">Логи</TabsTrigger>
           <TabsTrigger value="stats" className="whitespace-nowrap">Статистика</TabsTrigger>
           <TabsTrigger value="availability" className="whitespace-nowrap">Доступность</TabsTrigger>
-          <TabsTrigger value="input-meter" className="whitespace-nowrap" disabled>Прибор учета</TabsTrigger>
+          <TabsTrigger value="input-meter" className="whitespace-nowrap">Прибор учета</TabsTrigger>
           <TabsTrigger value="rectifiers" className="whitespace-nowrap">Выпрямители</TabsTrigger>
         </TabsList>
 
