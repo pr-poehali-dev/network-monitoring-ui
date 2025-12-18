@@ -28,9 +28,13 @@ export default function RectifiersTab({ serialNumber }: RectifiersTabProps) {
     }
   };
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: any): JSX.Element | string => {
     if (typeof value === 'boolean') {
-      return value ? 'true' : 'false';
+      return (
+        <div className="flex justify-center">
+          <div className={`w-2.5 h-2.5 rounded-full ${value ? 'bg-red-500' : 'bg-green-500'}`}></div>
+        </div>
+      );
     }
     if (typeof value === 'number') {
       return value.toFixed(2);
@@ -66,7 +70,7 @@ export default function RectifiersTab({ serialNumber }: RectifiersTabProps) {
 
   const allKeys = Array.from(
     new Set(modulesData.flatMap(module => Object.keys(module)))
-  );
+  ).filter(key => key !== 'time');
 
   return (
     <div className="space-y-6">
@@ -79,14 +83,14 @@ export default function RectifiersTab({ serialNumber }: RectifiersTabProps) {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b-2 border-gray-300">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">
+                  <th className="text-left py-2 px-3 text-xs font-semibold text-gray-700 w-48">
                     Параметр
                   </th>
                   {modulesData.map((module, idx) => (
-                    <th key={idx} className="text-center py-3 px-4 text-sm font-semibold text-gray-700">
+                    <th key={idx} className="text-center py-2 px-2 text-xs font-semibold text-gray-700">
                       PM{module.moduleId || idx + 1}
                     </th>
                   ))}
@@ -98,11 +102,11 @@ export default function RectifiersTab({ serialNumber }: RectifiersTabProps) {
                     key={key} 
                     className={`border-b ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}
                   >
-                    <td className="py-3 px-4 text-sm font-medium text-gray-700">
+                    <td className="py-2 px-3 text-xs font-medium text-gray-700">
                       {key}
                     </td>
                     {modulesData.map((module, moduleIdx) => (
-                      <td key={moduleIdx} className="py-3 px-4 text-center text-sm font-mono">
+                      <td key={moduleIdx} className="py-2 px-2 text-center text-xs font-mono">
                         {formatValue(module[key])}
                       </td>
                     ))}
