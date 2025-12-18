@@ -122,7 +122,7 @@ export default function TransactionsTab({ serialNumber, onTransactionClick }: Tr
                   <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Длительность</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Статус</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Причина</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время завершения</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700 text-sm">Время начала/завершения</th>
                 </tr>
               </thead>
               <tbody>
@@ -150,21 +150,34 @@ export default function TransactionsTab({ serialNumber, onTransactionClick }: Tr
                       <span className="text-sm">{formatDuration(transaction.durationSec)}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <span
-                        className={`text-xs px-2 py-1 rounded-full ${
-                          transaction.success
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {transaction.success ? 'Успешно' : 'Неуспешно'}
-                      </span>
+                      {transaction.isActive ? (
+                        <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 flex items-center gap-1 w-fit">
+                          <Icon name="Loader2" size={12} className="animate-spin" />
+                          В процессе
+                        </span>
+                      ) : (
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full ${
+                            transaction.success
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}
+                        >
+                          {transaction.success ? 'Успешно' : 'Неуспешно'}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <span className="text-xs text-gray-600">{transaction.reason}</span>
                     </td>
                     <td className="py-3 px-4">
-                      <span className="text-xs text-gray-500">{formatDateTime(transaction.time)}</span>
+                      {transaction.isActive && transaction.startTime ? (
+                        <div className="text-xs">
+                          <div className="text-blue-600 font-medium">Начало: {formatDateTime(transaction.startTime)}</div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-500">{formatDateTime(transaction.time)}</span>
+                      )}
                     </td>
                   </tr>
                 ))}
