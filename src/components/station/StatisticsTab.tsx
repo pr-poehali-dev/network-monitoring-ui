@@ -119,6 +119,20 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
     return `${secs}с`;
   };
 
+  const formatDurationWithSeconds = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hours > 0) {
+      return `${hours}ч ${minutes}м ${secs}с`;
+    }
+    if (minutes > 0) {
+      return `${minutes}м ${secs}с`;
+    }
+    return `${secs}с`;
+  };
+
   const formatDateTime = (isoString: string): string => {
     const date = new Date(isoString);
     return date.toLocaleString('ru-RU', {
@@ -284,7 +298,7 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
               <div className="text-2xl font-bold text-purple-900">{formatEnergy(summary.energyKwhTotal)}</div>
             </div>
 
-            <div className="bg-amber-50 rounded-lg p-4">
+            <div className="bg-amber-50 rounded-lg p-4" title={formatDurationWithSeconds(summary.avgSessionDurationSec)}>
               <div className="flex items-center gap-2 text-amber-700 mb-2">
                 <Icon name="Clock" size={18} />
                 <span className="text-sm font-medium">Средняя сессия</span>
@@ -361,7 +375,7 @@ export default function StatisticsTab({ serialNumber }: StatisticsTabProps) {
                   <span className="font-semibold text-purple-700">{formatEnergy(connector.energyKwhTotal)}</span>
                 </div>
 
-                <div className="flex items-center justify-between py-2 border-b">
+                <div className="flex items-center justify-between py-2 border-b" title={formatDurationWithSeconds(connector.avgSessionDurationSec)}>
                   <span className="text-sm text-gray-600">Средняя сессия</span>
                   <span className="font-semibold">{formatDuration(connector.avgSessionDurationSec)}</span>
                 </div>
