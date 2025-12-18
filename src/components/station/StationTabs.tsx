@@ -11,6 +11,7 @@ import AvailabilityTab from './AvailabilityTab';
 import StatisticsTab from './StatisticsTab';
 import InputMeterTab from './InputMeterTab';
 import RectifiersTab from './RectifiersTab';
+import ContactorsTab from './ContactorsTab';
 import { Transaction } from '@/types/websocket';
 
 interface Connector {
@@ -80,6 +81,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
           <TabsTrigger value="availability" className="whitespace-nowrap">Доступность</TabsTrigger>
           <TabsTrigger value="input-meter" className="whitespace-nowrap">Прибор учета</TabsTrigger>
           <TabsTrigger value="rectifiers" className="whitespace-nowrap">Выпрямители</TabsTrigger>
+          <TabsTrigger value="contactors" className="whitespace-nowrap">Контакторы</TabsTrigger>
         </TabsList>
 
         <TabsContent value="management" className="space-y-6">
@@ -120,6 +122,10 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
 
         <TabsContent value="rectifiers">
           <RectifiersTab serialNumber={station.serialNumber} />
+        </TabsContent>
+
+        <TabsContent value="contactors">
+          <ContactorsTab serialNumber={station.serialNumber} />
         </TabsContent>
       </Tabs>
 

@@ -349,6 +349,18 @@ export class WebSocketService {
     return response.data?.modules || [];
   }
 
+  async getContactorsStatus(serialNumber: string): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getContactorsStatus',
+      serialNumber,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response.data || { signals: [], contactors: [] };
+  }
+
   async getStationLogDates(serialNumber: string): Promise<string[]> {
     const message: WSClientMessage = {
       type: 'request',

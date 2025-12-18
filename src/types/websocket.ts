@@ -28,7 +28,7 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getStationLogDates' | 'getStationLogFile';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
@@ -154,4 +154,18 @@ export interface RectifierModule {
   dcdcOutputOvervoltage: boolean;
   notConnect: boolean;
   isOn: boolean;
+}
+
+export interface Contactor {
+  id: number;
+  in: boolean;
+  out: boolean;
+}
+
+export interface ContactorsData {
+  time: string;
+  signals: number[];
+  signalsCount: number;
+  contactorsCount: number;
+  contactors: Contactor[];
 }
