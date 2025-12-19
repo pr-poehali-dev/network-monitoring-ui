@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
@@ -9,12 +9,21 @@ interface InputMeterTabProps {
   serialNumber: string;
 }
 
+interface TooltipData {
+  x: number;
+  y: number;
+  time: string;
+  values: { phase: string; value: number; color: string }[];
+}
+
 export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1h');
   const [meterData, setMeterData] = useState<EnergyMeterData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<'voltage' | 'current' | 'power' | 'energy'>('voltage');
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadMeterData();
@@ -83,6 +92,62 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleMouseMove = (
+    e: React.MouseEvent<HTMLDivElement>,
+    data: MetricPoint[] | undefined,
+    dataL1?: MetricPoint[] | undefined,
+    dataL2?: MetricPoint[] | undefined,
+    dataL3?: MetricPoint[] | undefined,
+    unit?: string
+  ) => {
+    if (!chartRef.current) return;
+
+    const rect = chartRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const relativeX = x / rect.width;
+
+    if (data && data.length > 0) {
+      const index = Math.round(relativeX * (data.length - 1));
+      const point = data[index];
+      if (point) {
+        setTooltip({
+          x: e.clientX,
+          y: e.clientY,
+          time: formatTime(point.time),
+          values: [{ phase: '', value: point.value, color: '' }]
+        });
+      }
+    } else if (dataL1 || dataL2 || dataL3) {
+      const maxLength = Math.max(dataL1?.length || 0, dataL2?.length || 0, dataL3?.length || 0);
+      const index = Math.round(relativeX * (maxLength - 1));
+      
+      const values = [];
+      if (dataL1 && dataL1[index]) {
+        values.push({ phase: 'L1', value: dataL1[index].value, color: '#DC2626' });
+      }
+      if (dataL2 && dataL2[index]) {
+        values.push({ phase: 'L2', value: dataL2[index].value, color: '#CA8A04' });
+      }
+      if (dataL3 && dataL3[index]) {
+        values.push({ phase: 'L3', value: dataL3[index].value, color: '#2563EB' });
+      }
+
+      if (values.length > 0) {
+        const timeSource = dataL1?.[index] || dataL2?.[index] || dataL3?.[index];
+        setTooltip({
+          x: e.clientX,
+          y: e.clientY,
+          time: timeSource ? formatTime(timeSource.time) : '',
+          values
+        });
+      }
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(null);
+  };
+
   const renderChart = (data: MetricPoint[] | undefined, label: string, unit: string, color: string) => {
     if (!data || data.length === 0) {
       return <div className="text-center text-gray-500 py-8">Нет данных</div>;
@@ -93,7 +158,12 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
     const range = maxValue - minValue || 1;
 
     return (
-      <div className="relative h-64">
+      <div 
+        ref={chartRef}
+        className="relative h-64"
+        onMouseMove={(e) => handleMouseMove(e, data, undefined, undefined, undefined, unit)}
+        onMouseLeave={handleMouseLeave}
+      >
         <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
           <polyline
             fill="none"
@@ -133,7 +203,12 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
     const range = maxValue - minValue || 1;
 
     return (
-      <div className="relative h-64">
+      <div 
+        ref={chartRef}
+        className="relative h-64"
+        onMouseMove={(e) => handleMouseMove(e, undefined, dataL1, dataL2, dataL3, unit)}
+        onMouseLeave={handleMouseLeave}
+      >
         <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
           {dataL1 && dataL1.length > 0 && (
             <polyline
@@ -398,7 +473,7 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
           )}
 
           {/* График */}
-          <div>
+          <div className="relative">
             {activeChart === 'voltage' && renderMultiPhaseChart(
               metrics.voltageL1,
               metrics.voltageL2,
@@ -424,6 +499,44 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
               'Энергия',
               'кВт⋅ч',
               '#8B5CF6'
+            )}
+            
+            {/* Тултип */}
+            {tooltip && (
+              <div
+                className="fixed z-50 pointer-events-none"
+                style={{
+                  left: `${tooltip.x + 15}px`,
+                  top: `${tooltip.y - 10}px`
+                }}
+              >
+                <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm">
+                  <div className="font-medium mb-1">{tooltip.time}</div>
+                  <div className="space-y-1">
+                    {tooltip.values.map((val, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        {val.phase && (
+                          <>
+                            <div 
+                              className="w-2 h-2 rounded-full" 
+                              style={{ backgroundColor: val.color }}
+                            />
+                            <span className="text-gray-300">{val.phase}:</span>
+                          </>
+                        )}
+                        <span className="font-semibold">
+                          {val.value.toFixed(2)} {
+                            activeChart === 'voltage' ? 'В' :
+                            activeChart === 'current' ? 'А' :
+                            activeChart === 'power' ? 'кВт' :
+                            'кВт⋅ч'
+                          }
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </CardContent>
