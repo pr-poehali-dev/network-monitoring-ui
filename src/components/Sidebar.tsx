@@ -20,31 +20,36 @@ const Sidebar = () => {
       name: 'Карта',
       href: '/?tab=map',
       icon: 'Map',
-      active: location.pathname === '/' && (location.search.includes('tab=map') || !location.search)
+      active: location.pathname === '/' && (location.search.includes('tab=map') || !location.search),
+      disabled: false
     },
     {
       name: 'Список станций',
       href: '/?tab=list',
       icon: 'List',
-      active: location.pathname === '/' && location.search.includes('tab=list')
+      active: location.pathname === '/' && location.search.includes('tab=list'),
+      disabled: false
     },
     {
       name: 'Статистика',
       href: '/statistics',
       icon: 'BarChart3',
-      active: location.pathname === '/statistics'
+      active: location.pathname === '/statistics',
+      disabled: true
     },
     {
       name: 'Мониторинг',
       href: '/monitoring',
       icon: 'AlertTriangle',
-      active: location.pathname === '/monitoring'
+      active: location.pathname === '/monitoring',
+      disabled: true
     },
     {
       name: 'Администрирование',
       href: '/admin',
       icon: 'Shield',
-      active: location.pathname === '/admin'
+      active: location.pathname === '/admin',
+      disabled: false
     }
   ];
 
@@ -68,25 +73,29 @@ const Sidebar = () => {
       {/* Navigation */}
       <nav className="mt-6 px-3">
         <div className="space-y-1">
-          {navigation.map((item) => (
-            <Link
-              key={item.name}
-              to={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
-                item.active
-                  ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              )}
-            >
-              <Icon 
-                name={item.icon} 
-                size={20} 
-                className={item.active ? 'text-blue-600' : 'text-gray-400'} 
-              />
-              {item.name}
-            </Link>
-          ))}
+          {navigation.map((item) => {
+            const Component = item.disabled ? 'div' : Link;
+            return (
+              <Component
+                key={item.name}
+                {...(!item.disabled && { to: item.href })}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
+                  item.disabled && 'opacity-50 cursor-not-allowed',
+                  item.active
+                    ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-600'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                )}
+              >
+                <Icon 
+                  name={item.icon} 
+                  size={20} 
+                  className={item.active ? 'text-blue-600' : 'text-gray-400'} 
+                />
+                {item.name}
+              </Component>
+            );
+          })}
 
           {/* Текущая станция */}
           {isStationPage && (() => {
@@ -179,12 +188,9 @@ const Sidebar = () => {
               <span className="font-medium text-blue-600">12</span>
             </div>
           </div>
-          <Link 
-            to="/monitoring" 
-            className="block mt-3 text-xs text-blue-600 hover:text-blue-800 hover:underline"
-          >
+          <div className="block mt-3 text-xs text-gray-400 cursor-not-allowed">
             Подробнее →
-          </Link>
+          </div>
         </div>
       </nav>
     </div>

@@ -134,7 +134,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
             <p className="font-medium">Комментарий</p>
             <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
           </div>
-          <Button onClick={() => onAction('editComment')}>
+          <Button onClick={() => onAction('editComment')} disabled>
             РЕДАКТИРОВАТЬ
           </Button>
         </div>
@@ -149,6 +149,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => fileInputRef.current?.click()}
               className="flex items-center gap-2"
+              disabled
             >
               <Icon name="Plus" size={16} />
               ЗАГРУЗИТЬ
@@ -195,6 +196,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
                       onClick={() => handleDownload(file)}
                       className="h-8 w-8 p-0"
                       title="Скачать"
+                      disabled
                     >
                       <Icon name="Download" size={14} />
                     </Button>
@@ -204,6 +206,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
                       onClick={() => handleDelete(file.id)}
                       className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                       title="Удалить"
+                      disabled
                     >
                       <Icon name="Trash2" size={14} />
                     </Button>
@@ -237,7 +240,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => handleExternalLink('https://agava.visualization.com/station/1', 'Визуализацию Агавы')}
               className="flex items-center gap-2"
-              disabled={!isStationOnline}
+              disabled
             >
               <Icon name="ExternalLink" size={16} />
               ОТКРЫТЬ
@@ -257,7 +260,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => handleExternalLink('https://router.config.com/station/1', 'настройки роутера')}
               className="flex items-center gap-2"
-              disabled={!isStationOnline}
+              disabled
             >
               <Icon name="ExternalLink" size={16} />
               ОТКРЫТЬ
@@ -277,6 +280,7 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
               size="sm"
               onClick={() => handleExternalLink('https://company.bitrix24.ru/crm/station/1', 'Bitrix24')}
               className="flex items-center gap-2"
+              disabled
             >
               <Icon name="ExternalLink" size={16} />
               ОТКРЫТЬ
