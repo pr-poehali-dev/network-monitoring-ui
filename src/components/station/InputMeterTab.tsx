@@ -1,19 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { wsService } from '@/services/websocket';
 import { EnergyMeterData, MetricPoint } from '@/types/websocket';
 
 interface InputMeterTabProps {
   serialNumber: string;
-}
-
-interface TooltipData {
-  x: number;
-  y: number;
-  time: string;
-  values: { phase: string; value: number; color: string }[];
 }
 
 export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
@@ -22,8 +16,6 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState<'voltage' | 'current' | 'power' | 'energy'>('voltage');
-  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadMeterData();
@@ -92,60 +84,42 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleMouseMove = (
-    e: React.MouseEvent<HTMLDivElement>,
-    data: MetricPoint[] | undefined,
-    dataL1?: MetricPoint[] | undefined,
-    dataL2?: MetricPoint[] | undefined,
-    dataL3?: MetricPoint[] | undefined,
-    unit?: string
-  ) => {
-    if (!chartRef.current) return;
-
-    const rect = chartRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const relativeX = x / rect.width;
-
-    if (data && data.length > 0) {
-      const index = Math.round(relativeX * (data.length - 1));
-      const point = data[index];
-      if (point) {
-        setTooltip({
-          x: e.clientX,
-          y: e.clientY,
-          time: formatTime(point.time),
-          values: [{ phase: '', value: point.value, color: '' }]
-        });
-      }
-    } else if (dataL1 || dataL2 || dataL3) {
-      const maxLength = Math.max(dataL1?.length || 0, dataL2?.length || 0, dataL3?.length || 0);
-      const index = Math.round(relativeX * (maxLength - 1));
-      
-      const values = [];
-      if (dataL1 && dataL1[index]) {
-        values.push({ phase: 'L1', value: dataL1[index].value, color: '#DC2626' });
-      }
-      if (dataL2 && dataL2[index]) {
-        values.push({ phase: 'L2', value: dataL2[index].value, color: '#CA8A04' });
-      }
-      if (dataL3 && dataL3[index]) {
-        values.push({ phase: 'L3', value: dataL3[index].value, color: '#2563EB' });
-      }
-
-      if (values.length > 0) {
-        const timeSource = dataL1?.[index] || dataL2?.[index] || dataL3?.[index];
-        setTooltip({
-          x: e.clientX,
-          y: e.clientY,
-          time: timeSource ? formatTime(timeSource.time) : '',
-          values
-        });
-      }
-    }
+  const formatChartData = (data: MetricPoint[] | undefined) => {
+    if (!data) return [];
+    return data.map(m => ({
+      time: formatTime(m.time),
+      value: m.value
+    }));
   };
 
-  const handleMouseLeave = () => {
-    setTooltip(null);
+  const formatMultiPhaseChartData = (
+    dataL1: MetricPoint[] | undefined,
+    dataL2: MetricPoint[] | undefined,
+    dataL3: MetricPoint[] | undefined
+  ) => {
+    const maxLength = Math.max(dataL1?.length || 0, dataL2?.length || 0, dataL3?.length || 0);
+    const result = [];
+    
+    for (let i = 0; i < maxLength; i++) {
+      const item: any = {};
+      
+      if (dataL1 && dataL1[i]) {
+        item.time = formatTime(dataL1[i].time);
+        item.L1 = dataL1[i].value;
+      }
+      if (dataL2 && dataL2[i]) {
+        if (!item.time) item.time = formatTime(dataL2[i].time);
+        item.L2 = dataL2[i].value;
+      }
+      if (dataL3 && dataL3[i]) {
+        if (!item.time) item.time = formatTime(dataL3[i].time);
+        item.L3 = dataL3[i].value;
+      }
+      
+      if (item.time) result.push(item);
+    }
+    
+    return result;
   };
 
   const renderChart = (data: MetricPoint[] | undefined, label: string, unit: string, color: string) => {
@@ -153,35 +127,41 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
       return <div className="text-center text-gray-500 py-8">Нет данных</div>;
     }
 
-    const maxValue = Math.max(...data.map(d => d.value));
-    const minValue = Math.min(...data.map(d => d.value));
-    const range = maxValue - minValue || 1;
+    const chartData = formatChartData(data);
 
     return (
-      <div 
-        ref={chartRef}
-        className="relative h-64"
-        onMouseMove={(e) => handleMouseMove(e, data, undefined, undefined, undefined, unit)}
-        onMouseLeave={handleMouseLeave}
-      >
-        <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
-          <polyline
-            fill="none"
-            stroke={color}
-            strokeWidth="2"
-            points={data.map((point, i) => {
-              const x = (i / (data.length - 1)) * 800;
-              const y = 200 - ((point.value - minValue) / range) * 180;
-              return `${x},${y}`;
-            }).join(' ')}
-          />
-        </svg>
-        <div className="absolute top-0 right-0 text-sm text-gray-600">
-          {maxValue.toFixed(2)} {unit}
-        </div>
-        <div className="absolute bottom-0 right-0 text-sm text-gray-600">
-          {minValue.toFixed(2)} {unit}
-        </div>
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="time" 
+              tick={{ fontSize: 12 }}
+              stroke="#9ca3af"
+            />
+            <YAxis 
+              tick={{ fontSize: 12 }}
+              stroke="#9ca3af"
+              label={{ value: unit, angle: -90, position: 'insideLeft', fontSize: 12 }}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+              formatter={(value: any) => [`${value.toFixed(2)} ${unit}`, label]}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="value" 
+              stroke={color} 
+              strokeWidth={2}
+              dot={false}
+              name={label}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     );
   };
@@ -198,61 +178,64 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
       return <div className="text-center text-gray-500 py-8">Нет данных</div>;
     }
 
-    const maxValue = Math.max(...allData.map(d => d.value));
-    const minValue = Math.min(...allData.map(d => d.value));
-    const range = maxValue - minValue || 1;
+    const chartData = formatMultiPhaseChartData(dataL1, dataL2, dataL3);
 
     return (
-      <div 
-        ref={chartRef}
-        className="relative h-64"
-        onMouseMove={(e) => handleMouseMove(e, undefined, dataL1, dataL2, dataL3, unit)}
-        onMouseLeave={handleMouseLeave}
-      >
-        <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
-          {dataL1 && dataL1.length > 0 && (
-            <polyline
-              fill="none"
-              stroke="#DC2626"
-              strokeWidth="2"
-              points={dataL1.map((point, i) => {
-                const x = (i / (dataL1.length - 1)) * 800;
-                const y = 200 - ((point.value - minValue) / range) * 180;
-                return `${x},${y}`;
-              }).join(' ')}
+      <div className="h-64 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <XAxis 
+              dataKey="time" 
+              tick={{ fontSize: 12 }}
+              stroke="#9ca3af"
             />
-          )}
-          {dataL2 && dataL2.length > 0 && (
-            <polyline
-              fill="none"
-              stroke="#CA8A04"
-              strokeWidth="2"
-              points={dataL2.map((point, i) => {
-                const x = (i / (dataL2.length - 1)) * 800;
-                const y = 200 - ((point.value - minValue) / range) * 180;
-                return `${x},${y}`;
-              }).join(' ')}
+            <YAxis 
+              tick={{ fontSize: 12 }}
+              stroke="#9ca3af"
+              label={{ value: unit, angle: -90, position: 'insideLeft', fontSize: 12 }}
             />
-          )}
-          {dataL3 && dataL3.length > 0 && (
-            <polyline
-              fill="none"
-              stroke="#2563EB"
-              strokeWidth="2"
-              points={dataL3.map((point, i) => {
-                const x = (i / (dataL3.length - 1)) * 800;
-                const y = 200 - ((point.value - minValue) / range) * 180;
-                return `${x},${y}`;
-              }).join(' ')}
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px'
+              }}
+              formatter={(value: any) => `${value.toFixed(2)} ${unit}`}
             />
-          )}
-        </svg>
-        <div className="absolute top-0 right-0 text-sm text-gray-600">
-          {maxValue.toFixed(2)} {unit}
-        </div>
-        <div className="absolute bottom-0 right-0 text-sm text-gray-600">
-          {minValue.toFixed(2)} {unit}
-        </div>
+            <Legend />
+            {dataL1 && dataL1.length > 0 && (
+              <Line 
+                type="monotone" 
+                dataKey="L1" 
+                stroke="#DC2626" 
+                strokeWidth={2}
+                dot={false}
+                name="Фаза L1"
+              />
+            )}
+            {dataL2 && dataL2.length > 0 && (
+              <Line 
+                type="monotone" 
+                dataKey="L2" 
+                stroke="#CA8A04" 
+                strokeWidth={2}
+                dot={false}
+                name="Фаза L2"
+              />
+            )}
+            {dataL3 && dataL3.length > 0 && (
+              <Line 
+                type="monotone" 
+                dataKey="L3" 
+                stroke="#2563EB" 
+                strokeWidth={2}
+                dot={false}
+                name="Фаза L3"
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     );
   };
@@ -454,26 +437,8 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
             </button>
           </div>
 
-          {/* Легенда для трёхфазных графиков */}
-          {(activeChart === 'voltage' || activeChart === 'current') && (
-            <div className="flex justify-center gap-6 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-600" />
-                <span className="text-sm text-gray-700">Фаза L1</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-yellow-600" />
-                <span className="text-sm text-gray-700">Фаза L2</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-blue-600" />
-                <span className="text-sm text-gray-700">Фаза L3</span>
-              </div>
-            </div>
-          )}
-
           {/* График */}
-          <div className="relative">
+          <div>
             {activeChart === 'voltage' && renderMultiPhaseChart(
               metrics.voltageL1,
               metrics.voltageL2,
@@ -499,44 +464,6 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
               'Энергия',
               'кВт⋅ч',
               '#8B5CF6'
-            )}
-            
-            {/* Тултип */}
-            {tooltip && (
-              <div
-                className="fixed z-50 pointer-events-none"
-                style={{
-                  left: `${tooltip.x + 15}px`,
-                  top: `${tooltip.y - 10}px`
-                }}
-              >
-                <div className="bg-gray-900 text-white px-3 py-2 rounded-lg shadow-lg text-sm">
-                  <div className="font-medium mb-1">{tooltip.time}</div>
-                  <div className="space-y-1">
-                    {tooltip.values.map((val, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        {val.phase && (
-                          <>
-                            <div 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: val.color }}
-                            />
-                            <span className="text-gray-300">{val.phase}:</span>
-                          </>
-                        )}
-                        <span className="font-semibold">
-                          {val.value.toFixed(2)} {
-                            activeChart === 'voltage' ? 'В' :
-                            activeChart === 'current' ? 'А' :
-                            activeChart === 'power' ? 'кВт' :
-                            'кВт⋅ч'
-                          }
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </CardContent>
