@@ -361,6 +361,27 @@ export class WebSocketService {
     return response.data || { signals: [], contactors: [] };
   }
 
+  async getEnergyMeterMetrics(
+    serialNumber: string,
+    from?: string,
+    to?: string,
+    limit?: number
+  ): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getEnergyMeterMetrics',
+      serialNumber,
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+    if (limit) message.limit = limit;
+
+    const response = await this.sendMessage(message);
+    return response.data || null;
+  }
+
   async getStationLogDates(serialNumber: string): Promise<string[]> {
     const message: WSClientMessage = {
       type: 'request',

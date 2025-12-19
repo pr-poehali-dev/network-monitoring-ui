@@ -117,7 +117,7 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
         </TabsContent>
 
         <TabsContent value="input-meter">
-          <InputMeterTab />
+          <InputMeterTab serialNumber={station.serialNumber} />
         </TabsContent>
 
         <TabsContent value="rectifiers">

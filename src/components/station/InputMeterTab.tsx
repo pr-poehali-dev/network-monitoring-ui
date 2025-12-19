@@ -1,108 +1,60 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Icon from '@/components/ui/icon';
+import { wsService } from '@/services/websocket';
+import { EnergyMeterData, MetricPoint } from '@/types/websocket';
 
-interface PhaseData {
-  phase: 'L1' | 'L2' | 'L3';
-  voltage: number; // Вольты
-  current: number; // Амперы
-  power: number;   // Ватты
+interface InputMeterTabProps {
+  serialNumber: string;
 }
 
-interface MeterReading {
-  timestamp: string;
-  phases: PhaseData[];
-  frequency: number; // Герцы
-  totalPower: number; // Общая мощность кВт
-  totalEnergy: number; // Общая энергия кВт⋅ч
-}
-
-interface VoltagePoint {
-  time: string;
-  L1: number;
-  L2: number;
-  L3: number;
-}
-
-export default function InputMeterTab() {
+export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<string>('1h');
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; data: VoltagePoint; index: number } | null>(null);
-  const [voltageDataCache, setVoltageDataCache] = useState<Record<string, VoltagePoint[]>>({});
+  const [meterData, setMeterData] = useState<EnergyMeterData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeChart, setActiveChart] = useState<'voltage' | 'current' | 'power' | 'energy'>('voltage');
 
-  // Имитация текущих показаний прибора учета
-  const currentReading: MeterReading = {
-    timestamp: new Date().toISOString(),
-    phases: [
-      { phase: 'L1', voltage: 231.4, current: 15.8, power: 3656 },
-      { phase: 'L2', voltage: 229.7, current: 16.2, power: 3721 },
-      { phase: 'L3', voltage: 232.1, current: 15.1, power: 3505 }
-    ],
-    frequency: 49.95,
-    totalPower: 10.88, // кВт
-    totalEnergy: 45672.8 // кВт⋅ч за все время
+  useEffect(() => {
+    loadMeterData();
+  }, [serialNumber, selectedPeriod]);
+
+  const loadMeterData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const { from, to } = getPeriodRange(selectedPeriod);
+      const data = await wsService.getEnergyMeterMetrics(serialNumber, from, to, 300);
+      setMeterData(data);
+    } catch (err) {
+      console.error('Failed to load energy meter data:', err);
+      setError('Не удалось загрузить данные счётчика');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Генерируем и кешируем данные для графика напряжения
-  const generateVoltageData = (period: string): VoltagePoint[] => {
-    if (voltageDataCache[period]) {
-      return voltageDataCache[period];
-    }
-
-    const points: VoltagePoint[] = [];
+  const getPeriodRange = (period: string): { from: string; to: string } => {
     const now = new Date();
-    let intervals: number;
-    let stepMinutes: number;
+    const to = now.toISOString();
+    let from: Date;
 
     switch (period) {
       case '1h':
-        intervals = 60;
-        stepMinutes = 1;
+        from = new Date(now.getTime() - 60 * 60 * 1000);
         break;
       case '24h':
-        intervals = 24;
-        stepMinutes = 60;
+        from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         break;
       case '7d':
-        intervals = 7 * 24;
-        stepMinutes = 60;
+        from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
         break;
       default:
-        intervals = 60;
-        stepMinutes = 1;
+        from = new Date(now.getTime() - 60 * 60 * 1000);
     }
 
-    // Используем фиксированный seed для стабильных данных
-    for (let i = intervals; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * stepMinutes * 60000);
-      const seed = i * 0.1; // Фиксированный seed вместо Math.random()
-      points.push({
-        time: time.toLocaleTimeString('ru-RU', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          ...(period === '7d' && { day: '2-digit', month: '2-digit' })
-        }),
-        L1: 230 + Math.sin(seed) * 3 + Math.cos(seed * 2) * 1.5,
-        L2: 230 + Math.cos(seed) * 3 + Math.sin(seed * 1.5) * 1.5,
-        L3: 230 + Math.sin(seed * 1.5) * 3 + Math.cos(seed * 3) * 1.5
-      });
-    }
-    
-    // Кешируем данные
-    setVoltageDataCache(prev => ({ ...prev, [period]: points }));
-    return points;
-  };
-
-  const voltageData = generateVoltageData(selectedPeriod);
-
-  const getPhaseColor = (phase: string) => {
-    switch (phase) {
-      case 'L1': return 'text-red-600 border-red-200 bg-red-50';
-      case 'L2': return 'text-yellow-600 border-yellow-200 bg-yellow-50';
-      case 'L3': return 'text-blue-600 border-blue-200 bg-blue-50';
-      default: return 'text-gray-600 border-gray-200 bg-gray-50';
-    }
+    return { from: from.toISOString(), to };
   };
 
   const getPeriodLabel = (period: string) => {
@@ -114,370 +66,365 @@ export default function InputMeterTab() {
     }
   };
 
-  const formatVoltage = (voltage: number) => voltage.toFixed(1);
-  const formatCurrent = (current: number) => current.toFixed(1);
-  const formatPower = (power: number) => (power / 1000).toFixed(2);
+  const getPhaseColor = (phase: string) => {
+    switch (phase) {
+      case 'L1': return 'text-red-600 border-red-200 bg-red-50';
+      case 'L2': return 'text-yellow-600 border-yellow-200 bg-yellow-50';
+      case 'L3': return 'text-blue-600 border-blue-200 bg-blue-50';
+      default: return 'text-gray-600 border-gray-200 bg-gray-50';
+    }
+  };
+
+  const formatTime = (isoString: string) => {
+    const date = new Date(isoString);
+    if (selectedPeriod === '7d') {
+      return date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+    return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const renderChart = (data: MetricPoint[] | undefined, label: string, unit: string, color: string) => {
+    if (!data || data.length === 0) {
+      return <div className="text-center text-gray-500 py-8">Нет данных</div>;
+    }
+
+    const maxValue = Math.max(...data.map(d => d.value));
+    const minValue = Math.min(...data.map(d => d.value));
+    const range = maxValue - minValue || 1;
+
+    return (
+      <div className="relative h-64">
+        <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
+          <polyline
+            fill="none"
+            stroke={color}
+            strokeWidth="2"
+            points={data.map((point, i) => {
+              const x = (i / (data.length - 1)) * 800;
+              const y = 200 - ((point.value - minValue) / range) * 180;
+              return `${x},${y}`;
+            }).join(' ')}
+          />
+        </svg>
+        <div className="absolute top-0 right-0 text-sm text-gray-600">
+          {maxValue.toFixed(2)} {unit}
+        </div>
+        <div className="absolute bottom-0 right-0 text-sm text-gray-600">
+          {minValue.toFixed(2)} {unit}
+        </div>
+      </div>
+    );
+  };
+
+  const renderMultiPhaseChart = (
+    dataL1: MetricPoint[] | undefined,
+    dataL2: MetricPoint[] | undefined,
+    dataL3: MetricPoint[] | undefined,
+    label: string,
+    unit: string
+  ) => {
+    const allData = [...(dataL1 || []), ...(dataL2 || []), ...(dataL3 || [])];
+    if (allData.length === 0) {
+      return <div className="text-center text-gray-500 py-8">Нет данных</div>;
+    }
+
+    const maxValue = Math.max(...allData.map(d => d.value));
+    const minValue = Math.min(...allData.map(d => d.value));
+    const range = maxValue - minValue || 1;
+
+    return (
+      <div className="relative h-64">
+        <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
+          {dataL1 && dataL1.length > 0 && (
+            <polyline
+              fill="none"
+              stroke="#DC2626"
+              strokeWidth="2"
+              points={dataL1.map((point, i) => {
+                const x = (i / (dataL1.length - 1)) * 800;
+                const y = 200 - ((point.value - minValue) / range) * 180;
+                return `${x},${y}`;
+              }).join(' ')}
+            />
+          )}
+          {dataL2 && dataL2.length > 0 && (
+            <polyline
+              fill="none"
+              stroke="#CA8A04"
+              strokeWidth="2"
+              points={dataL2.map((point, i) => {
+                const x = (i / (dataL2.length - 1)) * 800;
+                const y = 200 - ((point.value - minValue) / range) * 180;
+                return `${x},${y}`;
+              }).join(' ')}
+            />
+          )}
+          {dataL3 && dataL3.length > 0 && (
+            <polyline
+              fill="none"
+              stroke="#2563EB"
+              strokeWidth="2"
+              points={dataL3.map((point, i) => {
+                const x = (i / (dataL3.length - 1)) * 800;
+                const y = 200 - ((point.value - minValue) / range) * 180;
+                return `${x},${y}`;
+              }).join(' ')}
+            />
+          )}
+        </svg>
+        <div className="absolute top-0 right-0 text-sm text-gray-600">
+          {maxValue.toFixed(2)} {unit}
+        </div>
+        <div className="absolute bottom-0 right-0 text-sm text-gray-600">
+          {minValue.toFixed(2)} {unit}
+        </div>
+      </div>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Загрузка данных счётчика...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-red-600">{error}</div>
+      </div>
+    );
+  }
+
+  if (!meterData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Нет данных</div>
+      </div>
+    );
+  }
+
+  const { current, metrics } = meterData;
 
   return (
     <div className="space-y-6">
-      {/* Текущие показания */}
-      <div className="grid gap-6">
+      {/* Статус подключения */}
+      {current.connected !== null && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="Gauge" size={20} />
-              Текущие показания входного прибора учета
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Общие параметры */}
-              <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{currentReading.totalPower} кВт</div>
-                <div className="text-sm text-gray-600 mt-1">Общая мощность</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">{currentReading.totalEnergy.toLocaleString()} кВт⋅ч</div>
-                <div className="text-sm text-gray-600 mt-1">Всего энергии</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-indigo-600">{currentReading.frequency} Гц</div>
-                <div className="text-sm text-gray-600 mt-1">Частота</div>
-              </div>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className={`w-4 h-4 rounded-full ${current.connected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="font-medium">
+                {current.connected ? 'Счётчик подключен' : 'Счётчик отключен'}
+              </span>
+              {current.time && (
+                <span className="text-sm text-gray-500">
+                  • Обновлено: {new Date(current.time).toLocaleString('ru-RU')}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* Показания по фазам */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Показания по фазам</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Фаза</th>
-                    <th className="text-center py-3 px-4">Напряжение</th>
-                    <th className="text-center py-3 px-4">Ток</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {currentReading.phases.map((phase) => (
-                    <tr key={phase.phase} className="border-b last:border-0">
+      {/* Текущие показания */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Icon name="Gauge" size={20} />
+            Текущие показания
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {current.power_total?.toFixed(2) || '—'} кВт
+              </div>
+              <div className="text-sm text-gray-600 mt-1">Мощность</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {current.energy_active?.toLocaleString() || '—'} кВт⋅ч
+              </div>
+              <div className="text-sm text-gray-600 mt-1">Энергия</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {current.voltageL1?.toFixed(1) || '—'} В
+              </div>
+              <div className="text-sm text-gray-600 mt-1">Напряжение L1</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {current.currentL1?.toFixed(2) || '—'} А
+              </div>
+              <div className="text-sm text-gray-600 mt-1">Ток L1</div>
+            </div>
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-3 px-4">Фаза</th>
+                  <th className="text-center py-3 px-4">Напряжение</th>
+                  <th className="text-center py-3 px-4">Ток</th>
+                </tr>
+              </thead>
+              <tbody>
+                {['L1', 'L2', 'L3'].map((phase) => {
+                  const voltage = current[`voltage${phase}` as keyof typeof current] as number | undefined;
+                  const currentVal = current[`current${phase}` as keyof typeof current] as number | undefined;
+                  return (
+                    <tr key={phase} className="border-b last:border-0">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-3">
                           <div className={`w-3 h-3 rounded-full ${
-                            phase.phase === 'L1' ? 'bg-red-500' :
-                            phase.phase === 'L2' ? 'bg-yellow-500' :
+                            phase === 'L1' ? 'bg-red-500' :
+                            phase === 'L2' ? 'bg-yellow-500' :
                             'bg-blue-500'
                           }`} />
-                          <span className="font-medium">Фаза {phase.phase}</span>
+                          <span className="font-medium">Фаза {phase}</span>
                         </div>
                       </td>
                       <td className="text-center py-3 px-4">
-                        <div className={`inline-block text-lg font-bold border-2 rounded-lg py-2 px-3 ${getPhaseColor(phase.phase)}`}>
-                          {formatVoltage(phase.voltage)} В
+                        <div className={`inline-block text-lg font-bold border-2 rounded-lg py-2 px-3 ${getPhaseColor(phase)}`}>
+                          {voltage?.toFixed(1) || '—'} В
                         </div>
                       </td>
                       <td className="text-center py-3 px-4">
-                        <div className={`inline-block text-lg font-bold border-2 rounded-lg py-2 px-3 ${getPhaseColor(phase.phase)}`}>
-                          {formatCurrent(phase.current)} А
+                        <div className={`inline-block text-lg font-bold border-2 rounded-lg py-2 px-3 ${getPhaseColor(phase)}`}>
+                          {currentVal?.toFixed(2) || '—'} А
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* График напряжения */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="TrendingUp" size={20} />
-              График напряжения по фазам
-            </CardTitle>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1h">Последний час</SelectItem>
-                <SelectItem value="24h">Последние 24 часа</SelectItem>
-                <SelectItem value="7d">Последняя неделя</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <p className="text-sm text-gray-500">
-            {getPeriodLabel(selectedPeriod)} • Обновлено: {new Date().toLocaleTimeString('ru-RU')}
-          </p>
-        </CardHeader>
-        <CardContent>
-          {/* Легенда */}
-          <div className="flex justify-center gap-6 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full" />
-              <span className="text-sm">Фаза L1</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-              <span className="text-sm">Фаза L2</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full" />
-              <span className="text-sm">Фаза L3</span>
-            </div>
-          </div>
-
-          {/* Интерактивный график в виде SVG */}
-          <div className="w-full h-80 border rounded-lg bg-gray-50 p-4 relative">
-            <svg 
-              width="100%" 
-              height="100%" 
-              viewBox="0 0 800 280"
-              className="overflow-visible"
-              preserveAspectRatio="none"
-            >
-              {/* Сетка */}
-              <defs>
-                <pattern id="grid" width="40" height="28" patternUnits="userSpaceOnUse">
-                  <path d="M 40 0 L 0 0 0 28" fill="none" stroke="#e5e7eb" strokeWidth="1"/>
-                </pattern>
-              </defs>
-              <rect width="100%" height="100%" fill="url(#grid)" />
-              
-              {/* Оси */}
-              <line x1="30" y1="260" x2="770" y2="260" stroke="#6b7280" strokeWidth="2" />
-              <line x1="30" y1="20" x2="30" y2="260" stroke="#6b7280" strokeWidth="2" />
-              
-              {/* Подписи осей */}
-              <text x="400" y="280" textAnchor="middle" className="text-sm fill-gray-600">Время</text>
-              
-              {/* Масштаб по Y (200-250В) */}
-              {[200, 210, 220, 230, 240, 250].map((voltage, i) => (
-                <g key={voltage}>
-                  <line x1="25" y1={260 - i * 40} x2="30" y2={260 - i * 40} stroke="#6b7280" strokeWidth="1" />
-                  <text x="23" y={264 - i * 40} textAnchor="end" className="text-xs fill-gray-600">{voltage}</text>
-                </g>
-              ))}
-              
-              {/* Линии графика */}
-              {voltageData.length > 1 && (
-                <>
-                  {/* L1 - красная */}
-                  <polyline
-                    fill="none"
-                    stroke="#dc2626"
-                    strokeWidth="2"
-                    points={voltageData.map((point, i) => 
-                      `${30 + (i * 740 / (voltageData.length - 1))},${260 - ((point.L1 - 200) * 200 / 50)}`
-                    ).join(' ')}
-                  />
-                  
-                  {/* L2 - желтая */}
-                  <polyline
-                    fill="none"
-                    stroke="#eab308"
-                    strokeWidth="2"
-                    points={voltageData.map((point, i) => 
-                      `${30 + (i * 740 / (voltageData.length - 1))},${260 - ((point.L2 - 200) * 200 / 50)}`
-                    ).join(' ')}
-                  />
-                  
-                  {/* L3 - синяя */}
-                  <polyline
-                    fill="none"
-                    stroke="#2563eb"
-                    strokeWidth="2"
-                    points={voltageData.map((point, i) => 
-                      `${30 + (i * 740 / (voltageData.length - 1))},${260 - ((point.L3 - 200) * 200 / 50)}`
-                    ).join(' ')}
-                  />
-                </>
-              )}
-
-              {/* Невидимая область для отслеживания мыши поверх графика */}
-              <rect
-                x="30"
-                y="20"
-                width="740"
-                height="240"
-                fill="transparent"
-                onMouseMove={(e) => {
-                  const svg = e.currentTarget.closest('svg')!;
-                  const svgRect = svg.getBoundingClientRect();
-                  // Получаем точную позицию мыши относительно SVG
-                  const mouseX = ((e.clientX - svgRect.left) / svgRect.width) * 800;
-                  
-                  // Ограничиваем область действия графика
-                  if (mouseX >= 30 && mouseX <= 770) {
-                    // Вычисляем индекс данных на основе позиции мыши в области графика
-                    const relativeX = mouseX - 30; // Смещение относительно начала графика
-                    const dataIndex = Math.round((relativeX / 740) * (voltageData.length - 1));
-                    
-                    if (dataIndex >= 0 && dataIndex < voltageData.length) {
-                      // Точная позиция линии на основе индекса данных
-                      const actualX = 30 + (dataIndex * 740 / (voltageData.length - 1));
-                      setHoveredPoint({
-                        x: actualX,
-                        y: 140,
-                        data: voltageData[dataIndex],
-                        index: dataIndex
-                      });
-                    }
-                  }
-                }}
-                onMouseLeave={() => setHoveredPoint(null)}
-              />
-
-              {/* Вертикальная линия при наведении */}
-              {hoveredPoint && (
-                <line
-                  x1={hoveredPoint.x}
-                  y1="20"
-                  x2={hoveredPoint.x}
-                  y2="260"
-                  stroke="#6b7280"
-                  strokeWidth="1"
-                  strokeDasharray="4,4"
-                  opacity="0.7"
-                />
-              )}
-
-              {/* Точки на линиях при наведении */}
-              {hoveredPoint && voltageData.length > 0 && (
-                <>
-                  {/* Точка L1 */}
-                  <circle
-                    cx={hoveredPoint.x}
-                    cy={260 - ((hoveredPoint.data.L1 - 200) * 200 / 50)}
-                    r="4"
-                    fill="#dc2626"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  {/* Точка L2 */}
-                  <circle
-                    cx={hoveredPoint.x}
-                    cy={260 - ((hoveredPoint.data.L2 - 200) * 200 / 50)}
-                    r="4"
-                    fill="#eab308"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                  {/* Точка L3 */}
-                  <circle
-                    cx={hoveredPoint.x}
-                    cy={260 - ((hoveredPoint.data.L3 - 200) * 200 / 50)}
-                    r="4"
-                    fill="#2563eb"
-                    stroke="white"
-                    strokeWidth="2"
-                  />
-                </>
-              )}
-              
-              {/* Подписи времени */}
-              {voltageData.length > 0 && selectedPeriod !== '7d' && (
-                <>
-                  <text x="30" y="275" textAnchor="start" className="text-xs fill-gray-600">
-                    {voltageData[0].time}
-                  </text>
-                  <text x="770" y="275" textAnchor="end" className="text-xs fill-gray-600">
-                    {voltageData[voltageData.length - 1].time}
-                  </text>
-                </>
-              )}
-            </svg>
-
-            {/* Тултип с данными */}
-            {hoveredPoint && (
-              <div
-                className="absolute pointer-events-none bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-10 min-w-[120px]"
-                style={{
-                  // Позиционируем тултип относительно SVG контейнера с учетом новой ширины
-                  left: `${(hoveredPoint.x / 800) * 100}%`,
-                  top: 10,
-                  transform: hoveredPoint.x > 400 ? 'translateX(-100%)' : 'translateX(10px)'
-                }}
-              >
-                <div className="text-xs font-semibold text-gray-700 mb-2">
-                  {hoveredPoint.data.time}
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-xs font-mono">L1: {formatVoltage(hoveredPoint.data.L1)} В</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span className="text-xs font-mono">L2: {formatVoltage(hoveredPoint.data.L2)} В</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-xs font-mono">L3: {formatVoltage(hoveredPoint.data.L3)} В</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Статистика по периоду - вычисляем один раз */}
-          <div className="mt-6 pt-6 border-t">
-            <div className="grid grid-cols-3 gap-6 text-center">
-              {(() => {
-                const avgL1 = voltageData.reduce((sum, p) => sum + p.L1, 0) / voltageData.length;
-                const avgL2 = voltageData.reduce((sum, p) => sum + p.L2, 0) / voltageData.length;
-                const avgL3 = voltageData.reduce((sum, p) => sum + p.L3, 0) / voltageData.length;
-                
-                return (
-                  <>
-                    <div>
-                      <div className="text-lg font-semibold text-red-600">
-                        {formatVoltage(avgL1)} В
-                      </div>
-                      <div className="text-sm text-gray-600">Среднее L1</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-yellow-600">
-                        {formatVoltage(avgL2)} В
-                      </div>
-                      <div className="text-sm text-gray-600">Среднее L2</div>
-                    </div>
-                    <div>
-                      <div className="text-lg font-semibold text-blue-600">
-                        {formatVoltage(avgL3)} В
-                      </div>
-                      <div className="text-sm text-gray-600">Среднее L3</div>
-                    </div>
-                  </>
-                );
-              })()} 
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
 
-      {/* Дополнительные действия */}
+      {/* Графики */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Icon name="Settings" size={20} />
-            Действия с прибором учета
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <Icon name="TrendingUp" size={20} />
+              Динамика показаний
+            </CardTitle>
+            <div className="flex gap-2">
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1h">Последний час</SelectItem>
+                  <SelectItem value="24h">Последние 24 часа</SelectItem>
+                  <SelectItem value="7d">Последняя неделя</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <p className="text-sm text-gray-500">
+            {getPeriodLabel(selectedPeriod)}
+          </p>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-3">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Icon name="Download" size={16} />
-              Экспорт данных
-            </Button>
+          {/* Переключатель графиков */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <button
+              onClick={() => setActiveChart('voltage')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeChart === 'voltage'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Напряжение
+            </button>
+            <button
+              onClick={() => setActiveChart('current')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeChart === 'current'
+                  ? 'bg-orange-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Ток
+            </button>
+            <button
+              onClick={() => setActiveChart('power')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeChart === 'power'
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Мощность
+            </button>
+            <button
+              onClick={() => setActiveChart('energy')}
+              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                activeChart === 'energy'
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Энергия
+            </button>
+          </div>
+
+          {/* Легенда для трёхфазных графиков */}
+          {(activeChart === 'voltage' || activeChart === 'current') && (
+            <div className="flex justify-center gap-6 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-600" />
+                <span className="text-sm text-gray-700">Фаза L1</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-yellow-600" />
+                <span className="text-sm text-gray-700">Фаза L2</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-blue-600" />
+                <span className="text-sm text-gray-700">Фаза L3</span>
+              </div>
+            </div>
+          )}
+
+          {/* График */}
+          <div>
+            {activeChart === 'voltage' && renderMultiPhaseChart(
+              metrics.voltageL1,
+              metrics.voltageL2,
+              metrics.voltageL3,
+              'Напряжение',
+              'В'
+            )}
+            {activeChart === 'current' && renderMultiPhaseChart(
+              metrics.currentL1,
+              metrics.currentL2,
+              metrics.currentL3,
+              'Ток',
+              'А'
+            )}
+            {activeChart === 'power' && renderChart(
+              metrics.power_total,
+              'Мощность',
+              'кВт',
+              '#10B981'
+            )}
+            {activeChart === 'energy' && renderChart(
+              metrics.energy_active,
+              'Энергия',
+              'кВт⋅ч',
+              '#8B5CF6'
+            )}
           </div>
         </CardContent>
       </Card>

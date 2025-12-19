@@ -28,7 +28,7 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
@@ -168,4 +168,37 @@ export interface ContactorsData {
   signalsCount: number;
   contactorsCount: number;
   contactors: Contactor[];
+}
+
+export interface EnergyMeterCurrent {
+  connected: boolean | null;
+  time: string;
+  ts: number;
+  voltageL1?: number;
+  voltageL2?: number;
+  voltageL3?: number;
+  currentL1?: number;
+  currentL2?: number;
+  currentL3?: number;
+  power_total?: number;
+  energy_active?: number;
+}
+
+export interface EnergyMeterMetrics {
+  voltageL1?: MetricPoint[];
+  voltageL2?: MetricPoint[];
+  voltageL3?: MetricPoint[];
+  currentL1?: MetricPoint[];
+  currentL2?: MetricPoint[];
+  currentL3?: MetricPoint[];
+  power_total?: MetricPoint[];
+  energy_active?: MetricPoint[];
+}
+
+export interface EnergyMeterData {
+  serialNumber: string;
+  from: string;
+  to: string;
+  current: EnergyMeterCurrent;
+  metrics: EnergyMeterMetrics;
 }
