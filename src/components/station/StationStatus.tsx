@@ -216,6 +216,15 @@ export default function StationStatus({ station, isStationOnline = true, station
                     </Badge>
                   </div>
                   <p className="text-sm text-gray-500">{connector.power} • DC</p>
+                  {stationData?.connectors?.[index]?.ocpp_status && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      OCPP: {stationData.connectors[index].ocpp_status.status}
+                      {stationData.connectors[index].ocpp_status.errorCode !== 'NoError' && 
+                        ` • ${stationData.connectors[index].ocpp_status.errorCode}`}
+                      {stationData.connectors[index].ocpp_status.info && 
+                        ` • ${stationData.connectors[index].ocpp_status.info}`}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
