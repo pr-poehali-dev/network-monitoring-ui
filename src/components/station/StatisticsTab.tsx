@@ -41,10 +41,10 @@ interface StatisticsData {
 }
 
 const CONNECTOR_TYPE_NAMES: { [key: number]: string } = {
-  1: 'Type 2',
+  1: 'CHAdeMO',
   2: 'CCS',
-  3: 'CHAdeMO',
-  4: 'Type 1',
+  3: 'GB/T',
+  4: 'Type2',
 };
 
 const PRESET_RANGES = [
