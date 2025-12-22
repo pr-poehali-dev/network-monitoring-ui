@@ -147,7 +147,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                 variant="outline" 
                 size="sm" 
                 className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                disabled={!isStationOnline}
+                disabled={loading}
               >
                 <Icon name="RotateCcw" size={16} />
                 ПЕРЕЗАГРУЗКА
@@ -156,7 +156,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                 variant="outline" 
                 size="sm" 
                 className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                disabled={!isStationOnline || loading}
+                disabled={loading}
                 onClick={handleOcppToggle}
               >
                 <Icon name="Wifi" size={16} />
@@ -198,7 +198,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                   variant="outline" 
                   size="sm" 
                   className="text-green-600 border-green-200 hover:bg-green-50"
-                  disabled={!isStationOnline || loading}
+                  disabled={loading}
                   onClick={() => handleStartConnector(connector.id)}
                 >
                   СТАРТ
@@ -207,7 +207,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                   variant="outline" 
                   size="sm" 
                   className="text-red-600 border-red-200 hover:bg-red-50"
-                  disabled={!isStationOnline || loading}
+                  disabled={loading}
                   onClick={() => handleStopConnector(connector.id)}
                 >
                   СТОП
@@ -216,7 +216,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                   variant="outline" 
                   size="sm" 
                   className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                  disabled={!isStationOnline || loading}
+                  disabled={loading}
                   onClick={() => handleToggleConnector(connector.id, connector.status === 'available')}
                 >
                   <Icon name="Power" size={16} />
