@@ -46,10 +46,22 @@ interface StationData {
   region: string;
   owner?: string;
   error_info?: string;
+  ocpp_connected?: boolean;
+  ocpp_status?: {
+    status: string;
+    errorCode: string;
+    info: string;
+    vendorErrorCode: string;
+  };
   connectors?: Array<{
     id: string;
     status: number;
     type: number;
+    ocpp_status?: {
+      status: string;
+      errorCode: string;
+      info: string;
+    };
   }>;
 }
 
@@ -73,7 +85,7 @@ const getStatusLabel = (status: string) => {
 
 export default function StationStatus({ station, isStationOnline = true, stationData }: StationStatusProps) {
   const { setOcppConnection, startConnector, stopConnector, setConnectorAvailability, loading } = useStationControl(stationData?.station_id);
-  const ocppDisconnected = stationData?.error_info === 'OCPP not connected';
+  const ocppDisconnected = !stationData?.ocpp_connected;
 
   const handleOcppToggle = async () => {
     try {
@@ -147,6 +159,12 @@ export default function StationStatus({ station, isStationOnline = true, station
                 <p className="text-sm text-gray-500">
                   {isStationOnline ? 'Станция подключена' : 'Станция отключена'}
                 </p>
+                {stationData?.ocpp_status && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    OCPP: {stationData.ocpp_status.status}
+                    {stationData.ocpp_status.info && ` • ${stationData.ocpp_status.info}`}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
