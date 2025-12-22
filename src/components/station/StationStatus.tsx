@@ -46,6 +46,8 @@ interface StationData {
   region: string;
   owner?: string;
   error_info?: string;
+  station_status?: string;
+  ocpp_connected?: boolean;
   ocpp_status?: {
     status: string;
     errorCode: string;
@@ -140,6 +142,11 @@ export default function StationStatus({ station, isStationOnline = true, station
   const { setOcppConnection, startConnector, stopConnector, setConnectorAvailability, loading } = useStationControl(stationData?.station_id);
   const ocppDisconnected = stationData?.error_info === 'OCPP not connected';
   const stationColors = stationData?.ocpp_status ? getOcppStatusColors(stationData.ocpp_status.status) : getOcppStatusColors('Unavailable');
+  
+  // Станция считается отключенной только если station_status === 'disconnected'
+  const isStationReallyOnline = stationData?.station_status !== 'disconnected';
+  // Для иконки wifi используем ocpp_connected
+  const isOcppConnected = stationData?.ocpp_connected !== false;
 
   const handleOcppToggle = async () => {
     try {
@@ -199,13 +206,15 @@ export default function StationStatus({ station, isStationOnline = true, station
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Icon 
-                name={isStationOnline ? "BatteryCharging" : "WifiOff"} 
+                name={isOcppConnected ? "BatteryCharging" : "WifiOff"} 
                 size={32} 
-                className={stationColors.icon} 
+                className={isOcppConnected ? stationColors.icon : "text-gray-400"} 
               />
               <div className="space-y-1">
                 <p className="text-sm text-gray-500">
-                  {isStationOnline ? 'Станция подключена' : 'Станция отключена'}
+                  {isStationReallyOnline ? (
+                    isOcppConnected ? 'Станция подключена' : 'OCPP отключен'
+                  ) : 'Станция отключена'}
                 </p>
                 {stationData?.ocpp_status && (
                   <div className="space-y-1 text-xs">
