@@ -167,8 +167,8 @@ export default function StationStatus({ station, isStationOnline = true, station
         </CardContent>
       </Card>
 
-      {/* Connectors - скрываем когда станция офлайн */}
-      {isStationOnline && (
+      {/* Connectors - скрываем только когда станция офлайн */}
+      {stationData?.station_status !== 'disconnected' && (
         <Card>
           <CardHeader>
             <CardTitle>Коннекторы</CardTitle>
