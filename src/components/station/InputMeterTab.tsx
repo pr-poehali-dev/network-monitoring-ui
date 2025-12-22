@@ -84,6 +84,22 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
     return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const formatEnergy = (wattHours: number | undefined): string => {
+    if (wattHours === undefined || wattHours === null) return '—';
+    
+    const absValue = Math.abs(wattHours);
+    
+    if (absValue >= 1_000_000_000) {
+      return `${(wattHours / 1_000_000_000).toFixed(2)} ГВт⋅ч`;
+    } else if (absValue >= 1_000_000) {
+      return `${(wattHours / 1_000_000).toFixed(2)} МВт⋅ч`;
+    } else if (absValue >= 1_000) {
+      return `${(wattHours / 1_000).toFixed(2)} кВт⋅ч`;
+    } else {
+      return `${wattHours.toFixed(2)} Вт⋅ч`;
+    }
+  };
+
   const formatChartData = (data: MetricPoint[] | undefined) => {
     if (!data) return [];
     return data.map(m => ({
@@ -268,24 +284,7 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
 
   return (
     <div className="space-y-6">
-      {/* Статус подключения */}
-      {current.connected !== null && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className={`w-4 h-4 rounded-full ${current.connected ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="font-medium">
-                {current.connected ? 'Счётчик подключен' : 'Счётчик отключен'}
-              </span>
-              {current.time && (
-                <span className="text-sm text-gray-500">
-                  • Обновлено: {new Date(current.time).toLocaleString('ru-RU')}
-                </span>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+
 
       {/* Текущие показания */}
       <Card>
@@ -305,7 +304,7 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {current.energy_active?.toLocaleString() || '—'} кВт⋅ч
+                {formatEnergy(current.energy_active)}
               </div>
               <div className="text-sm text-gray-600 mt-1">Энергия</div>
             </div>
