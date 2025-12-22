@@ -100,6 +100,22 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
     }
   };
 
+  const formatPower = (watts: number | undefined): string => {
+    if (watts === undefined || watts === null) return '—';
+    
+    const absValue = Math.abs(watts);
+    
+    if (absValue >= 1_000_000_000) {
+      return `${(watts / 1_000_000_000).toFixed(2)} ГВт`;
+    } else if (absValue >= 1_000_000) {
+      return `${(watts / 1_000_000).toFixed(2)} МВт`;
+    } else if (absValue >= 1_000) {
+      return `${(watts / 1_000).toFixed(2)} кВт`;
+    } else {
+      return `${watts.toFixed(2)} Вт`;
+    }
+  };
+
   const formatChartData = (data: MetricPoint[] | undefined) => {
     if (!data) return [];
     return data.map(m => ({
@@ -298,7 +314,7 @@ export default function InputMeterTab({ serialNumber }: InputMeterTabProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {current.power_total?.toFixed(2) || '—'} кВт
+                {formatPower(current.power_total)}
               </div>
               <div className="text-sm text-gray-600 mt-1">Мощность</div>
             </div>
