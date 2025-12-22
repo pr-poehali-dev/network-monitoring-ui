@@ -1,17 +1,9 @@
 // WebSocket типы и структуры данных
 
-export interface OcppStatus {
-  status: string;
-  errorCode: string;
-  info: string;
-  vendorErrorCode?: string;
-}
-
 export interface ConnectorData {
   id: string;
   status: number;
   type: number;
-  ocpp_status?: OcppStatus;
 }
 
 export type StationStatus = 'initializing' | 'connected' | 'error' | 'disconnected';
@@ -29,8 +21,6 @@ export interface StationData {
   lon: number | null;
   station_status: StationStatus;
   error_info: string;
-  ocpp_connected?: boolean;
-  ocpp_status?: OcppStatus;
   connectors: ConnectorData[];
   owner?: string;
 }
