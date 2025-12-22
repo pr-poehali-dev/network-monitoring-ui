@@ -90,6 +90,7 @@ export interface Transaction {
   reason: string;
   meterStartWh: number;
   meterStopWh: number;
+  isActive?: boolean;
 }
 
 export interface UptimeBucket {

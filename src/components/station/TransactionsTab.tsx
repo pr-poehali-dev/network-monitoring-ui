@@ -152,12 +152,14 @@ export default function TransactionsTab({ serialNumber, onTransactionClick }: Tr
                     <td className="py-3 px-4">
                       <span
                         className={`text-xs px-2 py-1 rounded-full ${
-                          transaction.success
+                          transaction.isActive
+                            ? 'bg-blue-100 text-blue-700'
+                            : transaction.success
                             ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
                         }`}
                       >
-                        {transaction.success ? 'Успешно' : 'Неуспешно'}
+                        {transaction.isActive ? 'Зарядка' : transaction.success ? 'Успешно' : 'Неуспешно'}
                       </span>
                     </td>
                     <td className="py-3 px-4">
