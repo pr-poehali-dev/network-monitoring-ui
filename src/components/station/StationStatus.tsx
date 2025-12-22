@@ -46,10 +46,24 @@ interface StationData {
   region: string;
   owner?: string;
   error_info?: string;
+  ocpp_status?: {
+    status: string;
+    errorCode: string;
+    info: string;
+    vendorErrorCode?: string;
+    vendor_error_code?: string;
+  };
   connectors?: Array<{
     id: string;
     status: number;
     type: number;
+    ocpp_status?: {
+      status: string;
+      errorCode: string;
+      info: string;
+      vendorErrorCode?: string;
+      vendor_error_code?: string;
+    };
   }>;
 }
 
@@ -142,11 +156,22 @@ export default function StationStatus({ station, isStationOnline = true, station
                 size={32} 
                 className={isStationOnline ? "text-green-600" : "text-gray-400"} 
               />
-              <div>
-                <p className="font-medium">{getStatusLabel(station.status)}</p>
+              <div className="space-y-1">
                 <p className="text-sm text-gray-500">
                   {isStationOnline ? 'Станция подключена' : 'Станция отключена'}
                 </p>
+                {stationData?.ocpp_status && (
+                  <div className="space-y-1 text-xs">
+                    <div><span className="text-gray-500">Status:</span> <span className="font-medium">{stationData.ocpp_status.status}</span></div>
+                    <div><span className="text-gray-500">Error:</span> <span className="font-medium">{stationData.ocpp_status.errorCode}</span></div>
+                    {stationData.ocpp_status.info && (
+                      <div><span className="text-gray-500">Info:</span> <span className="font-medium">{stationData.ocpp_status.info}</span></div>
+                    )}
+                    {(stationData.ocpp_status.vendor_error_code || stationData.ocpp_status.vendorErrorCode) && (
+                      <div><span className="text-gray-500">Vendor:</span> <span className="font-medium">{stationData.ocpp_status.vendor_error_code || stationData.ocpp_status.vendorErrorCode}</span></div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex gap-2">
@@ -181,23 +206,34 @@ export default function StationStatus({ station, isStationOnline = true, station
             <CardTitle>Коннекторы</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {station.connectors.map((connector, index) => (
-            <div key={connector.id} className={`flex items-center justify-between p-4 border rounded-lg ${connector.statusBorder}`}>
+            {station.connectors.map((connector, index) => {
+              const ocppStatus = stationData?.connectors?.[index]?.ocpp_status;
+              return (
+            <div key={connector.id} className="flex items-center justify-between p-4 border rounded-lg border-gray-200">
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${connector.statusBg}`}>
-                    <span className={`text-sm font-medium ${connector.statusColor}`}>{connector.id}</span>
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100">
+                    <span className="text-sm font-medium text-gray-700">{connector.id}</span>
                   </div>
-                  <Icon name="Plug" size={24} className={connector.statusColor.replace('text-', 'text-').replace('-700', '-600')} />
+                  <Icon name="Plug" size={24} className="text-gray-600" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
                     <span className="font-medium">{connector.type}</span>
-                    <Badge variant="outline" className={`${connector.statusBg} ${connector.statusColor} ${connector.statusBorder}`}>
-                      {connector.statusLabel}
-                    </Badge>
+                    <span className="text-sm text-gray-500">{connector.power} • DC</span>
                   </div>
-                  <p className="text-sm text-gray-500">{connector.power} • DC</p>
+                  {ocppStatus && (
+                    <div className="space-y-1 text-xs">
+                      <div><span className="text-gray-500">Status:</span> <span className="font-medium">{ocppStatus.status}</span></div>
+                      <div><span className="text-gray-500">Error:</span> <span className="font-medium">{ocppStatus.errorCode}</span></div>
+                      {ocppStatus.info && (
+                        <div><span className="text-gray-500">Info:</span> <span className="font-medium">{ocppStatus.info}</span></div>
+                      )}
+                      {(ocppStatus.vendor_error_code || ocppStatus.vendorErrorCode) && (
+                        <div><span className="text-gray-500">Vendor:</span> <span className="font-medium">{ocppStatus.vendor_error_code || ocppStatus.vendorErrorCode}</span></div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex gap-2">
@@ -231,7 +267,8 @@ export default function StationStatus({ station, isStationOnline = true, station
                 </Button>
               </div>
             </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
       )}
