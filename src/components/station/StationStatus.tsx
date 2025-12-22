@@ -67,13 +67,12 @@ const getStatusLabel = (status: string) => {
 
 export default function StationStatus({ station, isStationOnline = true, stationData }: StationStatusProps) {
   const { setOcppConnection, startConnector, stopConnector, setConnectorAvailability, loading } = useStationControl(stationData?.station_id);
-  const [ocppEnabled, setOcppEnabled] = useState(true);
+  const ocppDisconnected = stationData?.error_info === 'OCPP not connected';
 
   const handleOcppToggle = async () => {
     try {
-      const newState = !ocppEnabled;
+      const newState = !ocppDisconnected;
       await setOcppConnection(newState);
-      setOcppEnabled(newState);
       alert(`OCPP ${newState ? 'включен' : 'отключен'}`);
     } catch (error) {
       alert(`Ошибка: ${error instanceof Error ? error.message : 'Не удалось изменить состояние OCPP'}`);
@@ -160,7 +159,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                 onClick={handleOcppToggle}
               >
                 <Icon name="Wifi" size={16} />
-                OCPP {ocppEnabled ? 'ВЫКЛ' : 'ВКЛ'}
+                OCPP {ocppDisconnected ? 'ВКЛ' : 'ВЫКЛ'}
               </Button>
             </div>
           </div>
