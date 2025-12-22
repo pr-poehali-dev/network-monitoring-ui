@@ -140,7 +140,6 @@ const getOcppStatusColors = (status: string) => {
 
 export default function StationStatus({ station, isStationOnline = true, stationData }: StationStatusProps) {
   const { setOcppConnection, startConnector, stopConnector, setConnectorAvailability, loading } = useStationControl(stationData?.station_id);
-  const ocppDisconnected = stationData?.error_info === 'OCPP not connected';
   const stationColors = stationData?.ocpp_status ? getOcppStatusColors(stationData.ocpp_status.status) : getOcppStatusColors('Unavailable');
   
   // Станция считается отключенной только если station_status === 'disconnected'
@@ -150,7 +149,8 @@ export default function StationStatus({ station, isStationOnline = true, station
 
   const handleOcppToggle = async () => {
     try {
-      const newState = ocppDisconnected;
+      // Если OCPP отключен (false), то включаем (true), и наоборот
+      const newState = !isOcppConnected;
       await setOcppConnection(newState);
       alert(`OCPP ${newState ? 'включен' : 'отключен'}`);
     } catch (error) {
@@ -248,7 +248,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                 onClick={handleOcppToggle}
               >
                 <Icon name="Wifi" size={16} />
-                OCPP {ocppDisconnected ? 'ВКЛ' : 'ВЫКЛ'}
+                OCPP {isOcppConnected ? 'ВЫКЛ' : 'ВКЛ'}
               </Button>
             </div>
           </div>
