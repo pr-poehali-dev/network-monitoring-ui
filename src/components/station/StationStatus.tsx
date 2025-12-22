@@ -45,6 +45,12 @@ interface StationData {
   address: string;
   region: string;
   owner?: string;
+  error_info?: string;
+  connectors?: Array<{
+    id: string;
+    status: number;
+    type: number;
+  }>;
 }
 
 interface StationStatusProps {
@@ -97,9 +103,11 @@ export default function StationStatus({ station, isStationOnline = true, station
     }
   };
 
-  const handleToggleConnector = async (connectorId: string, currentlyAvailable: boolean) => {
+  const handleToggleConnector = async (connectorId: string) => {
     try {
-      const newState = !currentlyAvailable;
+      const connector = stationData?.connectors?.find(c => c.id === connectorId);
+      const isUnavailable = connector?.status === 254;
+      const newState = isUnavailable;
       await setConnectorAvailability(Number(connectorId), newState);
       alert(`Коннектор ${connectorId} ${newState ? 'включен' : 'отключен'}`);
     } catch (error) {
@@ -216,7 +224,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                   size="sm" 
                   className="text-gray-600 border-gray-200 hover:bg-gray-50"
                   disabled={loading}
-                  onClick={() => handleToggleConnector(connector.id, connector.status === 'available')}
+                  onClick={() => handleToggleConnector(connector.id)}
                 >
                   <Icon name="Power" size={16} />
                   ВКЛ/ВЫКЛ
