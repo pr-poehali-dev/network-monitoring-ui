@@ -147,48 +147,74 @@ export default function StationStatus({ station, isStationOnline = true, station
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Icon 
-                name={isStationOnline ? "BatteryCharging" : "WifiOff"} 
-                size={32} 
-                className={isStationOnline ? "text-green-600" : "text-gray-400"} 
-              />
-              <div>
-                <p className="font-medium">{getStatusLabel(station.status)}</p>
-                <p className="text-sm text-gray-500">
-                  {isStationOnline ? 'Станция подключена' : 'Станция отключена'}
-                </p>
-                {stationData?.ocpp_status && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    OCPP: {stationData.ocpp_status.status}
-                    {stationData.ocpp_status.info && ` • ${stationData.ocpp_status.info}`}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Icon 
+                  name={isStationOnline ? "BatteryCharging" : "WifiOff"} 
+                  size={32} 
+                  className={isStationOnline ? "text-green-600" : "text-gray-400"} 
+                />
+                <div>
+                  <p className="font-medium">{getStatusLabel(station.status)}</p>
+                  <p className="text-sm text-gray-500">
+                    {isStationOnline ? 'Станция подключена' : 'Станция отключена'}
                   </p>
-                )}
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-orange-600 border-orange-200 hover:bg-orange-50"
+                  disabled={loading}
+                >
+                  <Icon name="RotateCcw" size={16} />
+                  ПЕРЕЗАГРУЗКА
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-gray-600 border-gray-200 hover:bg-gray-50"
+                  disabled={loading}
+                  onClick={handleOcppToggle}
+                >
+                  <Icon name="Wifi" size={16} />
+                  OCPP {ocppDisconnected ? 'ВКЛ' : 'ВЫКЛ'}
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-orange-600 border-orange-200 hover:bg-orange-50"
-                disabled={loading}
-              >
-                <Icon name="RotateCcw" size={16} />
-                ПЕРЕЗАГРУЗКА
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                disabled={loading}
-                onClick={handleOcppToggle}
-              >
-                <Icon name="Wifi" size={16} />
-                OCPP {ocppDisconnected ? 'ВКЛ' : 'ВЫКЛ'}
-              </Button>
-            </div>
+            
+            {/* OCPP Station Status */}
+            {stationData?.ocpp_status && (
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="text-xs font-medium text-gray-500 mb-2">OCPP СТАТУС СТАНЦИИ</div>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-gray-500">Status:</span>
+                    <span className="ml-2 font-medium">{stationData.ocpp_status.status}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Error Code:</span>
+                    <span className="ml-2 font-medium">{stationData.ocpp_status.errorCode}</span>
+                  </div>
+                  {stationData.ocpp_status.info && (
+                    <div>
+                      <span className="text-gray-500">Info:</span>
+                      <span className="ml-2 font-medium">{stationData.ocpp_status.info}</span>
+                    </div>
+                  )}
+                  {stationData.ocpp_status.vendorErrorCode && (
+                    <div>
+                      <span className="text-gray-500">Vendor Code:</span>
+                      <span className="ml-2 font-medium">{stationData.ocpp_status.vendorErrorCode}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
+
         </CardContent>
       </Card>
 
@@ -208,7 +234,7 @@ export default function StationStatus({ station, isStationOnline = true, station
                   </div>
                   <Icon name="Plug" size={24} className={connector.statusColor.replace('text-', 'text-').replace('-700', '-600')} />
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="font-medium">{connector.type}</span>
                     <Badge variant="outline" className={`${connector.statusBg} ${connector.statusColor} ${connector.statusBorder}`}>
@@ -216,14 +242,28 @@ export default function StationStatus({ station, isStationOnline = true, station
                     </Badge>
                   </div>
                   <p className="text-sm text-gray-500">{connector.power} • DC</p>
+                  
+                  {/* OCPP Connector Status */}
                   {stationData?.connectors?.[index]?.ocpp_status && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      OCPP: {stationData.connectors[index].ocpp_status.status}
-                      {stationData.connectors[index].ocpp_status.errorCode !== 'NoError' && 
-                        ` • ${stationData.connectors[index].ocpp_status.errorCode}`}
-                      {stationData.connectors[index].ocpp_status.info && 
-                        ` • ${stationData.connectors[index].ocpp_status.info}`}
-                    </p>
+                    <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                      <div className="text-xs font-medium text-gray-500 mb-1">OCPP</div>
+                      <div className="flex gap-2 text-xs">
+                        <span className="text-gray-600">Status:</span>
+                        <span className="font-medium">{stationData.connectors[index].ocpp_status.status}</span>
+                        {stationData.connectors[index].ocpp_status.errorCode !== 'NoError' && (
+                          <>
+                            <span className="text-gray-400">•</span>
+                            <span className="text-red-600 font-medium">{stationData.connectors[index].ocpp_status.errorCode}</span>
+                          </>
+                        )}
+                      </div>
+                      {stationData.connectors[index].ocpp_status.info && (
+                        <div className="flex gap-2 text-xs mt-1">
+                          <span className="text-gray-600">Info:</span>
+                          <span className="font-medium">{stationData.connectors[index].ocpp_status.info}</span>
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
