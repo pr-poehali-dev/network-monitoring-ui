@@ -28,7 +28,7 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics' | 'setOcppConnection' | 'startConnector' | 'stopConnector' | 'setConnectorAvailability';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
@@ -43,6 +43,10 @@ export interface WSClientMessage {
     region?: string;
     station_status?: string;
   };
+  enabled?: boolean;
+  connectorId?: number;
+  idTag?: string;
+  available?: boolean;
 }
 
 // Структура сообщений сервер -> клиент

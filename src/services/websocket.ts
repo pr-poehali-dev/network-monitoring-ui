@@ -532,6 +532,56 @@ export class WebSocketService {
   isConnected(): boolean {
     return this.ws?.readyState === WebSocket.OPEN;
   }
+
+  async setOcppConnection(serialNumber: string, enabled: boolean): Promise<any> {
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'setOcppConnection',
+      serialNumber,
+      enabled,
+      requestId: ''
+    });
+
+    return response.data;
+  }
+
+  async startConnector(serialNumber: string, connectorId: number, idTag: string = 'monitoring'): Promise<any> {
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'startConnector',
+      serialNumber,
+      connectorId,
+      idTag,
+      requestId: ''
+    });
+
+    return response.data;
+  }
+
+  async stopConnector(serialNumber: string, connectorId: number): Promise<any> {
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'stopConnector',
+      serialNumber,
+      connectorId,
+      requestId: ''
+    });
+
+    return response.data;
+  }
+
+  async setConnectorAvailability(serialNumber: string, connectorId: number, available: boolean): Promise<any> {
+    const response = await this.sendMessage({
+      type: 'request',
+      action: 'setConnectorAvailability',
+      serialNumber,
+      connectorId,
+      available,
+      requestId: ''
+    });
+
+    return response.data;
+  }
 }
 
 export const wsService = new WebSocketService('wss://eprom.online:10008');

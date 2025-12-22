@@ -279,3 +279,89 @@ export function useUptimeBuckets(serialNumber: string | undefined) {
     loadBuckets
   };
 }
+
+export function useStationControl(serialNumber: string | undefined) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const setOcppConnection = useCallback(async (enabled: boolean) => {
+    if (!serialNumber) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await wsService.setOcppConnection(serialNumber, enabled);
+      return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to set OCPP connection';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  const startConnector = useCallback(async (connectorId: number, idTag: string = 'monitoring') => {
+    if (!serialNumber) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await wsService.startConnector(serialNumber, connectorId, idTag);
+      return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to start connector';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  const stopConnector = useCallback(async (connectorId: number) => {
+    if (!serialNumber) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await wsService.stopConnector(serialNumber, connectorId);
+      return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to stop connector';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  const setConnectorAvailability = useCallback(async (connectorId: number, available: boolean) => {
+    if (!serialNumber) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await wsService.setConnectorAvailability(serialNumber, connectorId, available);
+      return result;
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to set connector availability';
+      setError(errorMsg);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  return {
+    loading,
+    error,
+    setOcppConnection,
+    startConnector,
+    stopConnector,
+    setConnectorAvailability
+  };
+}

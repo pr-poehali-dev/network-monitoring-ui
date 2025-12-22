@@ -3,6 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
+import { useStationControl } from '@/hooks/useWebSocket';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface Connector {
   id: string;
@@ -63,6 +66,48 @@ const getStatusLabel = (status: string) => {
 
 
 export default function StationStatus({ station, isStationOnline = true, stationData }: StationStatusProps) {
+  const { setOcppConnection, startConnector, stopConnector, setConnectorAvailability, loading } = useStationControl(stationData?.station_id);
+  const [ocppEnabled, setOcppEnabled] = useState(true);
+
+  const handleOcppToggle = async () => {
+    try {
+      const newState = !ocppEnabled;
+      await setOcppConnection(newState);
+      setOcppEnabled(newState);
+      alert(`OCPP ${newState ? 'включен' : 'отключен'}`);
+    } catch (error) {
+      alert(`Ошибка: ${error instanceof Error ? error.message : 'Не удалось изменить состояние OCPP'}`);
+    }
+  };
+
+  const handleStartConnector = async (connectorId: string) => {
+    try {
+      await startConnector(Number(connectorId));
+      alert(`Коннектор ${connectorId} запущен`);
+    } catch (error) {
+      alert(`Ошибка: ${error instanceof Error ? error.message : 'Не удалось запустить коннектор'}`);
+    }
+  };
+
+  const handleStopConnector = async (connectorId: string) => {
+    try {
+      await stopConnector(Number(connectorId));
+      alert(`Коннектор ${connectorId} остановлен`);
+    } catch (error) {
+      alert(`Ошибка: ${error instanceof Error ? error.message : 'Не удалось остановить коннектор'}`);
+    }
+  };
+
+  const handleToggleConnector = async (connectorId: string, currentlyAvailable: boolean) => {
+    try {
+      const newState = !currentlyAvailable;
+      await setConnectorAvailability(Number(connectorId), newState);
+      alert(`Коннектор ${connectorId} ${newState ? 'включен' : 'отключен'}`);
+    } catch (error) {
+      alert(`Ошибка: ${error instanceof Error ? error.message : 'Не удалось изменить доступность коннектора'}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Station Status */}
@@ -111,10 +156,11 @@ export default function StationStatus({ station, isStationOnline = true, station
                 variant="outline" 
                 size="sm" 
                 className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                disabled={!isStationOnline}
+                disabled={!isStationOnline || loading}
+                onClick={handleOcppToggle}
               >
                 <Icon name="Wifi" size={16} />
-                OCPP ВКЛ/ВЫКЛ
+                OCPP {ocppEnabled ? 'ВЫКЛ' : 'ВКЛ'}
               </Button>
             </div>
           </div>
@@ -152,7 +198,8 @@ export default function StationStatus({ station, isStationOnline = true, station
                   variant="outline" 
                   size="sm" 
                   className="text-green-600 border-green-200 hover:bg-green-50"
-                  disabled={!isStationOnline}
+                  disabled={!isStationOnline || loading}
+                  onClick={() => handleStartConnector(connector.id)}
                 >
                   СТАРТ
                 </Button>
@@ -160,7 +207,8 @@ export default function StationStatus({ station, isStationOnline = true, station
                   variant="outline" 
                   size="sm" 
                   className="text-red-600 border-red-200 hover:bg-red-50"
-                  disabled={!isStationOnline}
+                  disabled={!isStationOnline || loading}
+                  onClick={() => handleStopConnector(connector.id)}
                 >
                   СТОП
                 </Button>
@@ -168,7 +216,8 @@ export default function StationStatus({ station, isStationOnline = true, station
                   variant="outline" 
                   size="sm" 
                   className="text-gray-600 border-gray-200 hover:bg-gray-50"
-                  disabled={!isStationOnline}
+                  disabled={!isStationOnline || loading}
+                  onClick={() => handleToggleConnector(connector.id, connector.status === 'available')}
                 >
                   <Icon name="Power" size={16} />
                   ВКЛ/ВЫКЛ
