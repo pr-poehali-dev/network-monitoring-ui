@@ -71,7 +71,7 @@ export default function StationStatus({ station, isStationOnline = true, station
 
   const handleOcppToggle = async () => {
     try {
-      const newState = !ocppDisconnected;
+      const newState = ocppDisconnected;
       await setOcppConnection(newState);
       alert(`OCPP ${newState ? 'включен' : 'отключен'}`);
     } catch (error) {
