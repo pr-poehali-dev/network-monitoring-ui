@@ -73,13 +73,64 @@ interface StationStatusProps {
   stationData?: StationData | null;
 }
 
-const getStatusLabel = (status: string) => {
+const getOcppStatusColors = (status: string) => {
   switch (status) {
-    case 'available': return 'Online';
-    case 'charging': return 'Зарядка';
-    case 'error': return 'Ошибка';
-    case 'offline': return 'Офлайн';
-    default: return 'Неизвестно';
+    case 'Available':
+      return {
+        bg: 'bg-green-50',
+        border: 'border-green-200',
+        icon: 'text-green-600',
+        text: 'text-green-700',
+        badge: 'bg-green-100 text-green-800'
+      };
+    case 'Preparing':
+      return {
+        bg: 'bg-yellow-50',
+        border: 'border-yellow-200',
+        icon: 'text-yellow-600',
+        text: 'text-yellow-700',
+        badge: 'bg-yellow-100 text-yellow-800'
+      };
+    case 'Charging':
+      return {
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        icon: 'text-blue-600',
+        text: 'text-blue-700',
+        badge: 'bg-blue-100 text-blue-800'
+      };
+    case 'Finishing':
+      return {
+        bg: 'bg-orange-50',
+        border: 'border-orange-200',
+        icon: 'text-orange-600',
+        text: 'text-orange-700',
+        badge: 'bg-orange-100 text-orange-800'
+      };
+    case 'Faulted':
+      return {
+        bg: 'bg-red-50',
+        border: 'border-red-200',
+        icon: 'text-red-600',
+        text: 'text-red-700',
+        badge: 'bg-red-100 text-red-800'
+      };
+    case 'Unavailable':
+      return {
+        bg: 'bg-gray-50',
+        border: 'border-gray-200',
+        icon: 'text-gray-600',
+        text: 'text-gray-700',
+        badge: 'bg-gray-100 text-gray-800'
+      };
+    default:
+      return {
+        bg: 'bg-gray-50',
+        border: 'border-gray-200',
+        icon: 'text-gray-600',
+        text: 'text-gray-700',
+        badge: 'bg-gray-100 text-gray-800'
+      };
   }
 };
 
@@ -88,6 +139,7 @@ const getStatusLabel = (status: string) => {
 export default function StationStatus({ station, isStationOnline = true, stationData }: StationStatusProps) {
   const { setOcppConnection, startConnector, stopConnector, setConnectorAvailability, loading } = useStationControl(stationData?.station_id);
   const ocppDisconnected = stationData?.error_info === 'OCPP not connected';
+  const stationColors = stationData?.ocpp_status ? getOcppStatusColors(stationData.ocpp_status.status) : getOcppStatusColors('Unavailable');
 
   const handleOcppToggle = async () => {
     try {
@@ -132,29 +184,24 @@ export default function StationStatus({ station, isStationOnline = true, station
   return (
     <div className="space-y-6">
       {/* Station Status */}
-      <Card>
-        <CardHeader>
+      <Card className={`${stationColors.border} border-2`}>
+        <CardHeader className={stationColors.bg}>
           <CardTitle className="flex items-center gap-2">
             Зарядная станция
-            <Badge 
-              variant={station.status === 'error' ? 'destructive' : 'default'}
-              className={
-                station.status === 'available' ? 'bg-green-100 text-green-800' :
-                station.status === 'charging' ? 'bg-orange-100 text-orange-800' :
-                ''
-              }
-            >
-              {getStatusLabel(station.status)}
-            </Badge>
+            {stationData?.ocpp_status && (
+              <Badge className={stationColors.badge}>
+                {stationData.ocpp_status.status}
+              </Badge>
+            )}
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className={stationColors.bg}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Icon 
                 name={isStationOnline ? "BatteryCharging" : "WifiOff"} 
                 size={32} 
-                className={isStationOnline ? "text-green-600" : "text-gray-400"} 
+                className={stationColors.icon} 
               />
               <div className="space-y-1">
                 <p className="text-sm text-gray-500">
@@ -208,19 +255,25 @@ export default function StationStatus({ station, isStationOnline = true, station
           <CardContent className="space-y-4">
             {station.connectors.map((connector, index) => {
               const ocppStatus = stationData?.connectors?.[index]?.ocpp_status;
+              const connectorColors = ocppStatus ? getOcppStatusColors(ocppStatus.status) : getOcppStatusColors('Unavailable');
               return (
-            <div key={connector.id} className="flex items-center justify-between p-4 border rounded-lg border-gray-200">
+            <div key={connector.id} className={`flex items-center justify-between p-4 border-2 rounded-lg ${connectorColors.border} ${connectorColors.bg}`}>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-100">
-                    <span className="text-sm font-medium text-gray-700">{connector.id}</span>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${connectorColors.bg} border-2 ${connectorColors.border}`}>
+                    <span className={`text-sm font-medium ${connectorColors.text}`}>{connector.id}</span>
                   </div>
-                  <Icon name="Plug" size={24} className="text-gray-600" />
+                  <Icon name="Plug" size={24} className={connectorColors.icon} />
                 </div>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{connector.type}</span>
                     <span className="text-sm text-gray-500">{connector.power} • DC</span>
+                    {ocppStatus && (
+                      <Badge className={connectorColors.badge}>
+                        {ocppStatus.status}
+                      </Badge>
+                    )}
                   </div>
                   {ocppStatus && (
                     <div className="space-y-1 text-xs">
