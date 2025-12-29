@@ -1,17 +1,44 @@
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import Icon from '@/components/ui/icon';
 import { wsService } from '@/services/websocket';
 import { useToast } from '@/hooks/use-toast';
-import UnknownStationsTable from './unknown-stations/UnknownStationsTable';
-import AddStationDialog from './unknown-stations/AddStationDialog';
-import {
-  UnknownStation,
-  UnknownStationsResponse,
-  StationFormData,
-} from './unknown-stations/UnknownStationsTypes';
+
+interface UnknownStation {
+  serialNumber: string;
+  ip: string | null;
+  connectedSince: number | null;
+  connectedSinceIso: string | null;
+  stationStatus: string;
+  errorInfo: string;
+  firmware: string | null;
+  dbMatchSerial: string | null;
+}
+
+interface UnknownStationsResponse {
+  count: number;
+  stations: UnknownStation[];
+  error?: string;
+}
 
 interface UnknownStationsProps {
   isActive?: boolean;
@@ -28,7 +55,7 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
   const [selectedStation, setSelectedStation] = useState<UnknownStation | null>(null);
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState<StationFormData>({
+  const [formData, setFormData] = useState({
     name: '',
     serialNumber: '',
     lat: '',
@@ -236,29 +263,106 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
           </div>
         )}
 
-        {!loading && !error && (
-          <>
-            <UnknownStationsTable
-              stations={stations}
-              loading={loading}
-              onAddStation={handleOpenAddDialog}
-              formatDate={formatDate}
-              getStatusBadge={getStatusBadge}
-            />
-
-            {stations.length > 0 && (
-              <div className="mt-4 text-sm text-gray-500">
-                Всего неизвестных станций: <strong>{stations.length}</strong>
-              </div>
-            )}
-          </>
-        )}
-
         {loading && (
           <div className="text-center py-12">
             <Icon name="Loader2" size={48} className="mx-auto text-gray-300 mb-3 animate-spin" />
             <p className="text-gray-500">Загрузка данных...</p>
           </div>
+        )}
+
+        {!loading && !error && stations.length === 0 && (
+          <div className="text-center py-12 bg-green-50 rounded-lg border border-green-200">
+            <Icon name="CheckCircle2" size={48} className="mx-auto text-green-600 mb-3" />
+            <p className="text-green-700 font-medium">Все подключённые станции добавлены в систему</p>
+            <p className="text-green-600 text-sm mt-1">Неизвестных станций не обнаружено</p>
+          </div>
+        )}
+
+        {!loading && stations.length > 0 && (
+          <>
+            <div className="mb-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <Icon name="AlertTriangle" size={20} className="text-orange-600 mt-0.5" />
+                <div>
+                  <p className="text-orange-900 font-medium">
+                    Обнаружено {stations.length} {stations.length === 1 ? 'неизвестная станция' : 'неизвестных станций'}
+                  </p>
+                  <p className="text-orange-700 text-sm mt-1">
+                    Эти станции подключены к системе, но не зарегистрированы в базе данных
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Серийный номер</TableHead>
+                    <TableHead>IP-адрес</TableHead>
+                    <TableHead>Статус</TableHead>
+                    <TableHead>Прошивка</TableHead>
+                    <TableHead>Подключена с</TableHead>
+                    <TableHead>Совпадение в БД</TableHead>
+                    <TableHead>Ошибки</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {stations.map((station) => (
+                    <TableRow key={station.serialNumber}>
+                      <TableCell className="font-mono font-semibold text-orange-700">
+                        {station.serialNumber}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {station.ip || '—'}
+                      </TableCell>
+                      <TableCell>
+                        {getStatusBadge(station.stationStatus)}
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {station.firmware || '—'}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {formatDate(station.connectedSinceIso)}
+                      </TableCell>
+                      <TableCell>
+                        {station.dbMatchSerial ? (
+                          <div className="flex items-center gap-2">
+                            <Icon name="Info" size={16} className="text-blue-600" />
+                            <span className="font-mono text-sm text-blue-700">
+                              {station.dbMatchSerial}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {station.errorInfo ? (
+                          <Badge variant="outline" className="text-red-600 border-red-300">
+                            {station.errorInfo}
+                          </Badge>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          onClick={() => handleOpenAddDialog(station)}
+                          className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Icon name="Plus" size={16} />
+                          Добавить
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         )}
       </Card>
 
@@ -283,14 +387,137 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
         </div>
       </Card>
 
-      <AddStationDialog
-        isOpen={isDialogOpen}
-        formData={formData}
-        addingStation={addingStation}
-        onClose={handleCancel}
-        onSubmit={handleAddStation}
-        onInputChange={handleInputChange}
-      />
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon name="Plus" size={20} />
+              Добавление станции
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="serialNumber">Серийный номер</Label>
+              <Input
+                id="serialNumber"
+                value={formData.serialNumber}
+                onChange={(e) => handleInputChange('serialNumber', e.target.value)}
+                placeholder="00857"
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="name">Название</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="ЭЗС 00857"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lat">Широта</Label>
+              <Input
+                id="lat"
+                type="number"
+                step="0.000001"
+                value={formData.lat}
+                onChange={(e) => handleInputChange('lat', e.target.value)}
+                placeholder="55.7558"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="lon">Долгота</Label>
+              <Input
+                id="lon"
+                type="number"
+                step="0.000001"
+                value={formData.lon}
+                onChange={(e) => handleInputChange('lon', e.target.value)}
+                placeholder="37.6173"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="ipAddress">IP-адрес</Label>
+              <Input
+                id="ipAddress"
+                value={formData.ipAddress}
+                onChange={(e) => handleInputChange('ipAddress', e.target.value)}
+                placeholder="62.118.80.8"
+                className="font-mono"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="region">Регион</Label>
+              <Input
+                id="region"
+                value={formData.region}
+                onChange={(e) => handleInputChange('region', e.target.value)}
+                placeholder="Московская область"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="owner">Владелец</Label>
+              <Input
+                id="owner"
+                value={formData.owner}
+                onChange={(e) => handleInputChange('owner', e.target.value)}
+                placeholder="ООО Ромашка"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="app">Приложение</Label>
+              <Input
+                id="app"
+                value={formData.app}
+                onChange={(e) => handleInputChange('app', e.target.value)}
+                placeholder="ChargePoint"
+              />
+            </div>
+
+            <div className="space-y-2 col-span-2">
+              <Label htmlFor="address">Адрес</Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange('address', e.target.value)}
+                placeholder="г. Москва, ул. Ленина, д. 1"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCancel} disabled={addingStation}>
+              Отмена
+            </Button>
+            <Button 
+              onClick={handleAddStation} 
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+              disabled={addingStation}
+            >
+              {addingStation ? (
+                <>
+                  <Icon name="Loader2" size={18} className="animate-spin" />
+                  Добавление...
+                </>
+              ) : (
+                <>
+                  <Icon name="Plus" size={18} />
+                  Добавить станцию
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
