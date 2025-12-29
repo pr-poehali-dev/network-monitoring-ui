@@ -151,41 +151,7 @@ const Sidebar = () => {
           </div>
         </div>
 
-        {/* Active Alerts */}
-        <div className="mt-6 px-3">
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">
-            Активные ошибки
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-gray-600">Критичные</span>
-              </div>
-              <span className="font-medium text-red-600">2</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                <span className="text-gray-600">Внимание</span>
-              </div>
-              <span className="font-medium text-orange-600">5</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-gray-600">Уведомления</span>
-              </div>
-              <span className="font-medium text-blue-600">12</span>
-            </div>
-          </div>
-          <Link 
-            to="/monitoring" 
-            className="block mt-3 text-xs text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            Подробнее →
-          </Link>
-        </div>
+
       </nav>
     </div>
   );
