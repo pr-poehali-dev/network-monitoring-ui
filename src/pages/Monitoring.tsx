@@ -204,12 +204,12 @@ export default function Monitoring() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Select value={regionFilter} onValueChange={setRegionFilter}>
+                    <Select value={regionFilter || 'all'} onValueChange={(val) => setRegionFilter(val === 'all' ? '' : val)}>
                       <SelectTrigger className="w-48">
                         <SelectValue placeholder="Все регионы" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Все регионы</SelectItem>
+                        <SelectItem value="all">Все регионы</SelectItem>
                         {regions.map((region: string) => (
                           <SelectItem key={region} value={region}>{region}</SelectItem>
                         ))}
