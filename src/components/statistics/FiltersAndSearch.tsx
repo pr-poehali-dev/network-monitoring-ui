@@ -16,8 +16,6 @@ interface FiltersAndSearchProps {
   setAppFilter: (value: string) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
-  periodFilter?: string;
-  setPeriodFilter?: (value: string) => void;
 }
 
 export default function FiltersAndSearch({
@@ -32,27 +30,51 @@ export default function FiltersAndSearch({
   appFilter,
   setAppFilter,
   clearFilters,
-  hasActiveFilters,
-  periodFilter,
-  setPeriodFilter
+  hasActiveFilters
 }: FiltersAndSearchProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          {setPeriodFilter && (
-            <Select value={periodFilter || 'all'} onValueChange={setPeriodFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Период" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">За все время</SelectItem>
-                <SelectItem value="today">Сегодня</SelectItem>
-                <SelectItem value="week">Неделя</SelectItem>
-                <SelectItem value="month">Месяц</SelectItem>
-                <SelectItem value="year">Год</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="relative">
+            <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Фильтр по городу..."
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="pl-9 w-48"
+            />
+          </div>
+
+          <div className="relative">
+            <Icon name="Building" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Фильтр по собственнику..."
+              value={ownerFilter}
+              onChange={(e) => setOwnerFilter(e.target.value)}
+              className="pl-9 w-48"
+            />
+          </div>
+
+          <div className="relative">
+            <Icon name="Smartphone" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Фильтр по приложению..."
+              value={appFilter}
+              onChange={(e) => setAppFilter(e.target.value)}
+              className="pl-9 w-48"
+            />
+          </div>
+
+          {hasActiveFilters && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={clearFilters}
+            >
+              <Icon name="X" size={16} className="mr-1" />
+              Сбросить
+            </Button>
           )}
         </div>
         
@@ -79,49 +101,6 @@ export default function FiltersAndSearch({
             </SelectContent>
           </Select>
         </div>
-      </div>
-
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Фильтр по городу..."
-            value={cityFilter}
-            onChange={(e) => setCityFilter(e.target.value)}
-            className="pl-9 w-48"
-          />
-        </div>
-
-        <div className="relative">
-          <Icon name="Building" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Фильтр по собственнику..."
-            value={ownerFilter}
-            onChange={(e) => setOwnerFilter(e.target.value)}
-            className="pl-9 w-48"
-          />
-        </div>
-
-        <div className="relative">
-          <Icon name="Smartphone" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Фильтр по приложению..."
-            value={appFilter}
-            onChange={(e) => setAppFilter(e.target.value)}
-            className="pl-9 w-48"
-          />
-        </div>
-
-        {hasActiveFilters && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={clearFilters}
-          >
-            <Icon name="X" size={16} className="mr-1" />
-            Сбросить фильтры
-          </Button>
-        )}
       </div>
     </div>
   );

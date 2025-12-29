@@ -7,6 +7,7 @@ import TopStationsCards from '@/components/statistics/TopStationsCards';
 import RegionalBreakdown from '@/components/statistics/RegionalBreakdown';
 import DetailedTable from '@/components/statistics/DetailedTable';
 import FiltersAndSearch from '@/components/statistics/FiltersAndSearch';
+import PeriodFilter from '@/components/statistics/PeriodFilter';
 import { useAllStationsStatistics } from '@/hooks/useWebSocket';
 import { GlobalStats } from '@/components/statistics/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -60,35 +61,7 @@ export default function Statistics() {
 
   const hasActiveFilters = cityFilter !== '' || ownerFilter !== '' || appFilter !== '';
 
-  const handleRefresh = () => {
-    const filters: Record<string, any> = {};
-    if (cityFilter) filters.region = cityFilter;
-    
-    let from: string | undefined;
-    let to: string | undefined;
-    const now = new Date();
-    
-    switch (periodFilter) {
-      case 'today':
-        from = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
-        to = now.toISOString();
-        break;
-      case 'week':
-        from = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        to = now.toISOString();
-        break;
-      case 'month':
-        from = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-        to = now.toISOString();
-        break;
-      case 'year':
-        from = new Date(now.getFullYear(), 0, 1).toISOString();
-        to = now.toISOString();
-        break;
-    }
-    
-    loadStatistics(from, to, Object.keys(filters).length > 0 ? filters : undefined);
-  };
+
 
   const globalStats: GlobalStats = statistics?.totals ? {
     totalStations: statistics.totals.totalStations || 0,
@@ -145,7 +118,7 @@ export default function Statistics() {
 
   return (
     <Layout>
-      <StatisticsHeader onRefresh={handleRefresh} />
+      <StatisticsHeader />
 
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {loading && (
@@ -169,6 +142,8 @@ export default function Statistics() {
 
         {!loading && !error && statistics && (
           <>
+            <PeriodFilter value={periodFilter} onChange={setPeriodFilter} />
+            
             <GlobalStatsCards globalStats={globalStats} />
             
             <AdvancedMetrics totals={statistics.totals} />
@@ -211,8 +186,6 @@ export default function Statistics() {
                   setAppFilter={setAppFilter}
                   clearFilters={clearFilters}
                   hasActiveFilters={hasActiveFilters}
-                  periodFilter={periodFilter}
-                  setPeriodFilter={setPeriodFilter}
                 />
 
                 <div className="flex items-center justify-between text-sm text-gray-600">
