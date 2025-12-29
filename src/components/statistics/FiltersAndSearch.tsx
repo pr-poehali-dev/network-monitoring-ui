@@ -16,6 +16,8 @@ interface FiltersAndSearchProps {
   setAppFilter: (value: string) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
+  periodFilter?: string;
+  setPeriodFilter?: (value: string) => void;
 }
 
 export default function FiltersAndSearch({
@@ -30,15 +32,30 @@ export default function FiltersAndSearch({
   appFilter,
   setAppFilter,
   clearFilters,
-  hasActiveFilters
+  hasActiveFilters,
+  periodFilter,
+  setPeriodFilter
 }: FiltersAndSearchProps) {
   return (
     <div className="space-y-4">
-      {/* Основные фильтры */}
       <div className="flex items-center justify-between">
-        <div></div>
+        <div className="flex items-center gap-4">
+          {setPeriodFilter && (
+            <Select value={periodFilter || 'all'} onValueChange={setPeriodFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Период" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">За все время</SelectItem>
+                <SelectItem value="today">Сегодня</SelectItem>
+                <SelectItem value="week">Неделя</SelectItem>
+                <SelectItem value="month">Месяц</SelectItem>
+                <SelectItem value="year">Год</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+        </div>
         
-        {/* Поиск и сортировка */}
         <div className="flex items-center gap-4">
           <div className="relative">
             <Icon name="Search" size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -58,16 +75,12 @@ export default function FiltersAndSearch({
               <SelectItem value="name">По названию</SelectItem>
               <SelectItem value="sessions">По сессиям</SelectItem>
               <SelectItem value="energy">По энергии</SelectItem>
-              <SelectItem value="errors">По ошибкам</SelectItem>
-              <SelectItem value="utilization">По загрузке</SelectItem>
-              <SelectItem value="city">По городу</SelectItem>
-              <SelectItem value="owner">По собственнику</SelectItem>
+              <SelectItem value="success">По успешности</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Дополнительные фильтры */}
       <div className="flex items-center gap-4">
         <div className="relative">
           <Icon name="MapPin" size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />

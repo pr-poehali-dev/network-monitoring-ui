@@ -582,6 +582,25 @@ export class WebSocketService {
 
     return response.data;
   }
+
+  async getAllStationsStatistics(
+    from?: string,
+    to?: string,
+    filters?: Record<string, any>
+  ): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getAllStationsStatistics',
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+    if (filters) message.filters = filters;
+
+    const response = await this.sendMessage(message);
+    return response.data || null;
+  }
 }
 
 export const wsService = new WebSocketService('wss://eprom.online:10008');

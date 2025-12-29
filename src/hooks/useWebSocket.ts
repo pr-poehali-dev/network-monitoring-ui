@@ -365,3 +365,36 @@ export function useStationControl(serialNumber: string | undefined) {
     setConnectorAvailability
   };
 }
+
+export function useAllStationsStatistics() {
+  const [statistics, setStatistics] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStatistics = useCallback(async (
+    from?: string,
+    to?: string,
+    filters?: Record<string, any>
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await wsService.getAllStationsStatistics(from, to, filters);
+      setStatistics(data);
+    } catch (err) {
+      console.error('Error loading all stations statistics:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load statistics');
+      setStatistics(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    statistics,
+    loading,
+    error,
+    loadStatistics
+  };
+}
