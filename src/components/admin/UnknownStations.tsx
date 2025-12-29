@@ -63,6 +63,8 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
     region: '',
     address: '',
     ipAddress: '',
+    owner: '',
+    app: '',
   });
 
   const loadUnknownStations = async () => {
@@ -124,6 +126,8 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
       region: '',
       address: '',
       ipAddress: station.ip || '',
+      owner: '',
+      app: 'ChargePoint',
     });
     setIsDialogOpen(true);
   };
@@ -142,6 +146,8 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
         ipAddress: formData.ipAddress || undefined,
         lat: formData.lat ? parseFloat(formData.lat) : undefined,
         lon: formData.lon ? parseFloat(formData.lon) : undefined,
+        owner: formData.owner || undefined,
+        app: formData.app || undefined,
       });
       
       if (result.type === 'response' && result.data?.operation) {
@@ -454,6 +460,26 @@ export default function UnknownStations({ isActive = false }: UnknownStationsPro
                 value={formData.region}
                 onChange={(e) => handleInputChange('region', e.target.value)}
                 placeholder="Московская область"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="owner">Владелец</Label>
+              <Input
+                id="owner"
+                value={formData.owner}
+                onChange={(e) => handleInputChange('owner', e.target.value)}
+                placeholder="ООО Ромашка"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="app">Приложение</Label>
+              <Input
+                id="app"
+                value={formData.app}
+                onChange={(e) => handleInputChange('app', e.target.value)}
+                placeholder="ChargePoint"
               />
             </div>
 

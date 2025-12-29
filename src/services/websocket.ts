@@ -456,6 +456,8 @@ export class WebSocketService {
     ipAddress?: string;
     lat?: number;
     lon?: number;
+    owner?: string;
+    app?: string;
   }): Promise<WSServerMessage> {
     const message: WSClientMessage = {
       type: 'request',

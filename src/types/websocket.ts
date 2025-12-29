@@ -23,6 +23,7 @@ export interface StationData {
   error_info: string;
   connectors: ConnectorData[];
   owner?: string;
+  app?: string;
 }
 
 // Структура сообщений клиент -> сервер

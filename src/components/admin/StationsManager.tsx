@@ -46,6 +46,8 @@ export default function StationsManager() {
     region: '',
     address: '',
     ip_address: '',
+    owner: '',
+    app: '',
   });
 
   const filteredStations = stations.filter(station =>
@@ -63,6 +65,8 @@ export default function StationsManager() {
       region: station.region || '',
       address: station.address || '',
       ip_address: station.ip_address || '',
+      owner: station.owner || '',
+      app: station.app || '',
     });
     setIsDialogOpen(true);
   };
@@ -82,6 +86,8 @@ export default function StationsManager() {
         ipAddress: formData.ip_address || undefined,
         lat: formData.lat ? parseFloat(formData.lat) : undefined,
         lon: formData.lon ? parseFloat(formData.lon) : undefined,
+        owner: formData.owner || undefined,
+        app: formData.app || undefined,
       });
       
       if (result.type === 'response' && result.data?.operation) {
@@ -309,6 +315,26 @@ export default function StationsManager() {
                 value={formData.region}
                 onChange={(e) => handleInputChange('region', e.target.value)}
                 placeholder="Татарстан"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="owner">Владелец</Label>
+              <Input
+                id="owner"
+                value={formData.owner}
+                onChange={(e) => handleInputChange('owner', e.target.value)}
+                placeholder="ООО Ромашка"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="app">Приложение</Label>
+              <Input
+                id="app"
+                value={formData.app}
+                onChange={(e) => handleInputChange('app', e.target.value)}
+                placeholder="ChargePoint"
               />
             </div>
 
