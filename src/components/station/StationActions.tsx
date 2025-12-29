@@ -2,12 +2,25 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import Icon from '@/components/ui/icon';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { wsService } from '@/services/websocket';
+import { useToast } from '@/hooks/use-toast';
 
 interface StationActionsProps {
   onAction: (action: string) => void;
   isStationOnline?: boolean;
+  serialNumber?: string;
+  stationId?: number;
+  currentComment?: string;
 }
 
 interface StationFile {
@@ -19,7 +32,11 @@ interface StationFile {
   url?: string; // Для скачивания
 }
 
-export default function StationActions({ onAction, isStationOnline = true }: StationActionsProps) {
+export default function StationActions({ onAction, isStationOnline = true, serialNumber, stationId, currentComment = '' }: StationActionsProps) {
+  const { toast } = useToast();
+  const [isCommentDialogOpen, setIsCommentDialogOpen] = useState(false);
+  const [comment, setComment] = useState(currentComment);
+  const [savingComment, setSavingComment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<StationFile[]>([
     {
@@ -44,6 +61,10 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
       uploadDate: '2024-09-15'
     }
   ]);
+
+  useEffect(() => {
+    setComment(currentComment || '');
+  }, [currentComment]);
 
   const handleExternalLink = (url: string, name: string) => {
     // Пока заглушка - в будущем будет реальная ссылка
@@ -129,14 +150,28 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
         <CardTitle>Действия</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <p className="font-medium">Комментарий</p>
-            <p className="text-sm text-gray-500">Редактировать операционную информацию</p>
+        <div>
+          <div className="flex justify-between items-center mb-2">
+            <div>
+              <p className="font-medium">Комментарий</p>
+              <p className="text-sm text-gray-500">Операционная информация о станции</p>
+            </div>
+            <Button onClick={() => {
+              setComment(currentComment || '');
+              setIsCommentDialogOpen(true);
+            }}>
+              РЕДАКТИРОВАТЬ
+            </Button>
           </div>
-          <Button onClick={() => onAction('editComment')}>
-            РЕДАКТИРОВАТЬ
-          </Button>
+          {currentComment ? (
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-700 whitespace-pre-wrap">{currentComment}</p>
+            </div>
+          ) : (
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-400 italic">Комментарий не добавлен</p>
+            </div>
+          )}
         </div>
 
         <Separator />
@@ -206,6 +241,84 @@ export default function StationActions({ onAction, isStationOnline = true }: Sta
           </div>
         </div>
       </CardContent>
+
+      <Dialog open={isCommentDialogOpen} onOpenChange={setIsCommentDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Icon name="FileText" size={20} />
+              Редактирование комментария
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <Textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Введите комментарий к станции..."
+              rows={8}
+              className="resize-none"
+            />
+            <p className="text-sm text-gray-500">
+              Комментарий поддерживает несколько строк. Используйте Enter для переноса строки.
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsCommentDialogOpen(false)}
+              disabled={savingComment}
+            >
+              Отмена
+            </Button>
+            <Button 
+              onClick={async () => {
+                setSavingComment(true);
+                try {
+                  const result = await wsService.saveStationComment({
+                    stationId,
+                    serialNumber,
+                    comment,
+                  });
+
+                  if (result.type === 'response') {
+                    toast({
+                      title: 'Комментарий сохранен',
+                      description: 'Изменения успешно применены',
+                    });
+                    setIsCommentDialogOpen(false);
+                  } else if (result.type === 'error') {
+                    toast({
+                      title: 'Ошибка',
+                      description: result.message || 'Не удалось сохранить комментарий',
+                      variant: 'destructive',
+                    });
+                  }
+                } catch (error) {
+                  toast({
+                    title: 'Ошибка',
+                    description: 'Не удалось сохранить комментарий',
+                    variant: 'destructive',
+                  });
+                } finally {
+                  setSavingComment(false);
+                }
+              }}
+              disabled={savingComment}
+            >
+              {savingComment ? (
+                <>
+                  <Icon name="Loader2" size={16} className="animate-spin" />
+                  Сохранение...
+                </>
+              ) : (
+                'Сохранить'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

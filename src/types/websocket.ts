@@ -24,12 +24,13 @@ export interface StationData {
   connectors: ConnectorData[];
   owner?: string;
   app?: string;
+  comment?: string;
 }
 
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics' | 'setOcppConnection' | 'startConnector' | 'stopConnector' | 'setConnectorAvailability' | 'getStationErrors' | 'getAllStationsErrors';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics' | 'setOcppConnection' | 'startConnector' | 'stopConnector' | 'setConnectorAvailability' | 'getStationErrors' | 'getAllStationsErrors' | 'saveStationComment';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
@@ -50,6 +51,7 @@ export interface WSClientMessage {
   activeOnly?: boolean;
   historyLimitPerStation?: number;
   historyTotalLimit?: number;
+  comment?: string;
 }
 
 // Структура сообщений сервер -> клиент

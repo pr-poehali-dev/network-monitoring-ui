@@ -470,6 +470,24 @@ export class WebSocketService {
     return response;
   }
 
+  async saveStationComment(params: {
+    stationId?: number;
+    serialNumber?: string;
+    comment: string;
+  }): Promise<WSServerMessage> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'saveStationComment',
+      ...(params.stationId !== undefined ? { stationId: params.stationId } : {}),
+      ...(params.serialNumber ? { serialNumber: params.serialNumber } : {}),
+      comment: params.comment,
+      requestId: ''
+    };
+
+    const response = await this.sendMessage(message);
+    return response;
+  }
+
   async subscribeSystemStats(
     intervalMs?: number,
     paths?: string[]

@@ -86,7 +86,13 @@ export default function StationTabs({ station, mockLogs, activeTab, onTabChange,
 
         <TabsContent value="management" className="space-y-6">
           <StationStatus station={station} isStationOnline={isStationOnline} stationData={stationData} />
-          <StationActions onAction={onAction} isStationOnline={isStationOnline} />
+          <StationActions 
+            onAction={onAction} 
+            isStationOnline={isStationOnline}
+            serialNumber={station.serialNumber}
+            stationId={stationData?.id}
+            currentComment={stationData?.comment}
+          />
         </TabsContent>
 
         <TabsContent value="transactions">
