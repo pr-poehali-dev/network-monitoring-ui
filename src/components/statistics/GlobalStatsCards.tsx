@@ -11,6 +11,19 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Всего станций</CardTitle>
+          <Icon name="Server" className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{globalStats.totalStations.toLocaleString()}</div>
+          <p className="text-xs text-muted-foreground">
+            {globalStats.activeStations} активных за период
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Всего сессий</CardTitle>
           <Icon name="Activity" className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
@@ -33,43 +46,20 @@ export default function GlobalStatsCards({ globalStats }: GlobalStatsCardsProps)
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{globalStats.totalEnergy.toLocaleString()} кВт⋅ч</div>
-          <p className="text-xs text-muted-foreground">За все время</p>
+          <p className="text-xs text-muted-foreground">За выбранный период</p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Общие ошибки</CardTitle>
+          <CardTitle className="text-sm font-medium">Ошибки</CardTitle>
           <Icon name="AlertTriangle" className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-red-600">{globalStats.totalErrors}</div>
+          <div className="text-2xl font-bold text-red-600">{globalStats.totalErrors.toLocaleString()}</div>
           <p className="text-xs text-muted-foreground">
-            Среднее на станцию: {Math.round(globalStats.totalErrors / globalStats.totalStations)}
+            ~{Math.round(globalStats.totalErrors / Math.max(globalStats.activeStations, 1))} на активную станцию
           </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Статус станций</CardTitle>
-          <Icon name="Server" className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <div className="text-lg font-bold text-green-600">{globalStats.activeStations}</div>
-              <div className="text-xs text-gray-500">Активные</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-red-600">{globalStats.offlineStations}</div>
-              <div className="text-xs text-gray-500">Оффлайн</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-bold text-yellow-600">{globalStats.maintenanceStations}</div>
-              <div className="text-xs text-gray-500">Зарядка</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

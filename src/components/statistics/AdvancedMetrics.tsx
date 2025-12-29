@@ -32,33 +32,17 @@ export default function AdvancedMetrics({ totals }: AdvancedMetricsProps) {
       bgColor: 'bg-yellow-50'
     },
     {
-      title: 'Всего энергии',
-      value: `${totals.energyMwhTotal?.toFixed(2) || 0} МВт⋅ч`,
-      description: `${totals.energyKwhTotal?.toLocaleString() || 0} кВт⋅ч`,
-      icon: 'Gauge',
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50'
-    },
-    {
-      title: 'Проигнорированные',
-      value: `${totals.ignoredSessions?.toLocaleString() || 0}`,
-      description: `${totals.ignoredRatePct?.toFixed(1) || 0}% от всех`,
-      icon: 'AlertCircle',
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50'
-    },
-    {
-      title: 'Станций с сессиями',
-      value: `${totals.stationsWithSessions || 0} / ${totals.totalStations || 0}`,
-      description: `${((totals.stationsWithSessions / totals.totalStations) * 100).toFixed(0)}% активных`,
-      icon: 'Server',
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-50'
+      title: 'Неуспешные сессии',
+      value: `${totals.failedSessions?.toLocaleString() || 0}`,
+      description: `${totals.failureRatePct?.toFixed(1) || 0}% от всех`,
+      icon: 'XCircle',
+      color: 'text-red-600',
+      bgColor: 'bg-red-50'
     }
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {metrics.map((metric, index) => (
         <Card key={index}>
           <CardHeader className="pb-3">
