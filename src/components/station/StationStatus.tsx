@@ -45,6 +45,7 @@ interface StationData {
   address: string;
   region: string;
   owner?: string;
+  app?: string;
   error_info?: string;
   station_status?: string;
   ocpp_connected?: boolean;
@@ -364,6 +365,11 @@ export default function StationStatus({ station, isStationOnline = true, station
           <div className="flex justify-between">
             <span className="text-gray-500">Владелец</span>
             <span className="font-medium">{stationData?.owner || 'None'}</span>
+          </div>
+          <Separator />
+          <div className="flex justify-between">
+            <span className="text-gray-500">Приложение</span>
+            <span className="font-medium">{stationData?.app || 'None'}</span>
           </div>
         </CardContent>
       </Card>
