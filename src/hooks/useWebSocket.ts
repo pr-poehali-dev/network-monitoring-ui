@@ -398,3 +398,95 @@ export function useAllStationsStatistics() {
     loadStatistics
   };
 }
+
+export function useStationErrors(serialNumber: string | undefined) {
+  const [errors, setErrors] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadErrors = useCallback(async (
+    from?: string,
+    to?: string,
+    limit?: number,
+    includeHistory: boolean = true,
+    includeEvents: boolean = false
+  ) => {
+    if (!serialNumber) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await wsService.getStationErrors(
+        serialNumber,
+        from,
+        to,
+        limit,
+        includeHistory,
+        includeEvents
+      );
+      setErrors(data);
+    } catch (err) {
+      console.error('Error loading station errors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load errors');
+      setErrors(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [serialNumber]);
+
+  return {
+    errors,
+    loading,
+    error,
+    loadErrors
+  };
+}
+
+export function useAllStationsErrors() {
+  const [errorsData, setErrorsData] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadAllErrors = useCallback(async (
+    from?: string,
+    to?: string,
+    activeOnly: boolean = false,
+    includeHistory: boolean = true,
+    historyLimitPerStation: number = 5,
+    historyTotalLimit: number = 5000,
+    filters?: Record<string, any>
+  ) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await wsService.getAllStationsErrors(
+        from,
+        to,
+        activeOnly,
+        includeHistory,
+        historyLimitPerStation,
+        historyTotalLimit,
+        filters
+      );
+      setErrorsData(data);
+    } catch (err) {
+      console.error('Error loading all stations errors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load errors');
+      setErrorsData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return {
+    errorsData,
+    loading,
+    error,
+    loadAllErrors
+  };
+}

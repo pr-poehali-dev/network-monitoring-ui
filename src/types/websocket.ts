@@ -28,7 +28,7 @@ export interface StationData {
 // Структура сообщений клиент -> сервер
 export interface WSClientMessage {
   type: 'request';
-  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics' | 'setOcppConnection' | 'startConnector' | 'stopConnector' | 'setConnectorAvailability';
+  action: 'getAllStations' | 'getStationById' | 'getStationBySerialNumber' | 'subscribeUpdates' | 'unsubscribeUpdates' | 'getStationTransactions' | 'getStationUptimeBuckets' | 'getTransactionDetails' | 'getRectifiersStatus' | 'getContactorsStatus' | 'getStationLogDates' | 'getStationLogFile' | 'getEnergyMeterMetrics' | 'setOcppConnection' | 'startConnector' | 'stopConnector' | 'setConnectorAvailability' | 'getStationErrors' | 'getAllStationsErrors';
   requestId: string;
   stationId?: number;
   serialNumber?: string;
@@ -39,14 +39,16 @@ export interface WSClientMessage {
   bucketMinutes?: number;
   date?: string;
   maxBytes?: number;
-  filters?: {
-    region?: string;
-    station_status?: string;
-  };
+  filters?: Record<string, any>;
   enabled?: boolean;
   connectorId?: number;
   idTag?: string;
   available?: boolean;
+  includeHistory?: boolean;
+  includeEvents?: boolean;
+  activeOnly?: boolean;
+  historyLimitPerStation?: number;
+  historyTotalLimit?: number;
 }
 
 // Структура сообщений сервер -> клиент

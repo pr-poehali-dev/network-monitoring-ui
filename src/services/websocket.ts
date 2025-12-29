@@ -601,6 +601,58 @@ export class WebSocketService {
     const response = await this.sendMessage(message);
     return response.data || null;
   }
+
+  async getStationErrors(
+    serialNumber: string,
+    from?: string,
+    to?: string,
+    limit?: number,
+    includeHistory: boolean = true,
+    includeEvents: boolean = false
+  ): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getStationErrors',
+      serialNumber,
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+    if (limit) message.limit = limit;
+    message.includeHistory = includeHistory;
+    message.includeEvents = includeEvents;
+
+    const response = await this.sendMessage(message);
+    return response.data || null;
+  }
+
+  async getAllStationsErrors(
+    from?: string,
+    to?: string,
+    activeOnly: boolean = false,
+    includeHistory: boolean = true,
+    historyLimitPerStation: number = 5,
+    historyTotalLimit: number = 5000,
+    filters?: Record<string, any>
+  ): Promise<any> {
+    const message: WSClientMessage = {
+      type: 'request',
+      action: 'getAllStationsErrors',
+      requestId: ''
+    };
+
+    if (from) message.from = from;
+    if (to) message.to = to;
+    message.activeOnly = activeOnly;
+    message.includeHistory = includeHistory;
+    message.historyLimitPerStation = historyLimitPerStation;
+    message.historyTotalLimit = historyTotalLimit;
+    if (filters) message.filters = filters;
+
+    const response = await this.sendMessage(message);
+    return response.data || null;
+  }
 }
 
 export const wsService = new WebSocketService('wss://eprom.online:10008');
